@@ -1,0 +1,1 @@
+cmd /c g:\HxCFloppyEmulator_soft\HxCFloppyEmulator.exe "G:\SDHxCFloppySelector.amigados"

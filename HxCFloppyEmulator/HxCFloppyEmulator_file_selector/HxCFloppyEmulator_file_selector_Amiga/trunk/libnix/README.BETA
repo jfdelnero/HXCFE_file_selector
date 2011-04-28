@@ -1,0 +1,31 @@
+This is BETA 2 of libnix and its considered final. Changes compared with
+the previous BETA are completed append mode (now works for fdopen()),
+stderr behavoir according to the standard (always unbuffered; previosly
+it had the normal fopen() mode) since write-only streams are now optimized
+(as in *BSD ;-). The internal socket i/o interface was changed for better
+system compatibility (used a packet in private memory, now its DOS alloced)
+The only change that I consider is a makefile change: changing the 
+optimization level from -O3 to -O2 or -Os.
+
+---old---
+
+This libnix version is BETA!!! The final version will certainly contain
+changes compared to this snapshot.
+Its intended for those who are interested and are able to recompile the
+libraries. This packaged can be compiled under a cross compiler environment.
+The configure script MUST be invoked through an absolute pathname! If you
+configure it with a relative pathname you have to modify VPATH and srcdir
+in startup/Makefile (remove the first ../).
+
+libnix 2.0 finally offers support for networking. The network support is
+in a new link library called libsocket.a. This code is based on work by
+Jeff Sheperd. For a more changes consult sources/history. The list is
+probably no complete.
+
+Send comments and bugreports to:
+
+  gnikl@informatik.uni-rostock.de
+
+with a subject including "libnix BETA".
+
+Flames to dev/null :-)
