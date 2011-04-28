@@ -1,0 +1,2 @@
+/home/Jeff/buildlibnix/libnix/sources/math/stdio/isnan.c: In function `isnan':
+/home/Jeff/buildlibnix/libnix/sources/math/stdio/isnan.c:3: warning: dereferencing type-punned pointer will break strict-aliasing rules

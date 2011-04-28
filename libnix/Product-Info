@@ -1,0 +1,51 @@
+.name
+libnix
+.aminet-dir
+dev/gcc
+.type
+Library
+.short
+A library for amiga specific gcc develp.
+.description
+This is libnix, a static (i.e. link) library for gcc 2.3.3 or above.
+It's not a replacement for ixemul.library (though it's possible to
+recompile most of the gcc environment with libnix) but a good thing
+for amiga specific development on gcc:
+
+* It's mostly compatible to SAS's way of handling things, i.e.
+  you get even an automatic shared library opening feature and
+  some other things you may miss in ixemul.library.
+  This also means it's ANSI compliant.
+
+* It doesn't need any shared libraries than normal Amiga OS ones.
+
+* It is not copyrighted by the FSF. Therefore you neither need
+  to include sources nor objects together with your executable.
+  (read the GLGPL _before_ flaming on this statement)
+
+* And it's short! I was able to compile a 492 byte 'hello, world'
+  using normal main.
+
+* It uses OS20 features whenever necessary.
+
+To cut it short:
+
+Use ixemul.library for porting Un*x programs, libnix for compiling
+amiga-only programs and gcc becomes one of the best Amiga compilers.
+.version
+1.2
+.author
+Matthias Fleischer
+Gunther Nikl
+.distribution
+Public Domain
+.email
+fleischr@izfm.uni-stuttgart.de
+gnikl@informatik.uni-rostock.de
+.docs
+libnix.guide
+libnix.readme
+.described-by
+Fred Fish (fnf@amigalib.com)
+.submittal
+Downloaded via ftp from aminet (wuarchive.wustl.edu).
