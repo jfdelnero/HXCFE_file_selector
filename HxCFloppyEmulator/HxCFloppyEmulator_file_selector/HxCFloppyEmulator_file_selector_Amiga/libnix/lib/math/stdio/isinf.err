@@ -1,2 +1,0 @@
-/home/Jeff/buildlibnix/libnix/sources/math/stdio/isinf.c: In function `isinf':
-/home/Jeff/buildlibnix/libnix/sources/math/stdio/isinf.c:3: warning: dereferencing type-punned pointer will break strict-aliasing rules
