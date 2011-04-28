@@ -1,0 +1,371 @@
+B=Bugfix
+S=Specification changed
+P=Performance gain
+M=Memory gain
+F=New Feature
+
+Start (V0.1)
+
+B A symbol and it's indirected counterpart cannot be used both - fixed.
+
+B __stdio.c used the wrong flag for testing if filehandle has to be closed
+  so the standard filehandle was closed three times - fixed.
+
+P memchr.c changed - the C code looks not very good, but the assembler
+  code is very smart now.
+
+F Half initialized local arrays reference bzero() - added.
+
+M malloc now rounds even _MSTEP up to full MMU page.
+
+P strcat(),strncat(),strcpy(),strncpy(),strchr(),strrchr() rewritten in asm.
+
+B strcmp(),strncmp() work on signed char - fixed.
+
+P Removed __chkabort() in fgetc() and fputc() - it's not necessary to poll
+  CTRL-C for EVERY character written.
+
+B Extraneous semicolon (';') in freopen() deleted.
+
+M Changed the code for setting buffer flags in setvbuf().
+
+B setvbuf() should set the buffer size ;-) - fixed.
+
+S _main() has the commandline as argument INCLUDING the program's name.
+  Had to change the interface - easiest way was to rename _main as __submain
+  and write a new __submain calling _main. Moved the call to open
+  the shared libraries out of the startups, too.
+
+S The private library bases now have two '_'.
+
+B libm.a needs the private library bases, too.
+
+S Some changes for Gerhard's gerlib: All I/O functions now run over
+  a unix-alike interface. The standard I/O streams now use fopen.
+
+F Added setbuffer() to be able to compile gas1.38 .
+
+F changed 'static char *errorlist[]' to 'char *sys_errlist[]' for better
+  compatibility. Added 'int sys_nerr' too :-P.
+
+F Rewrote documentation & some new chapters in texinfo format.
+
+F Changed the directory structure to the distribution form.
+  Added a 'distribution' makefile entry.
+
+V0.2
+
+B Adjusted global makefile for auto detach startups.
+
+F specs file added.
+
+F The gcc frontend has libgcc.a hardcoded. Added a stub libgcc.a to get
+  specs file to work.
+
+B gas writes EOF and expects it to be handled as 0xff - fixed.
+
+B Symbol redirections didn't work the way I expected - removed most of them.
+
+B -lm links libm.a BEFORE libnix. Moved some functions.
+
+B vfscanf() does no longer ungetc EOF.
+
+M Optimized __udivsi3, __umodsi3, __divsi3, __modsi3, div, ldiv.
+
+F Some functions added to libamiga.a.
+
+V0.3
+
+B strtod() gave a warning - fixed.
+
+B strftime() didn't count correctly - fixed.
+
+M Optimized atan2, fmod, strlen.
+
+B Bug in makefile for the math libraries  - fixed.
+
+F The low level standard-I/O functions are now posix compliant.
+
+F access(), stricmp(), unlink(), fstat(), bcmp() added.
+
+V0.4
+
+B Fixed bug in fstat().
+
+B Bugs in fread() and fwrite() when processing no data at all - fixed.
+
+P Added an inline version of strlen() in vfprintf, vsscanf, strxfrm, setlocale.
+
+M Rewrote all stub functions as symbol redirections to a single one.
+
+F strcasecmp() added.
+
+S moved __modsi3, __umodsi3 into the div-equivalents.
+
+B A missing locale.library should not cause a program exit - fixed.
+
+B asctime used 'c' instead of 'C' - fixed.
+
+B strftime didn't work correctly on numbers longer than 2 characters - fixed.
+
+B Some additional work on the low level I/O needed.
+
+S Did some work on the startups.
+
+S The auto-detach startups had some holes. I removed them
+  from distribution until I get a better method :'(.
+
+V0.5
+
+F Added Open("*",MODE_NEWFILE) as a fallback for process->pr_CES.
+
+F strdup, stricmp, strlower, strnicmp, strupper added.
+
+(first official release)
+
+B Fixed a bug in the low-level-I/O cleanup routine.
+
+B Added more error handling to open().
+
+M Changed the kludge in the library startup module.
+
+F Added optional support for Un*x style pathnames.
+
+B Bug in the low-level-I/O cleanup function fixed.
+
+B Yet another bug in strftime() fixed.
+
+M Optimized the standard I/O initialization.
+
+S Changed the disk layout for better handling of different library compilations.
+
+B The glue code generator didn't work correctly on void-'...'-functions - fixed.
+
+B Bug in freopen when using mode "w" on a already existing file fixed.
+
+S Cleaned the __initlibraries function up.
+
+F Hook and boopsi functions added to libamiga.a.
+
+B The commandline parser overwrote the __commandline variable
+  (this is not a real bug but a NASTY feature) - fixed.
+
+F Auto-detach reintegrated (clean this time) as an object module.
+
+F FastRand and RangeRand added to libamiga.a.
+
+B LocaleBase was defined twice - fixed.
+
+B Moved __decimalpoint from libm.a into libnix.a.
+
+F Added 3.1 system libraries to libstubs.a.
+
+F Added Un*x functions (mkdir,chdir,rmdir,getwd,getcwd,opendir,readdir,closedir)
+
+S main and _exit implemented with symbol redirection. This gives full C++ support
+  with libg++.a.
+
+F Added support for shared amiga-library creation (library and device initcode)
+
+V0.6
+
+F Added a stackswap-module
+
+S Changed stat() to work silently (now suppresses all *DOS* requesters)
+
+B Fixed a bug in __swbuf() - overrun buffersize by one character, oops...
+
+B __chkabort() didn't clear ctrl-c signal - fixed
+
+S signal handling heavily changed - now more unix-like
+
+F Added default values to libstubs.a for some by certain modules used variables
+  (__stack, _procname, __priority)
+
+S moved redirection of 'main' to '_main' into a separate file (in libnix_main.a)
+
+B improved precision of vfprintf.
+
+B fixed returncode of vfscanf on EOF
+
+F version string added to libnix.a
+
+V0.7 (second official release)
+
+B fseek didn't clear the EOF flag.
+
+S Dropped the ChangeMode call in open(). Now mode "a" files have a shared lock,
+  but the other method didn't work with all handlers :-(.
+
+B Made fread() and fwrite() buffered.
+
+S Got rid of those ARexx-scripts when building the library :-). Now you can
+  build libnix on a sun using a cross-compiler.
+
+B Fixed some holes in the commandline parser that could give empty arguments.
+
+F Prepared startups for the third argument of main(int argc,char *argv[],char *env[]).
+  It's not supported, but you could now ;-).
+
+B Fixed a bug in the floating point part of vprintf (introduced with the last
+  revision :-( ).
+
+F fileno() and fdtofh() added.
+
+F Version string added to ALL the modules - let's see if this hack works :-).
+
+V0.8 (third official release)
+
+B Fixed the returncode of close(STDIN_FILENO) and errno after lseek().
+
+B fflush(NULL) flushed stdout and stderr twice - fixed.
+
+B Fixed a bug in atan2().
+
+F All libnix requesters now check pr_WindowPtr first.
+
+S Moved __chkabort() one level down into read(), write(), lseek().
+
+B Fixed missing terminator in strncat().
+
+F Added code to handle stackextension/checking :-).
+
+S Changed all includes to use proto/ instead of inline/
+
+V0.9
+
+B ANSI demands flushing of line or unbuffered output files write reading from
+  line buffered input.
+
+B Fixed the bug that wrote weird characters for floats on some machines -
+  the system math libraries don't work correct if you open them in alphabetical
+  order (like the computer generated libstubs.a did - thanks ls :-( ).
+
+M Optimized the commandline parsers and shared library opener.
+
+M Removed some unused prototypes in C-files.
+
+V1.0
+
+B If no characters are read gets() should return NULL. Dropped unnecessary
+  ferror() call in fgets by the way.
+
+B strtoul() read characters which were invalid for the current base.
+
+S switched from fputs() to write(2,..) in raise()
+
+F addded a bunch of non-ansi function (mktemp,getrusage,etc.)
+
+F snprintf() and vsnprintf() added.
+
+F Added CPU check with error requester for the non-68000 versions (changed
+  startups, too).
+
+V1.1
+
+F cache flush function for gcc support added
+
+B fixed a macro in stabs.h for shared library support
+
+F replaced asm functions for automatic library with c functions
+
+F updated support functions for amiga.lib
+
+F code cleanup 
+
+V1.1a
+
+B fixed "off-by-one" error of portable strncpy()
+
+B fixed open() to ignore stdio slots now
+
+V1.1b
+
+B fixed longjmp() not returning 1 if passed a 0
+
+M changed automatic library opening once again ;-(
+  (moved openliberror() function into __initlibraries source)
+
+P tweaked string functions and removed some asm versions
+
+P updated headers/strsup.h with new string functions
+
+F moved all 1.3 compatibility stuff into a separate lib called libnix13.a
+  (contains integer math functions eg. useful for linking with -nostdlib)
+
+S added some const qualifiers at several places
+
+F tweaked libamiga.a functions
+
+F rewrote libinit.c, libinitr.c and devinit.c
+  (requires ADE/GG GCC 2.7.2.1 or up)
+
+F added three math functions from vc.lib: frexp.c, ldexp.c and modf.c
+
+B fixed serious bug in atol() and atoi()
+
+S added "/WAIT" to default stdiowin options
+  (suggested by Martin Hauner)
+
+V1.2
+
+S updated headers/strsup.h once again
+
+F added fdopen() (required changes in freopen())
+
+B fixed auto-initilization of init_stk.c
+  (broken since 1.2)
+
+B fixed bug in mktime() (tm_mday starts with 1!)
+  (reported by Detlef Wuerkner)
+
+S modified rename() according to man-page
+
+S __seterrno() does map rename() error now
+  (was disabled!?)
+
+V1.3
+
+F added networking support based on initial work by Jeff Sheperd
+  (supports AmiTCP and AS225 compatible stacks)
+
+B strftime() formats for date and date/time were swapped
+  (apparently this was due to an outdated manpage...)
+
+B fixed incorrect types usage with proper system types
+  (makes the library better prepared for PPC ;-)
+
+P improved memset(), bcopy() and bzero()
+  (hopefully ;-)
+
+B fixed (harmless?) bug in freopen() open mode handling
+  (did only handle rwa[b]+ but not rwa+[b])
+
+B fixed append filemode to really write at end of file only
+
+S changed fdopen() to be independed from freopen()
+
+S stdin/stdout/stderr initialization now use fdopen()
+  (-> removed freopen()'s stdio open kludge)
+
+S adapted chmod() to return success if SetProtection
+  fails because source is locked
+
+F finally rewrote devinit.c to use GCC 2.7.2.1 features
+  (now in sync with libinit.c/libinitr.c)
+
+B fixed Makefiles for case sensitives filesystems, cross
+  compilation support (dosesn't use ar directly anymore)
+  and proper $(MAKE) handling
+
+B fixed hole in math/Makefile.in :-(
+  (didn't reference *all* objects leading to vfprint/vfscanf)
+
+F added a better and more general debug scheme
+
+F added gettimeofday() from libnixPPC package
+
+S general code cleanup
+  (eg. replaced all numerical stdio flags with #defines)
+
+V2.0
