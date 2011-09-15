@@ -39,8 +39,9 @@ typedef struct cfgfile_
 	unsigned short update_cnt;
 	unsigned char load_last_floppy;
 	unsigned char buzzer_step_duration;  // 0xD8 <> 0xFF
-    unsigned char lcd_scroll_speed;
-
+	unsigned char lcd_scroll_speed;
+	unsigned char startup_mode;
+	unsigned char enable_drive_b;
 }__attribute__((__packed__)) cfgfile;
 
 
