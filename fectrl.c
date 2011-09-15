@@ -497,7 +497,7 @@ void displayFolder()
 	hxc_printf(0,SCREEN_XRESOL/2,CURDIR_Y_POS,"Current directory:");
 	
 	for(i=SCREEN_XRESOL/2;i<SCREEN_XRESOL;i=i+8) hxc_printf(0,i,CURDIR_Y_POS+8," ");
-	
+
 	if(strlen(currentPath)<32)	
 		hxc_printf(0,SCREEN_XRESOL/2,CURDIR_Y_POS+8,"%s",currentPath);
 	else
@@ -664,12 +664,15 @@ int main(int argc, char* argv[])
 
 		read_cfg_file(sdfecfg_file);
 
+                if(cfgfile_header[256+128]!=0xFF)
+                      set_color_scheme(cfgfile_header[256+128]);
+
 		strcpy( currentPath, "/" );
 		displayFolder();
 
 		slotnumber=1;
 		printslotstatus(slotnumber, (disk_in_drive *) &disks_slot_a[slotnumber], (disk_in_drive *) &disks_slot_b[slotnumber]) ;
-		
+
 		colormode=0;
 		read_entry=0;
 		selectorpos=0;
@@ -683,7 +686,7 @@ int main(int argc, char* argv[])
                   memcpy(&file_list_status_tab[i],&file_list_status ,sizeof(struct fs_dir_list_status));
         }
 		clear_list(0);
-		
+
 		for(;;)
 		{
 			y_pos=FILELIST_Y_POS;
@@ -726,7 +729,7 @@ int main(int argc, char* argv[])
 								entrytype=12;
 								DirectoryEntry_tab[i].attributes=0x00;
 							}
-							
+
 							hxc_printf(0,0,y_pos," %c%s",entrytype,dir_entry.filename);
 
 							y_pos=y_pos+8;
@@ -940,7 +943,7 @@ int main(int argc, char* argv[])
 							i=i+2;
 
 							hxc_printf(1,0,HELP_Y_POS+(i*8), "---Press Space to continue---");
-							
+
 							do
 							{
 
@@ -984,7 +987,7 @@ int main(int argc, char* argv[])
 							i++;
 							hxc_printf(1,0,HELP_Y_POS+(i*8), "V%s - %s",VERSIONCODE,DATECODE);
 
-							
+
 							do
 							{
 
@@ -1011,22 +1014,26 @@ int main(int argc, char* argv[])
 							i=2;
 							hxc_printf(0,0,HELP_Y_POS+(i*8), "Track step sound :");
 							hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->step_sound?"on":"off");
-							
+
 							i++;
 							hxc_printf(0,0,HELP_Y_POS+(i*8), "User interface sound:");
 							hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d   ",cfgfile_ptr->buzzer_duty_cycle);
-							
+
 							i++;
 							hxc_printf(0,0,HELP_Y_POS+(i*8), "LCD Backlight standby:");
 							hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s",cfgfile_ptr->back_light_tmr);
-							
+
 							i++;
 							hxc_printf(0,0,HELP_Y_POS+(i*8), "SDCard Standby:");
 							hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s",cfgfile_ptr->standby_tmr);
 
+							i++;
+							hxc_printf(0,0,HELP_Y_POS+(i*8), "DF1 drive :");
+							hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"off":"on");
+
 							i=i+2;
 							hxc_printf(1,0,HELP_Y_POS+(i*8), "---Press Space to exit---");
-						
+
 							i=2;
 							invert_line(HELP_Y_POS+(i*8));
 							do
@@ -1041,9 +1048,9 @@ int main(int argc, char* argv[])
 									break;
 									case FCT_DOWN_KEY:
 										invert_line(HELP_Y_POS+(i*8));
-										if(i<5) i++;
+										if(i<6) i++;
 										invert_line(HELP_Y_POS+(i*8));
-									break;									
+									break;
 									case FCT_LEFT_KEY:
 										invert_line(HELP_Y_POS+(i*8));
 										switch(i)
@@ -1061,20 +1068,25 @@ int main(int argc, char* argv[])
 											if(cfgfile_ptr->back_light_tmr) cfgfile_ptr->back_light_tmr--;
 											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->back_light_tmr);
 										break;
-										
+
 										case 5:
 											if(cfgfile_ptr->standby_tmr) cfgfile_ptr->standby_tmr--;
 											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->standby_tmr);
 										break;
+
+										case 6:
+											cfgfile_ptr->enable_drive_b=~cfgfile_ptr->enable_drive_b;
+											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"off":"on");
+										break;
 										}
 										invert_line(HELP_Y_POS+(i*8));
-										
-									break;									
+
+									break;
 									case FCT_RIGHT_KEY:
 										invert_line(HELP_Y_POS+(i*8));
 										switch(i)
 										{
-										case 2:											
+										case 2:
 											cfgfile_ptr->step_sound=~cfgfile_ptr->step_sound;
 											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->step_sound?"on":"off");
 											break;
@@ -1086,16 +1098,22 @@ int main(int argc, char* argv[])
 										case 4:
 											if(cfgfile_ptr->back_light_tmr<0xFF) cfgfile_ptr->back_light_tmr++;
 											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->back_light_tmr);
-											
+
 										break;
 										case 5:
-											if(cfgfile_ptr->standby_tmr<0xFF) cfgfile_ptr->standby_tmr++;										
-											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->standby_tmr);											
+											if(cfgfile_ptr->standby_tmr<0xFF) cfgfile_ptr->standby_tmr++;
+											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->standby_tmr);
 										break;
+										
+										case 6:
+											cfgfile_ptr->enable_drive_b=~cfgfile_ptr->enable_drive_b;
+											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"off":"on");
+										break;
+
 										}
 										invert_line(HELP_Y_POS+(i*8));
-									break;									
-									
+									break;
+
 								}
 							}while(c!=FCT_OK);
 
@@ -1157,15 +1175,16 @@ int main(int argc, char* argv[])
 						case FCT_CHGCOLOR:
 							colormode++;
 							set_color_scheme(colormode);
-							wait_released_key();							
-						break;	
+							cfgfile_header[256+128]=colormode;
+							wait_released_key();
+						break;
 						case FCT_TOP:
 							page_number=0;
 							memcpy(&file_list_status ,&file_list_status_tab[page_number&0x1FF],sizeof(struct fs_dir_list_status));
 							clear_list(0);
 							read_entry=1;
 							break;
-							
+
 						case FCT_SEARCH:
 							filtermode=0xFF;
 							hxc_printf(0,SCREEN_XRESOL/2,CURDIR_Y_POS+16,"Search:                     ");
