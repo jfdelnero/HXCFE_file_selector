@@ -1029,7 +1029,7 @@ int main(int argc, char* argv[])
 
 							i++;
 							hxc_printf(0,0,HELP_Y_POS+(i*8), "DF1 drive :");
-							hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"off":"on");
+							hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"on":"off");
 
 							i=i+2;
 							hxc_printf(1,0,HELP_Y_POS+(i*8), "---Press Space to exit---");
@@ -1076,7 +1076,7 @@ int main(int argc, char* argv[])
 
 										case 6:
 											cfgfile_ptr->enable_drive_b=~cfgfile_ptr->enable_drive_b;
-											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"off":"on");
+											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"on":"off");
 										break;
 										}
 										invert_line(HELP_Y_POS+(i*8));
@@ -1107,7 +1107,7 @@ int main(int argc, char* argv[])
 										
 										case 6:
 											cfgfile_ptr->enable_drive_b=~cfgfile_ptr->enable_drive_b;
-											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"off":"on");
+											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"on":"off");
 										break;
 
 										}
