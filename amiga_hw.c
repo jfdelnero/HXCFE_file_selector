@@ -299,13 +299,15 @@ int BuildCylinder(unsigned char * mfm_buffer,int mfm_size,unsigned char * track_
 
 unsigned char writesector(unsigned char sectornum,unsigned char * data)
 {
-	unsigned short i,j,len,retry;
+	unsigned short i,j,len,retry,retry2;
 	unsigned char sectorfound;
 	unsigned char c,lastbit;
 	unsigned char CRC16_High,CRC16_Low;
 	
 	Forbid();
-	
+
+	retry2=2;
+
 	i=0;
 	validcache=0;
 	
@@ -338,68 +340,81 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 		
 		do
 		{
-			
-			i=0;
-			
-			retry--;
-			
-			if(!readtrack(track_buffer,16,0))
+
+			do
 			{
-				Permit();
-				return 0;
-			}
-
-			while(track_buffer[i]==0x4489 && (i<16))
-			{
-				i++;
-			}
-
-			if(mfmluttable2[track_buffer[i]]==0xFE && (i<(16-3)))
-			{
-
-				CRC16_Init(&CRC16_High, &CRC16_Low);
-				for(j=0;j<3;j++)CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
-
-				lastbit=1;
-				for(j=0;j<(1+4+2);j++)
+				
+				i=0;
+				
+				retry--;
+				
+				if(!readtrack(track_buffer,16,0))
 				{
-					if(lastbit)
-					{
-						c=mfmluttable2[track_buffer[i+j]];
-						CRC16_Update(&CRC16_High, &CRC16_Low,c);
-					}
-					else
-					{
-						c=mfmluttable[track_buffer[i+j]];
-						CRC16_Update(&CRC16_High, &CRC16_Low,c);
-					}
-					lastbit=c&1;
+					Permit();
+					return 0;
 				}
 
-
-				if(!CRC16_High && !CRC16_Low)
+				while(track_buffer[i]==0x4489 && (i<16))
 				{
 					i++;
-					if(mfmluttable[track_buffer[i]]==0xFF) //track
+				}
+
+				if(mfmluttable2[track_buffer[i]]==0xFE && (i<(16-3)))
+				{
+
+					CRC16_Init(&CRC16_High, &CRC16_Low);
+					for(j=0;j<3;j++)CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
+
+					lastbit=1;
+					for(j=0;j<(1+4+2);j++)
+					{
+						if(lastbit)
+						{
+							c=mfmluttable2[track_buffer[i+j]];
+							CRC16_Update(&CRC16_High, &CRC16_Low,c);
+						}
+						else
+						{
+							c=mfmluttable[track_buffer[i+j]];
+							CRC16_Update(&CRC16_High, &CRC16_Low,c);
+						}
+						lastbit=c&1;
+					}
+
+
+					if(!CRC16_High && !CRC16_Low)
 					{
 						i++;
-						if(mfmluttable2[track_buffer[i]]==0x00) //side
+						if(mfmluttable[track_buffer[i]]==0xFF) //track
 						{
 							i++;
-							if(mfmluttable[track_buffer[i]]==sectornum) //sector
+							if(mfmluttable2[track_buffer[i]]==0x00) //side
 							{
-								sectorfound=1;
-								if(!writetrack(track_buffer_wr,len,0))
+								i++;
+								if(mfmluttable[track_buffer[i]]==sectornum) //sector
 								{
-									Permit();
-									return 0;
+									sectorfound=1;
+									if(!writetrack(track_buffer_wr,len,0))
+									{
+										Permit();
+										return 0;
+									}
 								}
 							}
 						}
 					}
 				}
+			}while(!sectorfound  && retry);
+			
+			if(!sectorfound)
+			{	
+				jumptotrack(255);
+				retry=30;
 			}
-		}while(!sectorfound  && retry);
+			retry2--;
+			
+		}while(!sectorfound && retry2);
+
 	}
 	else
 	{
@@ -421,145 +436,154 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 {
 	unsigned short i,j,t;
 	unsigned char sectorfound,tc;
-	unsigned char c,lastbit,retry,badcrc;
+	unsigned char c,lastbit,retry,badcrc,retry2;
 	unsigned char CRC16_High,CRC16_Low;
 
 	Forbid();
+	retry2=2;
 	retry=5;
 	
 	do
 	{
-		sectorfound=0;
-		i=0;
-		badcrc=0;
-		if(!validcache || invalidate_cache)
-		{
-			if(!readtrack(track_buffer,10*1024,0))
-			{
-				Permit();
-				return 0;
-			}
-			
-			i=1;
-			for(j=0;j<9;j++)
-			{
-				sector_pos[j]=0xFFFF;
-			}
-			
-			for(j=0;j<9;j++)
-			{
-				while(track_buffer[i]!=0x4489 && i) i=(i+1)&0x3FFF;
-				if(!i) j=9;
-				while(track_buffer[i]==0x4489 && i) i=(i+1)&0x3FFF;
-				if(!i) j=9;
-				if(mfmluttable2[track_buffer[i]]==0xFE)
-				{
-					sector_pos[mfmluttable[track_buffer[i+3]]&0xF]=i;
-					i=(i+512+2)&0x3FFF;
-				}
-				else
-				{
-					i++;
-				}
-			}
-		}
-		
+	
 		do
 		{
-			
-			i=sector_pos[sectornum&0xF];
-			if(i<16*1024)
+			sectorfound=0;
+			i=0;
+			badcrc=0;
+			if(!validcache || invalidate_cache)
 			{
-				if(mfmluttable2[track_buffer[i]]==0xFE)
+				if(!readtrack(track_buffer,10*1024,0))
 				{
-					CRC16_Init(&CRC16_High, &CRC16_Low);
-					for(j=0;j<3;j++)CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
-					
-					lastbit=1;
-					for(j=0;j<(1+4+2);j++)
+					Permit();
+					return 0;
+				}
+				
+				i=1;
+				for(j=0;j<9;j++)
+				{
+					sector_pos[j]=0xFFFF;
+				}
+				
+				for(j=0;j<9;j++)
+				{
+					while(track_buffer[i]!=0x4489 && i) i=(i+1)&0x3FFF;
+					if(!i) j=9;
+					while(track_buffer[i]==0x4489 && i) i=(i+1)&0x3FFF;
+					if(!i) j=9;
+					if(mfmluttable2[track_buffer[i]]==0xFE)
 					{
-						if(lastbit)
-						{
-							c=mfmluttable2[track_buffer[i+j]];
-							CRC16_Update(&CRC16_High, &CRC16_Low,c);
-						}
-						else
-						{
-							c=mfmluttable[track_buffer[i+j]];
-							CRC16_Update(&CRC16_High, &CRC16_Low,c);
-						}
-						lastbit=c&1;
+						sector_pos[mfmluttable[track_buffer[i+3]]&0xF]=i;
+						i=(i+512+2)&0x3FFF;
 					}
-					
-					
-					if(!CRC16_High && !CRC16_Low)
+					else
 					{
 						i++;
-						if(mfmluttable[track_buffer[i]]==0xFF) //track
+					}
+				}
+			}
+			
+			do
+			{
+				
+				i=sector_pos[sectornum&0xF];
+				if(i<16*1024)
+				{
+					if(mfmluttable2[track_buffer[i]]==0xFE)
+					{
+						CRC16_Init(&CRC16_High, &CRC16_Low);
+						for(j=0;j<3;j++)CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
+						
+						lastbit=1;
+						for(j=0;j<(1+4+2);j++)
+						{
+							if(lastbit)
+							{
+								c=mfmluttable2[track_buffer[i+j]];
+								CRC16_Update(&CRC16_High, &CRC16_Low,c);
+							}
+							else
+							{
+								c=mfmluttable[track_buffer[i+j]];
+								CRC16_Update(&CRC16_High, &CRC16_Low,c);
+							}
+							lastbit=c&1;
+						}
+						
+						
+						if(!CRC16_High && !CRC16_Low)
 						{
 							i++;
-							if(mfmluttable[track_buffer[i]]==0x00) //side
+							if(mfmluttable[track_buffer[i]]==0xFF) //track
 							{
 								i++;
-								if(mfmluttable[track_buffer[i]]==sectornum) //sector
+								if(mfmluttable[track_buffer[i]]==0x00) //side
 								{
-									i=i+41;
-									
-									lastbit=1;
-									
-									CRC16_Init(&CRC16_High, &CRC16_Low);
-									for(j=0;j<3;j++)CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
-									
-									lastbit=1;
-									
-									CRC16_Update(&CRC16_High,&CRC16_Low,mfmluttable2[track_buffer[i]]);
 									i++;
-									
-									for(j=0;j<512;j++)
+									if(mfmluttable[track_buffer[i]]==sectornum) //sector
 									{
+										i=i+41;
 										
-										t=track_buffer[i];
-										if(lastbit)
-										{
-											tc=mfmluttable2[t];
-										}
-										else
-										{
-											tc=mfmluttable[t];
-										}
+										lastbit=1;
 										
-										//	CRC16_Update(&CRC16_High, &CRC16_Low,tc);
+										CRC16_Init(&CRC16_High, &CRC16_Low);
+										for(j=0;j<3;j++)CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
 										
+										lastbit=1;
+										
+										CRC16_Update(&CRC16_High,&CRC16_Low,mfmluttable2[track_buffer[i]]);
 										i++;
-										data[j]=tc;
-										lastbit=tc&1;
-									}
-									
-									for(j=0;j<2;j++)
-									{
-										if(lastbit)
+										
+										for(j=0;j<512;j++)
 										{
-											c=mfmluttable2[track_buffer[i++]];
+											
+											t=track_buffer[i];
+											if(lastbit)
+											{
+												tc=mfmluttable2[t];
+											}
+											else
+											{
+												tc=mfmluttable[t];
+											}
+											
+											//	CRC16_Update(&CRC16_High, &CRC16_Low,tc);
+											
+											i++;
+											data[j]=tc;
+											lastbit=tc&1;
+										}
+										
+										for(j=0;j<2;j++)
+										{
+											if(lastbit)
+											{
+												c=mfmluttable2[track_buffer[i++]];
+											}
+											else
+											{
+												c=mfmluttable[track_buffer[i++]];
+											}
+											
+											
+											CRC16_Update(&CRC16_High, &CRC16_Low,c);
+											lastbit=c&1;
+										}
+										
+										if(1)//!CRC16_High && !CRC16_Low)
+										{
+											sectorfound=1;
 										}
 										else
 										{
-											c=mfmluttable[track_buffer[i++]];
+											badcrc=1;
 										}
 										
-										
-										CRC16_Update(&CRC16_High, &CRC16_Low,c);
-										lastbit=c&1;
-									}
-									
-									if(1)//!CRC16_High && !CRC16_Low)
-									{
-										sectorfound=1;
 									}
 									else
 									{
-										badcrc=1;
+										i=i+512+2;
 									}
-									
 								}
 								else
 								{
@@ -573,41 +597,46 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 						}
 						else
 						{
-							i=i+512+2;
+							i++;
+							badcrc=1;
 						}
 					}
 					else
 					{
 						i++;
-						badcrc=1;
 					}
 				}
 				else
 				{
-					i++;
+					badcrc=1;
 				}
-			}
-			else
-			{
-				badcrc=1;
-			}
 
-		}while( !sectorfound && (i<(16*1024)) && !badcrc);
+			}while( !sectorfound && (i<(16*1024)) && !badcrc);
+			
+			retry--;
+			if(!sectorfound && retry)
+			{
+				validcache=0;
+			}
+			
+		}while(!sectorfound && retry);
 		
-		retry--;
-		if(!sectorfound && retry)
+		
+		if(!sectorfound)
 		{
-			validcache=0;
+			jumptotrack(255);
+			retry2--;
+			retry=5;
 		}
 		
-	}while(!sectorfound && retry);
+		
+	}while(!sectorfound && retry2);
 	
 	if(!sectorfound)
 	{
 		validcache=0;
 	}
-	
-	
+		
 	Permit();
 	
 	return sectorfound;
