@@ -525,10 +525,10 @@ void enter_sub_dir(disk_in_drive *disk_ptr)
 		}
 		while ( currentPath[ currentPathLength ] != (unsigned char)'/' );
 
-		if ( currentPath[ currentPathLength-1 ] != (unsigned char)':' )
+		/*if ( currentPath[ currentPathLength-1 ] != (unsigned char)':' )
 		{
-		//	currentPath[ currentPathLength ] = 0;
-		}
+			currentPath[ currentPathLength ] = 0;
+		}*/
 	}
 	else
 	{
@@ -552,10 +552,10 @@ void enter_sub_dir(disk_in_drive *disk_ptr)
 			}
 
 			currentPathLength = strlen( currentPath );
-			if ( currentPath[ currentPathLength-1-1 ] != (unsigned char)':' )
+			/*if ( currentPath[ currentPathLength-1-1 ] != (unsigned char)':' )
 			{
-		//		strcat( currentPath, "/" );
-			}
+				strcat( currentPath, "/" );
+			}*/
 
 			if( currentPath[ currentPathLength-1] != '/')
 			strcat( currentPath, "/" );
@@ -754,7 +754,7 @@ int main(int argc, char* argv[])
 
 				filtermode=0;
 
-                                memcpy(&file_list_status_tab[(page_number+1)&0x1FF],&file_list_status ,sizeof(struct fs_dir_list_status));
+				memcpy(&file_list_status_tab[(page_number+1)&0x1FF],&file_list_status ,sizeof(struct fs_dir_list_status));
 
 				hxc_printf(0,0,FILELIST_Y_POS+(selectorpos*8),">");
 				invert_line(FILELIST_Y_POS+(selectorpos*8));
