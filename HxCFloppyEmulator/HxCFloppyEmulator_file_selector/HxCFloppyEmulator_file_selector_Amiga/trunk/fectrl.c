@@ -139,6 +139,12 @@ void print_hex(unsigned char * buffer, int size)
 	}
 }
 
+int printstep(int step)
+{
+	hxc_printf(0,0,0,"Step --- %d ---", step);
+
+
+}
 void lockup()
 {
 	for(;;);
@@ -633,8 +639,10 @@ int main(int argc, char* argv[])
 
 	init_display();
 
+	printstep(0);
 	bootdev=0;//argv[1][0]-'0';
 
+	//for(;;) hxc_printf(0,0,0,"Step : 0x%.2X", Joystick());
 	switch(bootdev)
 	{
 	case 0:
@@ -664,8 +672,8 @@ int main(int argc, char* argv[])
 
 		read_cfg_file(sdfecfg_file);
 
-                if(cfgfile_header[256+128]!=0xFF)
-                      set_color_scheme(cfgfile_header[256+128]);
+		if(cfgfile_header[256+128]!=0xFF)
+			set_color_scheme(cfgfile_header[256+128]);
 
 		strcpy( currentPath, "/" );
 		displayFolder();
@@ -683,8 +691,8 @@ int main(int argc, char* argv[])
 		fl_list_opendir(currentPath, &file_list_status);
 		for(i=0;i<512;i++)
 		{
-                  memcpy(&file_list_status_tab[i],&file_list_status ,sizeof(struct fs_dir_list_status));
-        }
+			memcpy(&file_list_status_tab[i],&file_list_status ,sizeof(struct fs_dir_list_status));
+		}
 		clear_list(0);
 
 		for(;;)
@@ -801,7 +809,7 @@ int main(int argc, char* argv[])
 								clear_list(0);
 								read_entry=1;
 								if(!last_file)page_number++;
-                                memcpy(&file_list_status ,&file_list_status_tab[page_number&0x1FF],sizeof(struct fs_dir_list_status));
+								memcpy(&file_list_status ,&file_list_status_tab[page_number&0x1FF],sizeof(struct fs_dir_list_status));
 							}
 							else
 							{
@@ -1031,6 +1039,10 @@ int main(int argc, char* argv[])
 							hxc_printf(0,0,HELP_Y_POS+(i*8), "DF1 drive :");
 							hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"on":"off");
 
+							i++;
+							hxc_printf(0,0,HELP_Y_POS+(i*8), "Load AUTOBOOT.HFE at power up :");
+							hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->startup_mode&0x04?"on":"off");
+							
 							i=i+2;
 							hxc_printf(1,0,HELP_Y_POS+(i*8), "---Press Space to exit---");
 
@@ -1038,7 +1050,7 @@ int main(int argc, char* argv[])
 							invert_line(HELP_Y_POS+(i*8));
 							do
 							{
-							c=wait_function_key();
+								c=wait_function_key();
 								switch(c)
 								{
 									case FCT_UP_KEY:
@@ -1048,36 +1060,41 @@ int main(int argc, char* argv[])
 									break;
 									case FCT_DOWN_KEY:
 										invert_line(HELP_Y_POS+(i*8));
-										if(i<6) i++;
+										if(i<7) i++;
 										invert_line(HELP_Y_POS+(i*8));
 									break;
 									case FCT_LEFT_KEY:
 										invert_line(HELP_Y_POS+(i*8));
 										switch(i)
 										{
-										case 2:
-											cfgfile_ptr->step_sound=~cfgfile_ptr->step_sound;
-											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->step_sound?"on":"off");
-										break;
-										case 3:
-											if(cfgfile_ptr->buzzer_duty_cycle) cfgfile_ptr->buzzer_duty_cycle--;
-											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d  ",cfgfile_ptr->buzzer_duty_cycle);
-											if(!cfgfile_ptr->buzzer_duty_cycle) cfgfile_ptr->ihm_sound=0x00;
+											case 2:
+												cfgfile_ptr->step_sound=~cfgfile_ptr->step_sound;
+												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->step_sound?"on":"off");
 											break;
-										case 4:
-											if(cfgfile_ptr->back_light_tmr) cfgfile_ptr->back_light_tmr--;
-											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->back_light_tmr);
-										break;
+											case 3:
+												if(cfgfile_ptr->buzzer_duty_cycle) cfgfile_ptr->buzzer_duty_cycle--;
+												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d  ",cfgfile_ptr->buzzer_duty_cycle);
+												if(!cfgfile_ptr->buzzer_duty_cycle) cfgfile_ptr->ihm_sound=0x00;
+												break;
+											case 4:
+												if(cfgfile_ptr->back_light_tmr) cfgfile_ptr->back_light_tmr--;
+												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->back_light_tmr);
+											break;
 
-										case 5:
-											if(cfgfile_ptr->standby_tmr) cfgfile_ptr->standby_tmr--;
-											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->standby_tmr);
-										break;
+											case 5:
+												if(cfgfile_ptr->standby_tmr) cfgfile_ptr->standby_tmr--;
+												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->standby_tmr);
+											break;
 
-										case 6:
-											cfgfile_ptr->enable_drive_b=~cfgfile_ptr->enable_drive_b;
-											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"on":"off");
-										break;
+											case 6:
+												cfgfile_ptr->enable_drive_b=~cfgfile_ptr->enable_drive_b;
+												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"on":"off");
+											break;
+											
+											case 7:
+												cfgfile_ptr->startup_mode = cfgfile_ptr->startup_mode  ^ 0x04;										
+												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",(cfgfile_ptr->startup_mode&0x4)?"on":"off");
+											break;										
 										}
 										invert_line(HELP_Y_POS+(i*8));
 
@@ -1086,36 +1103,40 @@ int main(int argc, char* argv[])
 										invert_line(HELP_Y_POS+(i*8));
 										switch(i)
 										{
-										case 2:
-											cfgfile_ptr->step_sound=~cfgfile_ptr->step_sound;
-											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->step_sound?"on":"off");
+											case 2:
+												cfgfile_ptr->step_sound=~cfgfile_ptr->step_sound;
+												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->step_sound?"on":"off");
+												break;
+											case 3:
+												if(cfgfile_ptr->buzzer_duty_cycle<0x80) cfgfile_ptr->buzzer_duty_cycle++;
+												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d  ",cfgfile_ptr->buzzer_duty_cycle);
+												cfgfile_ptr->ihm_sound=0xFF;
 											break;
-										case 3:
-											if(cfgfile_ptr->buzzer_duty_cycle<0x80) cfgfile_ptr->buzzer_duty_cycle++;
-											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d  ",cfgfile_ptr->buzzer_duty_cycle);
-											cfgfile_ptr->ihm_sound=0xFF;
-										break;
-										case 4:
-											if(cfgfile_ptr->back_light_tmr<0xFF) cfgfile_ptr->back_light_tmr++;
-											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->back_light_tmr);
+											case 4:
+												if(cfgfile_ptr->back_light_tmr<0xFF) cfgfile_ptr->back_light_tmr++;
+												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->back_light_tmr);
 
-										break;
-										case 5:
-											if(cfgfile_ptr->standby_tmr<0xFF) cfgfile_ptr->standby_tmr++;
-											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->standby_tmr);
-										break;
-										
-										case 6:
-											cfgfile_ptr->enable_drive_b=~cfgfile_ptr->enable_drive_b;
-											hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"on":"off");
-										break;
+											break;
+											case 5:
+												if(cfgfile_ptr->standby_tmr<0xFF) cfgfile_ptr->standby_tmr++;
+												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->standby_tmr);
+											break;
+											
+											case 6:
+												cfgfile_ptr->enable_drive_b=~cfgfile_ptr->enable_drive_b;
+												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"on":"off");
+											break;
 
+											case 7:
+												cfgfile_ptr->startup_mode = cfgfile_ptr->startup_mode  ^ 0x04;										
+												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",(cfgfile_ptr->startup_mode&0x4)?"on":"off");
+											break;											
 										}
 										invert_line(HELP_Y_POS+(i*8));
 									break;
 
 								}
-							}while(c!=FCT_OK);
+							}while(c!=FCT_OK && !(Joystick()&0x10));
 
        						clear_list(5);
 							init_buffer();
@@ -1192,16 +1213,16 @@ int main(int argc, char* argv[])
 							i=0;
 							do
 							{
-                                                               filter[i]=0;
-                                                               c=get_char();
-                                                               if(c!='\n')
-                                                               {
-                                                                   filter[i]=c;
-                                                                   hxc_printf(0,SCREEN_XRESOL/2+(8*8)+(8*i),CURDIR_Y_POS+16,"%c",c);
-                                                               }
-                                                               i++;
-                                                        }while(c!='\n' && i<16);
-                                                        filter[i]=0;
+								filter[i]=0;
+								c=get_char();
+								if(c!='\n')
+								{
+									filter[i]=c;
+									hxc_printf(0,SCREEN_XRESOL/2+(8*8)+(8*i),CURDIR_Y_POS+16,"%c",c);
+								}
+								i++;
+							}while(c!='\n' && i<16);
+							filter[i]=0;
 
 
 							//get_str(&filter);

@@ -206,6 +206,7 @@ int readtrack(unsigned short * track,unsigned short size,unsigned char waiti)
 	WRITEREG_W( DSKSYNC,0x4489);
 	WRITEREG_W( INTREQ, 0x0002);
 
+
 	if(waiti) waitindex();
 
 	//Put the value you want into the DSKLEN register
@@ -442,7 +443,7 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 	Forbid();
 	retry2=2;
 	retry=5;
-	
+
 	do
 	{
 	
@@ -458,7 +459,7 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 					Permit();
 					return 0;
 				}
-				
+
 				i=1;
 				for(j=0;j<9;j++)
 				{
@@ -646,12 +647,12 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 void init_amiga_fdc(unsigned char drive)
 {
 	unsigned short i;
-	
+
 	if(drive==0)
-        CIABPRB_DSKSEL=CIABPRB_DSKSEL0;
+		CIABPRB_DSKSEL=CIABPRB_DSKSEL0;
 	else
-        CIABPRB_DSKSEL=CIABPRB_DSKSEL1;
-	
+		CIABPRB_DSKSEL=CIABPRB_DSKSEL1;
+
 	//	for(i=0;i<3;i++) setnoclick(i, 1);
 
 	validcache=0;
@@ -662,21 +663,21 @@ void init_amiga_fdc(unsigned char drive)
 	
 	memset(mfmluttable,0,64*1024);
 	memset(mfmluttable2,0,64*1024);
-	
+
 	memset(track_buffer,0,32*1024);
 	memset(track_buffer_wr,0,32*1024);
-	
+
 	for(i=0;i<256;i++)
 	{
 		mfmluttable[0xFFFF&MFM_tab[i]]=i;
 		mfmluttable2[0x7FFF&MFM_tab[i]]=i;
 	}
-	
+
 	Forbid();
 	
 	WRITEREG_B(CIABPRB,~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL));
 	WRITEREG_W( DMACON,0x8210);
-	
+
 	jumptotrack(255);
 	Delay(12);
 	WRITEREG_W(INTREQ,0x0002);
@@ -687,17 +688,40 @@ void init_amiga_fdc(unsigned char drive)
 
 unsigned char Joystick()
 {
-	unsigned char code;
+	unsigned short code;
+	unsigned char bcode;
+	unsigned char ret;
 
 	/* Get a copy of the SDR value and invert it: */
-	code = READREG_B(0xBFEC01) ^ 0xFF;
+	code = READREG_W(0xDFF00C);
+	bcode = READREG_B(CIAAPRA);
 
-	/* Shift all bits one step to the right, and put the bit that is */
-	/* pushed out last: 76543210 -> 07654321                         */
-	code = code & 0x01 ? (code>>1)+0x80 : code>>1;
+	ret=0;
+	if( (code&0x100) ^ ((code&0x200)>>1) ) // Forward
+	{
+		ret=ret| 0x1;
+	}
+	if( ((code&0x200)) )  // Left
+	{
+		ret=ret| 0x8;
+	}
+	
+	if( (code&0x1) ^ ((code&0x2)>>1) ) // Back
+	{
+		ret=ret| 0x2;
+	}
+	
+	if( ((code&0x002)) )  // Right
+	{
+		ret=ret| 0x4;
+	}
 
-	/* Return the Raw Key Code Value: */
-	return( code );
+	if(!(bcode&0x80))
+	{
+		ret=ret| 0x10;
+	}
+	
+	return( ret );
 }
 
 
@@ -758,6 +782,13 @@ unsigned char get_char()
 
 //		hxc_printf(0,0,0,"%.8X",key);
 
+		if(key&0x80)
+		{
+			if(joy)
+				return FCT_DOWN_KEY;
+
+		}
+		
 		i=0;
 		do
 		{
@@ -774,7 +805,7 @@ unsigned char get_char()
 
 unsigned char wait_function_key()
 {
-	unsigned char key,i,c;
+	unsigned char key,joy,i,c;
 	unsigned char function_code,key_code;
 
 	function_code=FCT_NO_FUNCTION;
@@ -786,16 +817,33 @@ unsigned char wait_function_key()
 			do
 			{
 				key=Keyboard();
-				if(key&0x80)
+				joy=Joystick();
+				if(key&0x80 && !joy)
 				{
 					c=1;
 				}
-			}while(key&0x80);
+			}while(key&0x80 && !joy);
 			Delay(3);
 			c--;
 
 		}while(c);
 
+		if(joy)
+		{
+			if(joy&0x10)
+			{
+				while(Joystick()&0x10);
+				return FCT_SELECTSAVEREBOOT;
+			}
+			if(joy&2)
+				return FCT_DOWN_KEY;
+			if(joy&1)
+				return FCT_UP_KEY;
+			if(joy&4)
+				return FCT_RIGHT_KEY;
+			if(joy&8)
+				return FCT_LEFT_KEY;
+		}
 //		hxc_printf(0,0,0,"%.8X",key);
 
 		i=0;
