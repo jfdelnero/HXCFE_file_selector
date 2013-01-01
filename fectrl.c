@@ -139,17 +139,10 @@ void print_hex(unsigned char * buffer, int size)
 	}
 }
 
-int printstep(int step)
-{
-	hxc_printf(0,0,0,"Step --- %d ---", step);
-
-
-}
 void lockup()
 {
 	for(;;);
 }
-
 
 int setlbabase(unsigned long lba)
 {
@@ -254,25 +247,16 @@ int media_read(unsigned long sector, unsigned char *buffer)
 
 	do
 	{
-		//hxc_printf(0,100,0,"H000   ");
 		if((sector-last_setlbabase)>=8)
 		{
-			//hxc_printf(0,100,0,"H001   ");
-			
 			setlbabase(sector);
-			//hxc_printf(0,100,0,"H002   ");
-			
 		}
-		//hxc_printf(0,100,0,"H003   ");
 
 		if(!readsector(0,buffer,0))
 		{
 			hxc_printf_box(0,"ERROR: Read ERROR ! fsector %d",(sector-last_setlbabase)+1);
 		}
-		last_setlbabase=L_INDIAN(dass->lba_base);
-
-		//hxc_printf(0,100,0,"H004   ");
-		//hxc_printf(0,0,0,"BA: %.8X %.8X" ,L_INDIAN(dass->lba_base),sector);
+		last_setlbabase = L_INDIAN(dass->lba_base);
 
 	}while((sector-L_INDIAN(dass->lba_base))>=8);
 	
@@ -639,10 +623,8 @@ int main(int argc, char* argv[])
 
 	init_display();
 
-	printstep(0);
-	bootdev=0;//argv[1][0]-'0';
+	bootdev = 0;//argv[1][0]-'0';
 
-	//for(;;) hxc_printf(0,0,0,"Step : 0x%.2X", Joystick());
 	switch(bootdev)
 	{
 	case 0:
@@ -1205,7 +1187,6 @@ int main(int argc, char* argv[])
 							clear_list(0);
 							read_entry=1;
 							break;
-
 						case FCT_SEARCH:
 							filtermode=0xFF;
 							hxc_printf(0,SCREEN_XRESOL/2,CURDIR_Y_POS+16,"Search:                     ");

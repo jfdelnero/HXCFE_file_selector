@@ -111,6 +111,52 @@ void cpuwait(unsigned short w)
 }
 
 
+void setvideomode(int mode)
+{
+	Forbid();
+
+	switch(mode)
+	{
+		case 0:
+			// PAL Mode
+			WRITEREG_W( BEAMCON0, READREG_W(BEAMCON0) | 0x0020);
+			//WRITEREG_W( BEAMCON0, 0x0020);
+			WRITEREG_W( DDFSTRT,  0x0038);
+			WRITEREG_W( DDFSTOP,  0x00D8);
+			WRITEREG_W( FMODE,    0x0003);
+			WRITEREG_W( DIWSTRT,  0x4481);
+			WRITEREG_W( DIWSTOP,  0x0CC1);
+			WRITEREG_W( BPLCON0,  0x0211);
+			WRITEREG_W( BPL1MOD,  0x0000);
+			WRITEREG_W( BPL2MOD,  0x0000);
+			
+			//WRITEREG_W( DMACON,  0x0082);
+			//WRITEREG_W( DMACON,  0x8300);
+
+		break;
+		case 1:
+			// NTSC Mode
+			WRITEREG_W( BEAMCON0, READREG_W(BEAMCON0) & ~0x0020);
+			//WRITEREG_W( BEAMCON0, 0x0000);
+			WRITEREG_W( DDFSTRT,  0x0038);
+			WRITEREG_W( DDFSTOP,  0x00D8);
+			WRITEREG_W( FMODE,    0x0003);
+			WRITEREG_W( DIWSTRT,  0x2C81);
+			WRITEREG_W( DIWSTOP,  0xF4C1);
+			WRITEREG_W( BPLCON0,  0x0211);
+			WRITEREG_W( BPL1MOD,  0x0000);
+			WRITEREG_W( BPL2MOD,  0x0000);
+
+			//WRITEREG_W( DMACON,  0x0082);
+			//WRITEREG_W( DMACON,  0x8300);
+
+			break;
+	}
+	
+	Permit();
+}
+
+
 
 void jumptotrack(unsigned char t)
 {
@@ -188,8 +234,6 @@ static void setnoclick(ULONG unitnum, ULONG onoff)
 
 int readtrack(unsigned short * track,unsigned short size,unsigned char waiti)
 {
-  		//hxc_printf(0,0,0,">001");
-
 	WRITEREG_B(CIABPRB,~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL));
 	WRITEREG_W( DMACON,0x8210);
 
@@ -219,7 +263,6 @@ int readtrack(unsigned short * track,unsigned short size,unsigned char waiti)
 	WRITEREG_W(INTREQ,0x0002);
 
 	validcache=1;
-  		//hxc_printf(0,0,0,">002");
 
 	return 1;
 
@@ -262,7 +305,6 @@ int writetrack(unsigned short * track,unsigned short size,unsigned char waiti)
 	WRITEREG_W(INTREQ,0x0002);
 
 	validcache=0;
-          		//hxc_printf(0,0,0,">004");
 
 	return 1;
 }
@@ -780,15 +822,6 @@ unsigned char get_char()
 
 		}while(c);
 
-//		hxc_printf(0,0,0,"%.8X",key);
-
-		if(key&0x80)
-		{
-			if(joy)
-				return FCT_DOWN_KEY;
-
-		}
-		
 		i=0;
 		do
 		{
@@ -844,7 +877,6 @@ unsigned char wait_function_key()
 			if(joy&8)
 				return FCT_LEFT_KEY;
 		}
-//		hxc_printf(0,0,0,"%.8X",key);
 
 		i=0;
 		do
