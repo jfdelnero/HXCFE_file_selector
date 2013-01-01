@@ -1,13 +1,13 @@
 #CC=i386-pc-linux-gcc
 CC=m68k-amigaos-gcc.exe
-CFLAGS= -O3 -I . -noixemul -I ./fat32 -v
-LDFLAGS=-s  -Wl,-Map,foo.map   -noixemul -v -amiga-debug-hunk
+CFLAGS= -O3 -I . -noixemul -I ./fat32 
+LDFLAGS=-s  -Wl,-Map,foo.map   -noixemul  -amiga-debug-hunk
 EXEC=HXCFEMNG
 
 all: $(EXEC)
 	#m68k-atari-mint-strip -s $(EXEC)
 	#./upx  -9 $(EXEC)
-	mv $(EXEC) "G:\SDHxCFloppySelector.amigados"
+	mv $(EXEC) "D:\SDHxCFloppySelector.amigados"
 	cmd /c 'startfe.bat' &
 
 HXCFEMNG:      fectrl.o gui_utils.o amiga_hw.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o

@@ -6,6 +6,19 @@
 #define READREG_W(addr) *((volatile unsigned short *) (addr))
 #define READREG_L(addr) *((volatile unsigned long  *) (addr))
 
+#define DDFSTRT (0xdff092) // Display bit plane data fetch start.hor pos
+#define DDFSTOP (0xdff094) // Display bit plane data fetch stop.hor pos
+#define FMODE   (0xdff1FC) // Fetch mode register
+#define DIWSTRT (0xdff08E) // Display window start (upper left vert-hor pos)
+#define DIWSTOP (0xdff090) // Display window stop (lower right vert-hor pos)
+
+#define BPLCON0 (0xdff100) // Bit plane control reg (misc control bits)
+#define BPLCON1 (0xdff102) // Bit plane control reg (scroll val PF1,PF2)
+#define BPLCON2 (0xdff104) // Bit plane control reg (priority control)
+#define BPLCON3 (0xdff106) // Bit plane control reg (enhanced features)
+#define BPL1MOD (0xdff108) // Bit plane modulo (odd planes,or active- fetch lines if bitplane scan-doubling is enabled
+#define BPL2MOD (0xdff10A) // Bit plane modulo (even planes or inactive- fetch lines if bitplane scan-doubling is enabled
+#define BEAMCON0 (0xdff1DC) // Beam counter control register (SHRES,UHRES,PAL)
 
 #define CIAAPRA (0xBFE001) //four input bits for disk sensing
 #define CIABPRB (0xBFD100) //eight output bits for disk selection,
