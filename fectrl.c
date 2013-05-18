@@ -1,6 +1,6 @@
 /*
 //
-// Copyright (C) 2009, 2010, 2011 Jean-François DEL NERO
+// Copyright (C) 2009-2013 Jean-François DEL NERO
 //
 // This file is part of the HxCFloppyEmulator file selector.
 //
@@ -59,6 +59,7 @@
 
 #include "conf.h"
 
+//#define DBGMODE 1
 
 static unsigned long indexptr;
 static unsigned short y_pos;
@@ -97,7 +98,7 @@ void print_hex(unsigned char * buffer, int size)
 	int x,y;
 
 	c=0;
-	
+
 	x=0;
 	y=0;
 	for(i=0;i<size;i++)
@@ -112,10 +113,10 @@ void print_hex(unsigned char * buffer, int size)
 	}
 
 	c=0;
-	
+
 	x=0;
 	y=0;
-	
+
 	for(i=0;i<size;i++)
 	{
 		x=((c & 0xF)*8)+384+8;
@@ -149,12 +150,17 @@ int setlbabase(unsigned long lba)
 	int ret;
 	unsigned char cmd_cnt;
 	unsigned long lbatemp;
+
+	#ifdef DBGMODE
+		hxc_printf(0,0,0,"-- setlbabase E --");
+	#endif
+
 	direct_access_cmd_sector * dacs;
 	direct_access_status_sector * dass;
-	
+
 	dass=(direct_access_status_sector *)sector;
 	dacs=(direct_access_cmd_sector  *)sector;
-	
+
 	memset(&sector,0,512);
 
 	sprintf(dacs->DAHEADERSIGNATURE,"HxCFEDA");
@@ -164,7 +170,7 @@ int setlbabase(unsigned long lba)
 	dacs->parameter_2=(lba>>16)&0xFF;
 	dacs->parameter_3=(lba>>24)&0xFF;
 	dacs->parameter_4=0xA5;
-	
+
 	ret=writesector( 0,(unsigned char *)&sector);
 	if(!ret)
 	{
@@ -172,18 +178,56 @@ int setlbabase(unsigned long lba)
 		lockup();
 	}
 
+	#ifdef DBGMODE
+		hxc_printf(0,0,0,"-- setlbabase L --");
+	#endif
+
 	return 0;
 }
 
+int test_floppy_if()
+{
+	unsigned char sector[512];
+	direct_access_status_sector * dass;
+
+	dass=(direct_access_status_sector *)sector;
+
+	last_setlbabase = 2;
+	do
+	{
+		setlbabase(last_setlbabase);
+		if(!readsector(0,sector,1))
+		{
+			hxc_printf_box(0,"read sector %d error !",last_setlbabase);
+			for(;;);
+		}
+
+		#ifdef DBGMODE
+			hxc_printf(0,0,0,"       %.8X = %.8X ?" ,last_setlbabase,L_INDIAN(dass->lba_base));
+		#endif
+
+		if(last_setlbabase!=L_INDIAN(dass->lba_base))
+		{
+			hxc_printf_box(0,"LBA Change Test Failed ! Write Issue ?");
+			for(;;);
+		}
+
+		last_setlbabase--;
+	}while(last_setlbabase);
+
+	return 0;
+}
 
 int media_init()
 {
 	unsigned char ret;
 	unsigned char sector[512];
 	int i;
-
-
 	direct_access_status_sector * dass;
+
+	#ifdef DBGMODE
+		hxc_printf(0,0,0,"-- media_init E --");
+	#endif
 
 	last_setlbabase=0xFFFFF000;
 	ret=readsector(0,(unsigned char*)&sector,1);
@@ -195,42 +239,33 @@ int media_init()
 		{
 			hxc_printf(0,0,SCREEN_YRESOL-30,"Firmware %s" ,dass->FIRMWAREVERSION);
 
+			test_floppy_if();
+
 			dass= (direct_access_status_sector *)sector;
 			last_setlbabase=0;
 			setlbabase(last_setlbabase);
-			/*                        i=0;
-			do
-			{
-			setlbabase(last_setlbabase);
-			if(!readsector(0,sector,1))
-			{
-			hxc_printf_box(0,"read sector %d error !",i);
 
-			  for(;;);
-			  }
+			#ifdef DBGMODE
+				hxc_printf(0,0,0,"-- media_init L --");
+			#endif
 
-				hxc_printf(0,0,0,"       %.8X %.8X " ,last_setlbabase,L_INDIAN(dass->lba_base));
-				if(last_setlbabase!=L_INDIAN(dass->lba_base))
-				{
-				hxc_printf(0,0,24,"BAD !!!!!      %d",i);
-				i++;
-				}
-
-				  else
-				  hxc_printf(0,0,24,"         ");
-				  
-					last_setlbabase++;
-		}while(1);*/
-			
 			return 1;
 		}
 
 		hxc_printf_box(0,"Bad signature - HxC Floppy Emulator not found!");
-		
+
+		#ifdef DBGMODE
+			hxc_printf(0,0,0,"-- media_init L --");
+		#endif
+
 		return 0;
 	}
 	hxc_printf_box(0,"ERROR: Floppy Access error!  [%d]",ret);
-	
+
+	#ifdef DBGMODE
+		hxc_printf(0,0,0,"-- media_init L --");
+	#endif
+
 	return 0;
 }
 
@@ -240,6 +275,11 @@ int media_read(unsigned long sector, unsigned char *buffer)
 	direct_access_status_sector * dass;
 
 	dass= (direct_access_status_sector *)buffer;
+
+	#ifdef DBGMODE
+		hxc_printf(0,0,0,"-- media_read E --");
+	#endif
+
 
 	hxc_printf(0,8*79,0,"%c",23);
 
@@ -259,7 +299,7 @@ int media_read(unsigned long sector, unsigned char *buffer)
 		last_setlbabase = L_INDIAN(dass->lba_base);
 
 	}while((sector-L_INDIAN(dass->lba_base))>=8);
-	
+
 	if(!readsector((sector-last_setlbabase)+1,buffer,0))
 	{
 		hxc_printf_box(0,"ERROR: Read ERROR ! fsector %d",(sector-last_setlbabase)+1);
@@ -267,7 +307,11 @@ int media_read(unsigned long sector, unsigned char *buffer)
 	}
 
 	hxc_printf(0,8*79,0," ");
-	
+
+	#ifdef DBGMODE
+		hxc_printf(0,0,0,"-- media_read L --");
+	#endif
+
 	return 1;
 }
 
@@ -275,6 +319,10 @@ int media_write(unsigned long sector, unsigned char *buffer)
 {
 	int ret,retry;
 	direct_access_status_sector * dass;
+
+	#ifdef DBGMODE
+		hxc_printf(0,0,0,"-- media_write E --");
+	#endif
 
 	hxc_printf(0,8*79,0,"%c",23);
 
@@ -291,6 +339,10 @@ int media_write(unsigned long sector, unsigned char *buffer)
 	}
 
 	hxc_printf(0,8*79,0," ");
+
+	#ifdef DBGMODE
+		hxc_printf(0,0,0,"-- media_write L --");
+	#endif
 
 	return 1;
 }
@@ -327,6 +379,10 @@ char read_cfg_file(unsigned char * sdfecfg_file)
 	unsigned short i;
 	cfgfile * cfgfile_ptr;
 	FL_FILE *file;
+
+	#ifdef DBGMODE
+		hxc_printf(0,0,0,"-- read_cfg_file E --");
+	#endif
 
 	memset((void*)&disks_slot_a,0,sizeof(disk_in_drive)*NUMBER_OF_SLOT);
 	memset((void*)&disks_slot_b,0,sizeof(disk_in_drive)*NUMBER_OF_SLOT);
@@ -369,6 +425,10 @@ char read_cfg_file(unsigned char * sdfecfg_file)
 		hxc_printf_box(0,"ERROR: Access HXCSDFE.CFG file failed! [%d]",ret);
 	}
 
+	#ifdef DBGMODE
+		hxc_printf(0,0,0,"-- read_cfg_file L --");
+	#endif
+
 	return ret;
 }
 
@@ -379,6 +439,10 @@ char save_cfg_file(unsigned char * sdfecfg_file)
 	cfgfile * cfgfile_ptr;
 	unsigned short  floppyselectorindex;
 	FL_FILE *file;
+
+	#ifdef DBGMODE
+		hxc_printf(0,0,0,"-- save_cfg_file E --");
+	#endif
 
 	ret=0;
 	file = fl_fopen("/HXCSDFE.CFG", "r");
@@ -459,6 +523,10 @@ char save_cfg_file(unsigned char * sdfecfg_file)
 	// Close file
 	fl_fclose(file);
 
+	#ifdef DBGMODE
+		hxc_printf(0,0,0,"-- save_cfg_file L --");
+	#endif
+
 	return ret;
 }
 
@@ -485,10 +553,10 @@ void displayFolder()
 {
 	int i;
 	hxc_printf(0,SCREEN_XRESOL/2,CURDIR_Y_POS,"Current directory:");
-	
+
 	for(i=SCREEN_XRESOL/2;i<SCREEN_XRESOL;i=i+8) hxc_printf(0,i,CURDIR_Y_POS+8," ");
 
-	if(strlen(currentPath)<32)	
+	if(strlen(currentPath)<32)
 		hxc_printf(0,SCREEN_XRESOL/2,CURDIR_Y_POS+8,"%s",currentPath);
 	else
         hxc_printf(0,SCREEN_XRESOL/2,CURDIR_Y_POS+8,"...%s    ",&currentPath[strlen(currentPath)-32]);
@@ -504,7 +572,7 @@ void enter_sub_dir(disk_in_drive *disk_ptr)
 	int old_index;
 
 	old_index=strlen( currentPath );
-	
+
 	if ( (disk_ptr->DirEnt.longName[0] == (unsigned char)'.') && (disk_ptr->DirEnt.longName[1] == (unsigned char)'.') )
 	{
 		currentPathLength = strlen( currentPath ) - 1;
@@ -623,6 +691,10 @@ int main(int argc, char* argv[])
 
 	init_display();
 
+	#ifdef DBGMODE
+		hxc_printf(0,0,0,"-- Init display Done --");
+	#endif
+
 	bootdev = 0;//argv[1][0]-'0';
 
 	switch(bootdev)
@@ -639,10 +711,22 @@ int main(int argc, char* argv[])
 		break;
 	}
 
+	#ifdef DBGMODE
+		hxc_printf(0,0,0,"-- init_amiga_fdc Done --");
+	#endif
+
 	if(media_init())
 	{
+		#ifdef DBGMODE
+			hxc_printf(0,0,0,"-- media_init done --");
+		#endif
+
 		// Initialise File IO Library
 		fl_init();
+
+		#ifdef DBGMODE
+			hxc_printf(0,0,0,"-- fl_init done --");
+		#endif
 
 		/* Attach media access functions to library*/
 		if (fl_attach_media(media_read, media_write) != FAT_INIT_OK)
@@ -650,9 +734,18 @@ int main(int argc, char* argv[])
 			hxc_printf_box(0,"ERROR: Media attach failed !");
 			for(;;);
 		}
+
+		#ifdef DBGMODE
+			hxc_printf(0,0,0,"-- fl_attach_media done --");
+		#endif
+
 		hxc_printf_box(0,"Reading HXCSDFE.CFG ...");
 
 		read_cfg_file(sdfecfg_file);
+
+		#ifdef DBGMODE
+			hxc_printf(0,0,0,"-- read_cfg_file done --");
+		#endif
 
 		if(cfgfile_header[256+128]!=0xFF)
 			set_color_scheme(cfgfile_header[256+128]);
@@ -870,7 +963,7 @@ int main(int argc, char* argv[])
 								memcpy((void*)&disks_slot_a[slotnumber],(void*)&DirectoryEntry_tab[selectorpos],sizeof(disk_in_drive));
 								next_slot();
 							}
-							wait_released_key();							
+							wait_released_key();
 							break;
 
 						case FCT_SELECTSAVEREBOOT:
@@ -1019,12 +1112,12 @@ int main(int argc, char* argv[])
 
 							i++;
 							hxc_printf(0,0,HELP_Y_POS+(i*8), "DF1 drive :");
-							hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"on":"off");
+							hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"off":"on");
 
 							i++;
 							hxc_printf(0,0,HELP_Y_POS+(i*8), "Load AUTOBOOT.HFE at power up :");
 							hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->startup_mode&0x04?"on":"off");
-							
+
 							i=i+2;
 							hxc_printf(1,0,HELP_Y_POS+(i*8), "---Press Space to exit---");
 
@@ -1070,13 +1163,13 @@ int main(int argc, char* argv[])
 
 											case 6:
 												cfgfile_ptr->enable_drive_b=~cfgfile_ptr->enable_drive_b;
-												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"on":"off");
+												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"off":"on");
 											break;
-											
+
 											case 7:
-												cfgfile_ptr->startup_mode = cfgfile_ptr->startup_mode  ^ 0x04;										
+												cfgfile_ptr->startup_mode = cfgfile_ptr->startup_mode  ^ 0x04;
 												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",(cfgfile_ptr->startup_mode&0x4)?"on":"off");
-											break;										
+											break;
 										}
 										invert_line(HELP_Y_POS+(i*8));
 
@@ -1103,16 +1196,16 @@ int main(int argc, char* argv[])
 												if(cfgfile_ptr->standby_tmr<0xFF) cfgfile_ptr->standby_tmr++;
 												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->standby_tmr);
 											break;
-											
+
 											case 6:
 												cfgfile_ptr->enable_drive_b=~cfgfile_ptr->enable_drive_b;
-												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"on":"off");
+												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"off":"on");
 											break;
 
 											case 7:
-												cfgfile_ptr->startup_mode = cfgfile_ptr->startup_mode  ^ 0x04;										
+												cfgfile_ptr->startup_mode = cfgfile_ptr->startup_mode  ^ 0x04;
 												hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",(cfgfile_ptr->startup_mode&0x4)?"on":"off");
-											break;											
+											break;
 										}
 										invert_line(HELP_Y_POS+(i*8));
 									break;
@@ -1120,7 +1213,7 @@ int main(int argc, char* argv[])
 								}
 							}while(c!=FCT_OK && !(Joystick()&0x10));
 
-       						clear_list(5);
+							clear_list(5);
 							init_buffer();
 							printslotstatus(slotnumber, (disk_in_drive *) &disks_slot_a[slotnumber], (disk_in_drive *) &disks_slot_b[slotnumber]) ;
 							displayFolder();
@@ -1128,7 +1221,7 @@ int main(int argc, char* argv[])
 							memcpy(&file_list_status ,&file_list_status_tab[page_number&0x1FF],sizeof(struct fs_dir_list_status));
 							clear_list(0);
 							read_entry=1;
-						
+
 						break;
 
 						case FCT_SHOWSLOTS:
@@ -1174,7 +1267,7 @@ int main(int argc, char* argv[])
 							jumptotrack(0);
 							reboot();
 							break;
-							
+
 						case FCT_CHGCOLOR:
 							colormode++;
 							set_color_scheme(colormode);

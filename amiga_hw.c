@@ -1,6 +1,6 @@
 /*
 //
-// Copyright (C) 2009, 2010, 2011 Jean-François DEL NERO
+// Copyright (C) 2009-2013 Jean-François DEL NERO
 //
 // This file is part of the HxCFloppyEmulator file selector.
 //
@@ -48,8 +48,6 @@
 
 #include "crc.h"
 
-//#define CIABPRB_DSKSEL CIABPRB_DSKSEL0
-
 static unsigned char CIABPRB_DSKSEL;
 
 static const unsigned char MFM_short_tab[]=
@@ -94,22 +92,23 @@ static const unsigned short MFM_tab[]=
 	0x554A,0x5549,0x5544,0x5545,0x5552,0x5551,0x5554,0x5555
 };
 
-#define TRACKBUFFERSIZE 0x4000
+static unsigned char * mfmtobinLUT_L;
+static unsigned char * mfmtobinLUT_H;
 
-static unsigned char * mfmluttable;
-static unsigned char * mfmluttable2;
+#define MFMTOBIN(W) ( mfmtobinLUT_H[W>>8] | mfmtobinLUT_L[W&0xFF] )
+
 static unsigned short * track_buffer;
 static unsigned short * track_buffer_wr;
 
 static unsigned char validcache;
 
 unsigned short sector_pos[16];
+
 void cpuwait(unsigned short w)
 {
 	unsigned short i;
 	for(i=0;i<w;i++) asm("nop");
 }
-
 
 void setvideomode(int mode)
 {
@@ -129,7 +128,7 @@ void setvideomode(int mode)
 			WRITEREG_W( BPLCON0,  0x0211);
 			WRITEREG_W( BPL1MOD,  0x0000);
 			WRITEREG_W( BPL2MOD,  0x0000);
-			
+
 			//WRITEREG_W( DMACON,  0x0082);
 			//WRITEREG_W( DMACON,  0x8300);
 
@@ -152,7 +151,7 @@ void setvideomode(int mode)
 
 			break;
 	}
-	
+
 	Permit();
 }
 
@@ -250,7 +249,6 @@ int readtrack(unsigned short * track,unsigned short size,unsigned char waiti)
 	WRITEREG_W( DSKSYNC,0x4489);
 	WRITEREG_W( INTREQ, 0x0002);
 
-
 	if(waiti) waitindex();
 
 	//Put the value you want into the DSKLEN register
@@ -344,53 +342,53 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 {
 	unsigned short i,j,len,retry,retry2;
 	unsigned char sectorfound;
-	unsigned char c,lastbit;
+	unsigned char c;
 	unsigned char CRC16_High,CRC16_Low;
-	
+
 	Forbid();
 
 	retry2=2;
 
 	i=0;
 	validcache=0;
-	
+
 	for(j=0;j<22;j++)
 		track_buffer_wr[i++]=0x9254;
-	
+
 	for(j=0;j<12;j++)
 		track_buffer_wr[i++]=0xAAAA;
-	
+
 	track_buffer_wr[i++]=0x4489;
 	track_buffer_wr[i++]=0x4489;
 	track_buffer_wr[i++]=0x4489;
 	track_buffer_wr[i++]=0x5545;
-	
+
 	BuildCylinder((unsigned char*)&track_buffer_wr[i],512*2,data,512);
-	
+
 	i=i+512;
 	track_buffer_wr[i++]=0xAAAA;
 	track_buffer_wr[i++]=0xAAAA;
 	track_buffer_wr[i++]=0xAAAA;
 	track_buffer_wr[i++]=0xAAAA;
-	
+
 	len=i;
-	
+
 	sectorfound=0;
 	retry=30;
-	
+
 	if(sectornum)
 	{
-		
+
 		do
 		{
 
 			do
 			{
-				
+
 				i=0;
-				
+
 				retry--;
-				
+
 				if(!readtrack(track_buffer,16,0))
 				{
 					Permit();
@@ -402,39 +400,28 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 					i++;
 				}
 
-				if(mfmluttable2[track_buffer[i]]==0xFE && (i<(16-3)))
+				if(MFMTOBIN(track_buffer[i])==0xFE && (i<(16-3)))
 				{
 
 					CRC16_Init(&CRC16_High, &CRC16_Low);
 					for(j=0;j<3;j++)CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
 
-					lastbit=1;
 					for(j=0;j<(1+4+2);j++)
 					{
-						if(lastbit)
-						{
-							c=mfmluttable2[track_buffer[i+j]];
-							CRC16_Update(&CRC16_High, &CRC16_Low,c);
-						}
-						else
-						{
-							c=mfmluttable[track_buffer[i+j]];
-							CRC16_Update(&CRC16_High, &CRC16_Low,c);
-						}
-						lastbit=c&1;
+						c = MFMTOBIN(track_buffer[i+j]);
+						CRC16_Update(&CRC16_High, &CRC16_Low,c);
 					}
-
 
 					if(!CRC16_High && !CRC16_Low)
 					{
 						i++;
-						if(mfmluttable[track_buffer[i]]==0xFF) //track
+						if(MFMTOBIN(track_buffer[i])==0xFF) //track
 						{
 							i++;
-							if(mfmluttable2[track_buffer[i]]==0x00) //side
+							if(MFMTOBIN(track_buffer[i])==0x00) //side
 							{
 								i++;
-								if(mfmluttable[track_buffer[i]]==sectornum) //sector
+								if(MFMTOBIN(track_buffer[i])==sectornum) //sector
 								{
 									sectorfound=1;
 									if(!writetrack(track_buffer_wr,len,0))
@@ -448,14 +435,14 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 					}
 				}
 			}while(!sectorfound  && retry);
-			
+
 			if(!sectorfound)
-			{	
+			{
 				jumptotrack(255);
 				retry=30;
 			}
 			retry2--;
-			
+
 		}while(!sectorfound && retry2);
 
 	}
@@ -471,15 +458,16 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 
 	}
 
-	Permit();	
+	Permit();
 	return sectorfound;
 }
+
 
 unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned char invalidate_cache)
 {
 	unsigned short i,j,t;
 	unsigned char sectorfound,tc;
-	unsigned char c,lastbit,retry,badcrc,retry2;
+	unsigned char c,retry,badcrc,retry2;
 	unsigned char CRC16_High,CRC16_Low;
 
 	Forbid();
@@ -488,7 +476,7 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 
 	do
 	{
-	
+
 		do
 		{
 			sectorfound=0;
@@ -507,16 +495,16 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 				{
 					sector_pos[j]=0xFFFF;
 				}
-				
+
 				for(j=0;j<9;j++)
 				{
 					while(track_buffer[i]!=0x4489 && i) i=(i+1)&0x3FFF;
 					if(!i) j=9;
 					while(track_buffer[i]==0x4489 && i) i=(i+1)&0x3FFF;
 					if(!i) j=9;
-					if(mfmluttable2[track_buffer[i]]==0xFE)
+					if(MFMTOBIN(track_buffer[i])==0xFE)
 					{
-						sector_pos[mfmluttable[track_buffer[i+3]]&0xF]=i;
+						sector_pos[MFMTOBIN(track_buffer[i+3])&0xF]=i;
 						i=(i+512+2)&0x3FFF;
 					}
 					else
@@ -525,94 +513,60 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 					}
 				}
 			}
-			
+
 			do
 			{
-				
+
 				i=sector_pos[sectornum&0xF];
 				if(i<16*1024)
 				{
-					if(mfmluttable2[track_buffer[i]]==0xFE)
+					if(MFMTOBIN(track_buffer[i])==0xFE)
 					{
 						CRC16_Init(&CRC16_High, &CRC16_Low);
 						for(j=0;j<3;j++)CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
-						
-						lastbit=1;
+
 						for(j=0;j<(1+4+2);j++)
 						{
-							if(lastbit)
-							{
-								c=mfmluttable2[track_buffer[i+j]];
-								CRC16_Update(&CRC16_High, &CRC16_Low,c);
-							}
-							else
-							{
-								c=mfmluttable[track_buffer[i+j]];
-								CRC16_Update(&CRC16_High, &CRC16_Low,c);
-							}
-							lastbit=c&1;
+							c=MFMTOBIN(track_buffer[i+j]);
+							CRC16_Update(&CRC16_High, &CRC16_Low,c);
 						}
-						
-						
+
+
 						if(!CRC16_High && !CRC16_Low)
 						{
 							i++;
-							if(mfmluttable[track_buffer[i]]==0xFF) //track
+							if(MFMTOBIN(track_buffer[i])==0xFF) //track
 							{
 								i++;
-								if(mfmluttable[track_buffer[i]]==0x00) //side
+								if(MFMTOBIN(track_buffer[i])==0x00) //side
 								{
 									i++;
-									if(mfmluttable[track_buffer[i]]==sectornum) //sector
+									if(MFMTOBIN(track_buffer[i])==sectornum) //sector
 									{
 										i=i+41;
-										
-										lastbit=1;
-										
+
 										CRC16_Init(&CRC16_High, &CRC16_Low);
 										for(j=0;j<3;j++)CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
-										
-										lastbit=1;
-										
-										CRC16_Update(&CRC16_High,&CRC16_Low,mfmluttable2[track_buffer[i]]);
+
+										CRC16_Update(&CRC16_High,&CRC16_Low,MFMTOBIN(track_buffer[i]));
 										i++;
-										
+
 										for(j=0;j<512;j++)
 										{
-											
-											t=track_buffer[i];
-											if(lastbit)
-											{
-												tc=mfmluttable2[t];
-											}
-											else
-											{
-												tc=mfmluttable[t];
-											}
-											
+
+											tc = MFMTOBIN(track_buffer[i]);
+
 											//	CRC16_Update(&CRC16_High, &CRC16_Low,tc);
-											
 											i++;
 											data[j]=tc;
-											lastbit=tc&1;
 										}
-										
+
 										for(j=0;j<2;j++)
 										{
-											if(lastbit)
-											{
-												c=mfmluttable2[track_buffer[i++]];
-											}
-											else
-											{
-												c=mfmluttable[track_buffer[i++]];
-											}
-											
-											
+											c = MFMTOBIN(track_buffer[i++]);
 											CRC16_Update(&CRC16_High, &CRC16_Low,c);
-											lastbit=c&1;
 										}
-										
+
 										if(1)//!CRC16_High && !CRC16_Low)
 										{
 											sectorfound=1;
@@ -621,7 +575,7 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 										{
 											badcrc=1;
 										}
-										
+
 									}
 									else
 									{
@@ -655,36 +609,41 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 				}
 
 			}while( !sectorfound && (i<(16*1024)) && !badcrc);
-			
+
 			retry--;
 			if(!sectorfound && retry)
 			{
 				validcache=0;
 			}
-			
+
 		}while(!sectorfound && retry);
-		
-		
+
+
 		if(!sectorfound)
 		{
 			jumptotrack(255);
 			retry2--;
 			retry=5;
 		}
-		
-		
+
+
 	}while(!sectorfound && retry2);
-	
+
 	if(!sectorfound)
 	{
 		validcache=0;
 	}
-		
+
 	Permit();
-	
+
 	return sectorfound;
 }
 
+void alloc_error()
+{
+	hxc_printf_box(0,"ERROR: Memory Allocation Error -> No more free mem ?");
+	for(;;);
+}
 
 void init_amiga_fdc(unsigned char drive)
 {
@@ -698,25 +657,44 @@ void init_amiga_fdc(unsigned char drive)
 	//	for(i=0;i<3;i++) setnoclick(i, 1);
 
 	validcache=0;
-	mfmluttable=(unsigned char*)AllocMem(64*1024,MEMF_CHIP);
-	mfmluttable2=(unsigned char*)AllocMem(64*1024,MEMF_CHIP);
-	track_buffer=(unsigned short*)AllocMem(32*1024,MEMF_CHIP);
-	track_buffer_wr=(unsigned short*)AllocMem(32*1024,MEMF_CHIP);
-	
-	memset(mfmluttable,0,64*1024);
-	memset(mfmluttable2,0,64*1024);
 
-	memset(track_buffer,0,32*1024);
-	memset(track_buffer_wr,0,32*1024);
-
-	for(i=0;i<256;i++)
+	mfmtobinLUT_L=(unsigned char*)AllocMem(256,MEMF_CHIP);
+	mfmtobinLUT_H=(unsigned char*)AllocMem(256,MEMF_CHIP);
+	if(mfmtobinLUT_L && mfmtobinLUT_H)
 	{
-		mfmluttable[0xFFFF&MFM_tab[i]]=i;
-		mfmluttable2[0x7FFF&MFM_tab[i]]=i;
+		for(i=0;i<256;i++)
+		{
+			mfmtobinLUT_L[i] =   ((i&0x40)>>3) | ((i&0x10)>>2) | ((i&0x04)>>1) | (i&0x01);
+			mfmtobinLUT_H[i] =   mfmtobinLUT_L[i] << 4;
+		}
+	}
+	else
+	{
+		alloc_error();
+	}
+
+	track_buffer=(unsigned short*)AllocMem(24*1024,MEMF_CHIP);
+	if(track_buffer)
+	{
+		memset(track_buffer,0,24*1024);
+	}
+	else
+	{
+		alloc_error();
+	}
+
+	track_buffer_wr=(unsigned short*)AllocMem(2*1024,MEMF_CHIP);
+	if(track_buffer_wr)
+	{
+		memset(track_buffer_wr,0,2*1024);
+	}
+	else
+	{
+		alloc_error();
 	}
 
 	Forbid();
-	
+
 	WRITEREG_B(CIABPRB,~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL));
 	WRITEREG_W( DMACON,0x8210);
 
@@ -725,7 +703,6 @@ void init_amiga_fdc(unsigned char drive)
 	WRITEREG_W(INTREQ,0x0002);
 
 	Permit();
-
 }
 
 unsigned char Joystick()
@@ -747,12 +724,12 @@ unsigned char Joystick()
 	{
 		ret=ret| 0x8;
 	}
-	
+
 	if( (code&0x1) ^ ((code&0x2)>>1) ) // Back
 	{
 		ret=ret| 0x2;
 	}
-	
+
 	if( ((code&0x002)) )  // Right
 	{
 		ret=ret| 0x4;
@@ -762,7 +739,7 @@ unsigned char Joystick()
 	{
 		ret=ret| 0x10;
 	}
-	
+
 	return( ret );
 }
 
@@ -803,7 +780,7 @@ unsigned char get_char()
 
 	function_code=FCT_NO_FUNCTION;
 	while(!(Keyboard()&0x80));
-	
+
 	do
 	{
 		c=1;
@@ -832,7 +809,7 @@ unsigned char get_char()
 
 	}while(function_code==FCT_NO_FUNCTION);
 
-	return function_code;	
+	return function_code;
 }
 
 
@@ -903,7 +880,7 @@ unsigned short get_vid_mode()
 		vpos2=vpos;
 		vpos=((READREG_W(VPOSR)&1)<<8)  | (READREG_W(VHPOSR)>>8);
 	}while(vpos>=vpos2);
-	
+
 	return vpos2;
 }
 
