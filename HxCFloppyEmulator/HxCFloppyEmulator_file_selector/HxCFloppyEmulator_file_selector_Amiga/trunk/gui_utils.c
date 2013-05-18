@@ -471,7 +471,7 @@ void init_buffer()
 	i=1;
 	hxc_printf(1,0,HELP_Y_POS+(i*8), "SDCard HxC Floppy Emulator file selector for Amiga");
 	i++;
-	hxc_printf(1,0,HELP_Y_POS+(i*8), "(c) 2006-2011 HxC2001 / Jean-Francois DEL NERO");
+	hxc_printf(1,0,HELP_Y_POS+(i*8), "(c) 2006-2013 HxC2001 / Jean-Francois DEL NERO");
 	i++;
 	hxc_printf(1,0,HELP_Y_POS+(i*8), "Check for updates on :");
 	i++;

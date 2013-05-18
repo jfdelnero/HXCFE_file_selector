@@ -21,8 +21,8 @@
 // Size of cluster chain cache (can be undefined)
 // Mem used = FAT_CLUSTER_CACHE_ENTRIES * 4 * 2
 // Improves access speed considerably
-#define FAT_CLUSTER_CACHE_ENTRIES			256
-#define FAT_BROWSE_CLUSTER_CACHE_ENTRIES	256
+#define FAT_CLUSTER_CACHE_ENTRIES			512
+#define FAT_BROWSE_CLUSTER_CACHE_ENTRIES	512
 
 // Include support for writing files
 #define FATFS_INC_WRITE_SUPPORT				1
