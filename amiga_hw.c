@@ -352,9 +352,6 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 	i=0;
 	validcache=0;
 
-	for(j=0;j<22;j++)
-		track_buffer_wr[i++]=0x9254;
-
 	for(j=0;j<12;j++)
 		track_buffer_wr[i++]=0xAAAA;
 
