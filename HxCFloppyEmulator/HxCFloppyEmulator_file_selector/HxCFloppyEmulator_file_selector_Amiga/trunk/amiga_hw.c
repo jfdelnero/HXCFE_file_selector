@@ -104,12 +104,36 @@ static unsigned char validcache;
 
 unsigned short sector_pos[16];
 
-void cpuwait(unsigned short w)
+void waitms(int ms)
 {
-	unsigned short i;
-	for(i=0;i<w;i++) asm("nop");
+	int cnt;
+	
+	WRITEREG_B(CIAB_CRA, (READREG_B(CIAB_CRA)&0xC0) | 0x08 );
+	WRITEREG_B(CIAB_ICR, 0x7F );
+	
+	WRITEREG_B(CIAB_TALO, 0xCC );
+	WRITEREG_B(CIAB_TAHI, 0x02 );
+
+	WRITEREG_B(CIAB_CRA, READREG_B(CIAB_CRA) | 0x01 );
+	for(cnt=0;cnt<ms;cnt++)
+	{
+		do
+		{
+		}while(!(READREG_B(CIAB_ICR)&1));
+		
+		WRITEREG_B(CIAB_CRA, READREG_B(CIAB_CRA) | 0x01 );
+	}
 }
 
+void testblink()
+{
+	for(;;)
+	{
+		waitms(500);
+		
+		WRITEREG_B(CIAAPRA, READREG_B(CIAAPRA) ^  0x02 );
+	}
+}
 void setvideomode(int mode)
 {
 	Forbid();
@@ -163,22 +187,23 @@ void jumptotrack(unsigned char t)
 
 	Forbid();
 	WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ));
-	cpuwait(2500);
+
+	waitms(100);
 
 	while(READREG_B(CIAAPRA) & CIAAPRA_DSKTRACK0)
 	{
 		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL  | CIABPRB_DSKSTEP));
-		cpuwait(250);
+		waitms(1);
 		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ) );
-		cpuwait(500);
+		waitms(1);
 	}
 
 	for(j=0;j<t;j++)
 	{
 		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL | CIABPRB_DSKDIREC |CIABPRB_DSKSTEP) );
-		cpuwait(250);
+		waitms(1);
 		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL | CIABPRB_DSKDIREC ) );
-		cpuwait(500);
+		waitms(1);
 	}
 
 	WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ) );
@@ -288,10 +313,10 @@ int writetrack(unsigned short * track,unsigned short size,unsigned char waiti)
 	WRITEREG_W( INTREQ, 0x0002);
 
 	if(waiti)
-        {
-          	while(READREG_B(CIAB_ICR)&0x10);
-  	        while(!(READREG_B(CIAB_ICR)&0x10));
-        }
+	{
+		while(READREG_B(CIAB_ICR)&0x10);
+		while(!(READREG_B(CIAB_ICR)&0x10));
+	}
 
 	//Put the value you want into the DSKLEN register
 	WRITEREG_W( DSKLEN ,size | 0x8000 | 0x4000 );

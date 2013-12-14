@@ -987,9 +987,6 @@ int main(int argc, char* argv[])
 							}
 							break;
 
-
-
-
 						case FCT_HELP:
 							clear_list(5);
 

@@ -21,12 +21,20 @@
 #define BEAMCON0 (0xdff1DC) // Beam counter control register (SHRES,UHRES,PAL)
 
 #define CIAAPRA (0xBFE001) //four input bits for disk sensing
+#define CIABPRA (0xBFD000)
 #define CIABPRB (0xBFD100) //eight output bits for disk selection,
 #define ADKCON  (0xDFF09E) //control bits (write only register)
 #define ADKCONR (0xDFF010) //control bits (read only register)
 
+#define CIAB_TALO 0xBFD400 //CIAB timer A low byte (.715909 Mhz NTSC; .709379 Mhz PAL)
+#define CIAB_TAHI 0xBFD500 //CIAB timer A high byte
+#define CIAB_TBLO 0xBFD600 //CIAB timer B low byte (.715909 Mhz NTSC; .709379 Mhz PAL)
+#define CIAB_TBHI 0xBFD700 //CIAB timer B high byte
+#define CIAB_ICR  0xBFDD00 //CIAB interrupt control register
+#define CIAB_CRA  0xBFDE00 //CIAB Control register A
+#define CIAB_CRB  0xBFDF00 //CIAB Control register B
+
 #define DSKPTH   (0xDFF020) //DMA pointer (32 bits)
-#define CIAB_ICR (0xBFDD00) // CIAB interrupt control register
 #define INTREQR  (0xDFF01E)
 #define INTREQ   (0xDFF09C)
 
