@@ -48,6 +48,8 @@
 
 #include "crc.h"
 
+extern unsigned short SCREEN_YRESOL;
+
 static unsigned char CIABPRB_DSKSEL;
 
 static const unsigned char MFM_short_tab[]=
@@ -181,34 +183,62 @@ void setvideomode(int mode)
 
 
 
-void jumptotrack(unsigned char t)
+int jumptotrack(unsigned char t)
 {
-	unsigned short i,j;
+	unsigned short i,j,k;
 
 	Forbid();
 	WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ));
 
+#ifdef DBGMODE	
+	hxc_printf(0,0,0,"-- jumptotrack %d --",t);
+#endif
 	waitms(100);
 
-	while(READREG_B(CIAAPRA) & CIAAPRA_DSKTRACK0)
+#ifdef DBGMODE	
+	hxc_printf(0,0,0,"-- jumptotrack %d - seek track 0... --",t);
+#endif
+	k = 0;
+	while((READREG_B(CIAAPRA) & CIAAPRA_DSKTRACK0) && k<1024)
 	{
 		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL  | CIABPRB_DSKSTEP));
 		waitms(1);
 		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ) );
 		waitms(1);
+		
+		k++;
 	}
 
-	for(j=0;j<t;j++)
+	if(k < 1024)
 	{
-		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL | CIABPRB_DSKDIREC |CIABPRB_DSKSTEP) );
-		waitms(1);
-		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL | CIABPRB_DSKDIREC ) );
-		waitms(1);
+	#ifdef DBGMODE	
+		hxc_printf(0,0,0,"-- jumptotrack %d - track 0 found --",t);
+	#endif	
+
+		for(j=0;j<t;j++)
+		{
+			WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL | CIABPRB_DSKDIREC |CIABPRB_DSKSTEP) );
+			waitms(1);
+			WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL | CIABPRB_DSKDIREC ) );
+			waitms(1);
+		}
+
+		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ) );
+	#ifdef DBGMODE	
+		hxc_printf(0,0,0,"-- jumptotrack %d - jump done    --",t);
+	#endif
+
+		Permit();
+		
+		return 0;
 	}
 
-	WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ) );
-
+	#ifdef DBGMODE	
+		hxc_printf(0,0,0,"-- jumptotrack %d - track 0 not found!! --",t);
+	#endif
+	
 	Permit();
+	return 1;
 };
 
 void waitindex()
@@ -460,7 +490,10 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 
 			if(!sectorfound)
 			{
-				jumptotrack(255);
+				if(jumptotrack(255))
+				{
+					hxc_printf_box(0,"ERROR: writesector -> failure while seeking the track 00!");
+				}
 				retry=30;
 			}
 			retry2--;
@@ -643,7 +676,11 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 
 		if(!sectorfound)
 		{
-			jumptotrack(255);
+			if(jumptotrack(255))
+			{
+				hxc_printf_box(0,"ERROR: readsector -> failure while seeking the track 00!");
+			}
+
 			retry2--;
 			retry=5;
 		}
@@ -720,7 +757,11 @@ void init_amiga_fdc(unsigned char drive)
 	WRITEREG_B(CIABPRB,~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL));
 	WRITEREG_W( DMACON,0x8210);
 
-	jumptotrack(255);
+	if(jumptotrack(255))
+	{
+		hxc_printf_box(0,"ERROR: init_amiga_fdc -> failure while seeking the track 00!");
+		for(;;);
+	}
 	Delay(12);
 	WRITEREG_W(INTREQ,0x0002);
 
@@ -816,7 +857,7 @@ unsigned char get_char()
 					c=1;
 				}
 			}while(key&0x80);
-			Delay(3);
+			waitms(50);
 			c--;
 
 		}while(c);
@@ -855,7 +896,9 @@ unsigned char wait_function_key()
 					c=1;
 				}
 			}while(key&0x80 && !joy);
-			Delay(3);
+			
+			waitms(50);
+
 			c--;
 
 		}while(c);
@@ -895,15 +938,29 @@ unsigned char wait_function_key()
 unsigned short get_vid_mode()
 {
 	unsigned short vpos,vpos2;
+
 	vpos=0;
 	vpos2=0;
+
+	Forbid();
 	do
 	{
-		vpos2=vpos;
-		vpos=((READREG_W(VPOSR)&1)<<8)  | (READREG_W(VHPOSR)>>8);
-	}while(vpos>=vpos2);
+		vpos = READREG_W(VHPOSR) >> 8;
+		while (vpos == (READREG_W(VHPOSR) >> 8));
 
+		vpos=((READREG_W(VPOSR)&1)<<8)  | (READREG_W(VHPOSR)>>8);
+		if(vpos>=vpos2)
+		{
+			vpos2=vpos;
+		}
+	}while(vpos>=vpos2);
+	Permit();
 	return vpos2;
+}
+
+void disablemousepointer()
+{	
+	WRITEREG_W( DMACON ,0x20);
 }
 
 void _reboot();

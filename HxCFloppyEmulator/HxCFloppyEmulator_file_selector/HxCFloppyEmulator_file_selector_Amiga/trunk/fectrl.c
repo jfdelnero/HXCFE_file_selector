@@ -40,6 +40,8 @@
 #include <intuition/screens.h>
 #include <intuition/preferences.h>
 
+#include <exec/interrupts.h>
+
 #include <stdio.h>
 
 #include "keysfunc_defs.h"
@@ -60,6 +62,7 @@
 #include "conf.h"
 
 //#define DBGMODE 1
+#define  INTB_PORTS	(3)
 
 static unsigned long indexptr;
 static unsigned short y_pos;
@@ -91,6 +94,9 @@ extern struct fatfs _fs;
 
 extern unsigned short SCREEN_YRESOL;
 extern unsigned char  NUMBER_OF_FILE_ON_DISPLAY;
+
+struct Interrupt *rbfint, *priorint;
+unsigned long timercnt;
 
 void print_hex(unsigned char * buffer, int size)
 {
@@ -260,6 +266,7 @@ int media_init()
 
 		return 0;
 	}
+
 	hxc_printf_box(0,"ERROR: Floppy Access error!  [%d]",ret);
 
 	#ifdef DBGMODE
@@ -628,7 +635,6 @@ void enter_sub_dir(disk_in_drive *disk_ptr)
 
 	selectorpos=0;
 
-
 	if(!fl_list_opendir(currentPath, &file_list_status))
 	{
 		currentPath[old_index]=0;
@@ -677,6 +683,10 @@ void show_all_slots(void)
 }
 
 
+void ithandler(void)
+{
+	timercnt++;
+}
 
 int main(int argc, char* argv[])
 {
@@ -691,6 +701,17 @@ int main(int argc, char* argv[])
 
 	init_display();
 
+	rbfint = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC|MEMF_CLEAR);
+	rbfint->is_Node.ln_Type = NT_INTERRUPT;      /* Init interrupt node. */
+	//strcpy(rbfdata->rd_Name, allocname);
+	rbfint->is_Node.ln_Name = "HxCFESelectorTimerInt";
+	rbfint->is_Data = 0;//(APTR)rbfdata;
+	rbfint->is_Code = ithandler;
+                                                                        /* Save state of RBF and */
+	//priorenable = custom.intenar & INTF_RBF ? TRUE : FALSE; /* interrupt */
+	//custom.intena = INTF_RBF;                             /* disable it. */
+	//priorint = SetIntVector(INTB_PORTS, rbfint);
+	AddIntServer(5,rbfint);
 	#ifdef DBGMODE
 		hxc_printf(0,0,0,"-- Init display Done --");
 	#endif

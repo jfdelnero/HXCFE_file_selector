@@ -156,3 +156,8 @@ for Amiga drives is specified at 15 milliseconds.
 FLAG DSKINDEX* Disk index pulse ($BFDD00, bit 4). Can be used to
 create a level 6 interrupt. See Appendix F for details.
 */
+
+
+#define SPR0POS (0xDFF140)
+#define SPR0CTL (0xDFF142)
+#define JOYTEST (0xDFF036)
