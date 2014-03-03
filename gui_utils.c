@@ -30,10 +30,14 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include <graphics/sprite.h>
+#include <intuition/intuitionbase.h>
 #include <intuition/screens.h>
+#include <hardware/custom.h>
+#include <hardware/dmabits.h>
+
 #include <intuition/preferences.h>
 #include <exec/memory.h>
-
 
 #include <exec/types.h>
 #include <graphics/gfx.h>
@@ -59,6 +63,10 @@
 #include "gui_utils.h"
 
 #include "conf.h"
+
+#include "amiga_hw.h"
+#include "amiga_regs.h"
+
 
 static unsigned char * screen_buffer_aligned;
 static unsigned char * screen_buffer_backup_aligned;
@@ -178,9 +186,6 @@ void initpal()
 	*ptr=0x0777;
 
 }
-
-
-
 
 void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short x, unsigned short y)
 {
@@ -356,7 +361,6 @@ void h_line(unsigned short y_pos,unsigned short val)
   {
      ptr_dst[ptroffset+i]=val;
   }
-
 }
 
 
@@ -364,12 +368,11 @@ void box(unsigned short x_p1,unsigned short y_p1,unsigned short x_p2,unsigned sh
 {
 	unsigned short *ptr_dst;
 	unsigned short i,j,ptroffset,x_size;
-	
-	
+
 	ptr_dst=(unsigned short*)screen_buffer_aligned;
-	
+
 	x_size=((x_p2-x_p1)/16)*2;
-	
+
 	for(j=0;j<(y_p2-y_p1);j++)
 	{
 		for(i=0;i<x_size;i++)
@@ -512,6 +515,7 @@ void set_color_scheme(unsigned char color)
 {
 	LoadRGB4(&viewPort, &colortable[(color&0x1F)*4], 4);
 }
+
 int init_display()
 {
 	unsigned short loop,yr;
@@ -555,16 +559,16 @@ int init_display()
 	/* of the display.                   */
 	rasInfo.Next = NULL;          /* Single playfield - only one       */
 	/* RasInfo structure is necessary.   */
-	
+
 	InitVPort(&viewPort);           /*  Initialize the ViewPort.  */
 	view.ViewPort = &viewPort;      /*  Link the ViewPort into the View.  */
 	viewPort.RasInfo = &rasInfo;
 	viewPort.DWidth = WIDTH;
 	viewPort.DHeight = 256;
-	
+
 	/* Set the display mode the old-fashioned way */
 	viewPort.Modes=HIRES;// | LACE;
-	
+
 	cm =(struct ColorMap *) GetColorMap(COLOURS);
 	
 	/* Attach the ColorMap, old 1.3-style */
@@ -596,6 +600,8 @@ int init_display()
 		SCREEN_YRESOL=200;
 		NUMBER_OF_FILE_ON_DISPLAY=19-5;// 19-5 //19 -240
 	}
+
+	disablemousepointer();
 	
 	init_buffer();
 
