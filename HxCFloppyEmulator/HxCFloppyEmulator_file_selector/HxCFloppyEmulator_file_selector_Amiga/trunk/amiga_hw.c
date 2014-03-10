@@ -106,6 +106,26 @@ static unsigned char validcache;
 
 unsigned short sector_pos[16];
 
+void waitus(int centus)
+{
+	int cnt;
+	unsigned short time;
+
+	WRITEREG_B(CIAB_CRA, (READREG_B(CIAB_CRA)&0xC0) | 0x08 );
+	WRITEREG_B(CIAB_ICR, 0x7F );
+
+	time = 0x48 * centus;
+	WRITEREG_B(CIAB_TALO, time&0xFF );
+	WRITEREG_B(CIAB_TAHI, time>>8 );
+
+	WRITEREG_B(CIAB_CRA, READREG_B(CIAB_CRA) | 0x01 );
+
+	do
+	{
+	}while(!(READREG_B(CIAB_ICR)&1));
+
+}
+
 void waitms(int ms)
 {
 	int cnt;
@@ -136,6 +156,7 @@ void testblink()
 		WRITEREG_B(CIAAPRA, READREG_B(CIAAPRA) ^  0x02 );
 	}
 }
+
 void setvideomode(int mode)
 {
 	Forbid();
@@ -240,6 +261,71 @@ int jumptotrack(unsigned char t)
 	Permit();
 	return 1;
 };
+
+int test_drive(int drive)
+{
+	int t,j,c;
+	Forbid();
+	WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | (CIABPRB_DSKSEL0<<(drive&3)) ));
+
+	waitms(100);
+
+	// Track 0
+	t = 0;
+	while((READREG_B(CIAAPRA) & CIAAPRA_DSKTRACK0) && (t<260))
+	{
+		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | (CIABPRB_DSKSEL0<<(drive&3))  | CIABPRB_DSKSTEP));
+		waitus(2);
+		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | (CIABPRB_DSKSEL0<<(drive&3)) ) );
+		waitus(2);
+
+		t++;
+	}
+
+	if(t<260)
+	{
+		c = 0;
+		do
+		{
+			// Track 30
+			for(j=0;j<30;j++)
+			{
+				WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | (CIABPRB_DSKSEL0<<(drive&3)) | CIABPRB_DSKDIREC |CIABPRB_DSKSTEP) );
+				waitus(2);
+				WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | (CIABPRB_DSKSEL0<<(drive&3)) | CIABPRB_DSKDIREC ) );
+				waitus(2);
+			}
+
+			t = 0;
+			while((READREG_B(CIAAPRA) & CIAAPRA_DSKTRACK0) && (t<30))
+			{
+				WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | (CIABPRB_DSKSEL0<<(drive&3))  | CIABPRB_DSKSTEP));
+				waitus(2);
+				WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | (CIABPRB_DSKSEL0<<(drive&3)) ) );
+				waitus(2);
+
+				t++;
+			}
+
+			c++;
+		}while( (t != 30) && c < 4 );
+
+		if(t == 30)
+		{
+			WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | (CIABPRB_DSKSEL0<<(drive&3)) ) );
+
+			Permit();
+
+			return 1;
+		}
+	}
+
+	WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | (CIABPRB_DSKSEL0<<(drive&3)) ) );
+
+	Permit();
+
+	return 0;
+}
 
 void waitindex()
 {
