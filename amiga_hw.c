@@ -857,7 +857,7 @@ unsigned char get_char()
 					c=1;
 				}
 			}while(key&0x80);
-			waitms(50);
+			waitms(55);
 			c--;
 
 		}while(c);
@@ -897,7 +897,7 @@ unsigned char wait_function_key()
 				}
 			}while(key&0x80 && !joy);
 			
-			waitms(50);
+			waitms(55);
 
 			c--;
 
