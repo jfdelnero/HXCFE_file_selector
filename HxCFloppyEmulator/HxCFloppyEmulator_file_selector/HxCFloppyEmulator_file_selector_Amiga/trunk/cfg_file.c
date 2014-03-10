@@ -38,7 +38,7 @@
 #include "cfg_file.h"
 #include "utils.h"
 
-extern unsigned char step_sound_cfg;	// 0xF2B 
+extern unsigned char step_sound_cfg;	// 0xF2B
 extern unsigned char ihm_sound_cfg;	// 0xF2C
 extern unsigned char backlight_tmr_cfg; //0xF2D
 extern unsigned char standby_tmr_cfg;	//0xF2E
@@ -60,7 +60,7 @@ unsigned char get_device_parameters(struct DirectoryEntry *pDirEnt)
 
 	if(!strcmppgm2ram ((char*)cfgf->signature,(const far rom char *)"HXCFECFGV1.0"))
 	{
-		step_sound_cfg=cfgf->step_sound;	// 0xF2B 
+		step_sound_cfg=cfgf->step_sound;	// 0xF2B
 		ihm_sound_cfg=cfgf->ihm_sound;	// 0xF2C
 		backlight_tmr_cfg=cfgf->back_light_tmr; //0xF2D
 		standby_tmr_cfg=cfgf->standby_tmr;	//0xF2E
