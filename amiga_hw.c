@@ -129,10 +129,10 @@ void waitus(int centus)
 void waitms(int ms)
 {
 	int cnt;
-	
+
 	WRITEREG_B(CIAB_CRA, (READREG_B(CIAB_CRA)&0xC0) | 0x08 );
 	WRITEREG_B(CIAB_ICR, 0x7F );
-	
+
 	WRITEREG_B(CIAB_TALO, 0xCC );
 	WRITEREG_B(CIAB_TAHI, 0x02 );
 
@@ -142,7 +142,7 @@ void waitms(int ms)
 		do
 		{
 		}while(!(READREG_B(CIAB_ICR)&1));
-		
+
 		WRITEREG_B(CIAB_CRA, READREG_B(CIAB_CRA) | 0x01 );
 	}
 }
@@ -152,7 +152,7 @@ void testblink()
 	for(;;)
 	{
 		waitms(500);
-		
+
 		WRITEREG_B(CIAAPRA, READREG_B(CIAAPRA) ^  0x02 );
 	}
 }
@@ -211,12 +211,12 @@ int jumptotrack(unsigned char t)
 	Forbid();
 	WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ));
 
-#ifdef DBGMODE	
+#ifdef DBGMODE
 	hxc_printf(0,0,0,"-- jumptotrack %d --",t);
 #endif
 	waitms(100);
 
-#ifdef DBGMODE	
+#ifdef DBGMODE
 	hxc_printf(0,0,0,"-- jumptotrack %d - seek track 0... --",t);
 #endif
 	k = 0;
@@ -226,15 +226,15 @@ int jumptotrack(unsigned char t)
 		waitms(1);
 		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ) );
 		waitms(1);
-		
+
 		k++;
 	}
 
 	if(k < 1024)
 	{
-	#ifdef DBGMODE	
+	#ifdef DBGMODE
 		hxc_printf(0,0,0,"-- jumptotrack %d - track 0 found --",t);
-	#endif	
+	#endif
 
 		for(j=0;j<t;j++)
 		{
@@ -245,19 +245,19 @@ int jumptotrack(unsigned char t)
 		}
 
 		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ) );
-	#ifdef DBGMODE	
+	#ifdef DBGMODE
 		hxc_printf(0,0,0,"-- jumptotrack %d - jump done    --",t);
 	#endif
 
 		Permit();
-		
+
 		return 0;
 	}
 
-	#ifdef DBGMODE	
+	#ifdef DBGMODE
 		hxc_printf(0,0,0,"-- jumptotrack %d - track 0 not found!! --",t);
 	#endif
-	
+
 	Permit();
 	return 1;
 };
@@ -982,7 +982,7 @@ unsigned char wait_function_key()
 					c=1;
 				}
 			}while(key&0x80 && !joy);
-			
+
 			waitms(55);
 
 			c--;
@@ -1045,7 +1045,7 @@ unsigned short get_vid_mode()
 }
 
 void disablemousepointer()
-{	
+{
 	WRITEREG_W( DMACON ,0x20);
 }
 

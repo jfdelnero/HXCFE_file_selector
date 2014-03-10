@@ -75,7 +75,7 @@ unsigned char NUMBER_OF_FILE_ON_DISPLAY;// 19-5 //19 -240
 
 struct TextAttr MyFont =
 {
-		"topaz.font", // Font Name 
+		"topaz.font", // Font Name
 		TOPAZ_SIXTY, // Font Height
 		FS_NORMAL, // Style
 		FPF_ROMFONT, // Preferences
@@ -168,7 +168,7 @@ static UWORD colortable[] = {
 								0x444, 0x000, 0x0f0, 0x00f,
 								0x555, 0x000, 0x0f0, 0x00f,
 								0x666, 0x000, 0x0f0, 0x00f,
-								
+
 };
 
 
@@ -192,10 +192,10 @@ void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short 
 	unsigned short i,j,k,l,x_offset,base_offset;
 	unsigned short *ptr_src;
 	unsigned short *ptr_dst;
-	
+
 	ptr_dst=(unsigned short*)membuffer;
 	ptr_src=(unsigned short*)&sprite->data[0];
-	
+
 	k=0;
 	l=0;
 	base_offset=((y*80)+ ((x>>3)))/2;
@@ -216,12 +216,12 @@ void print_char(unsigned char * membuffer, bmaptype * font,unsigned short x, uns
 	unsigned short j,k,l,c1;
 	unsigned short *ptr_src;
 	unsigned short *ptr_dst;
-	
+
 	ptr_dst=(unsigned short*)membuffer;
 	ptr_src=(unsigned short*)&font->data[0];
 	x=(x>>3) & (~0x1);
 	// x=((x&(~0x1))<<1)+(x&1);//  0 1   2 3
-	
+
 	l=(y*80)+ x;
 	k=((c>>4)*(16*16))+(c&0xF);
 
@@ -231,7 +231,7 @@ void print_char(unsigned char * membuffer, bmaptype * font,unsigned short x, uns
 		k=k+(16);
 		l=l+(40);
 	}
-	
+
 }
 
 /*
@@ -263,10 +263,10 @@ void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, 
 	unsigned short j,k,l,c1;
 	unsigned char *ptr_src;
 	unsigned char *ptr_dst;
-	
+
 	ptr_dst=(unsigned char*)membuffer;
 	ptr_src=(unsigned char*)&font->data[0];
-	
+
 	x=x>>3;
 	//x=((x&(~0x1))<<1)+(x&1);//  0 1   2 3
 	ptr_dst=ptr_dst + ((y*80)+ x);
@@ -277,7 +277,7 @@ void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, 
 		ptr_src=ptr_src+16;
 		ptr_dst=ptr_dst+80;
 	}
-	
+
 }
 
 
@@ -286,7 +286,7 @@ void print_str(unsigned char * membuffer,char * buf,unsigned short x_pos,unsigne
 {
 	unsigned short i;
 	i=0;
-	
+
 	switch(font)
 	{
 	case 8:
@@ -310,7 +310,7 @@ void print_str(unsigned char * membuffer,char * buf,unsigned short x_pos,unsigne
 			}
 			i++;
 		}
-	break;	
+	break;
 	}
 }
 
@@ -395,12 +395,12 @@ void invert_line(unsigned short y_pos)
 	unsigned char i,j;
 	unsigned short *ptr_dst;
 	unsigned short ptroffset;
-	
+
 	for(j=0;j<8;j++)
 	{
 		ptr_dst=(unsigned short*)screen_buffer_aligned;
 		ptroffset=40* (y_pos+j);
-		
+
 		for(i=0;i<40;i++)
 		{
 			ptr_dst[ptroffset+i]=ptr_dst[ptroffset+i]^0xFFFF;
@@ -418,40 +418,40 @@ int hxc_printf_box(unsigned char mode,char * chaine, ...)
 	char temp_buffer[1024];
 	int str_size;
 	unsigned short i;
-	
+
 	memcpy(screen_buffer_backup_aligned,&screen_buffer_aligned[160*70], (8*1000) + 256);
-	
+
 	va_list marker;
 	va_start( marker, chaine );
-	
+
 	vsnprintf(temp_buffer,1024,chaine,marker);
-	
+
 	str_size=strlen(temp_buffer) * 8;
 	str_size=str_size+(4*8);
-	
+
 	for(i=0;i< str_size;i=i+8)
 	{
         print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+i,80-8,8);
 	}
 	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+(i-8),80-8,3);
 	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2),80-8,2);
-	
+
 	for(i=0;i< str_size;i=i+8)
 	{
         print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+i,80,' ');
 	}
-	
+
 	print_str(screen_buffer_aligned,temp_buffer,((SCREEN_XRESOL-str_size)/2)+(2*8),80,8);
 	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+(i-8),80,7);
 	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2),80,6);
-	
+
 	for(i=0;i< str_size;i=i+8)
 	{
         print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+i,80+8,9);
 	}
 	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+(i-8),80+8,5);
 	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2),80+8,4);
-	
+
 	va_end( marker );
 }
 
@@ -460,17 +460,17 @@ void init_buffer()
 	int i;
 	display_sprite(screen_buffer_aligned, bitmap_hxc2001logo_bmp,(SCREEN_XRESOL-bitmap_hxc2001logo_bmp->Xsize), (SCREEN_YRESOL-bitmap_hxc2001logo_bmp->Ysize));
 	display_sprite(screen_buffer_aligned, bitmap_sdhxcfelogo_bmp,(SCREEN_XRESOL-bitmap_sdhxcfelogo_bmp->Xsize)/2, (SCREEN_YRESOL-bitmap_sdhxcfelogo_bmp->Ysize));
-	
+
 	h_line(SCREEN_YRESOL-34,0xFFFF) ;
 	h_line(SCREEN_YRESOL-((48+(3*8))+2),0xFFFF) ;
 	h_line(8,0xFFFF) ;
-	
+
 	hxc_printf(0,0,SCREEN_YRESOL-(8*1),"Ver %s",VERSIONCODE);
-	
+
 	hxc_printf(1,0,0,"SDCard HxC Floppy Emulator Manager for Amiga");
 	h_line(SCREEN_YRESOL-(48+20)+24-2,0xFFFF) ;
 	hxc_printf(1,0,SCREEN_YRESOL-(48+20)+24,">>>Press HELP key for the function key list<<<");
-	
+
 	i=1;
 	hxc_printf(1,0,HELP_Y_POS+(i*8), "SDCard HxC Floppy Emulator file selector for Amiga");
 	i++;
@@ -483,12 +483,12 @@ void init_buffer()
 	hxc_printf(1,0,HELP_Y_POS+(i*8), "Email : hxc2001@free.fr");
 	i++;
 	hxc_printf(1,0,HELP_Y_POS+(i*8), "V%s - %s",VERSIONCODE,DATECODE);
-	
-	
+
+
 }
 
 void DestroyScrn ()
-{ 
+{
 	WORD Cntr;
 
 	if (view.LOFCprList) FreeCprList(view.LOFCprList);
@@ -526,32 +526,32 @@ int init_display()
 	memset(&my_bit_map,0,sizeof(struct BitMap));
 	memset(&my_rast_port,0,sizeof(struct RastPort));
 	screen_buffer_backup_aligned=(unsigned char*)malloc(16*1024);
-	
+
 	IntuitionBase=(struct IntuitionBase *)OpenLibrary( "intuition.library", 0 );
 	screen=(struct Screen *)OpenScreen(&screen_cfg);
-	
+
 	/* Open the Graphics library: */
 	GfxBaseptr = (struct GfxBase *) OpenLibrary( "graphics.library", 0 );
 	if( !GfxBaseptr )  return -1;
-	
+
 	/* Save the current View, so we can restore it later: */
 	my_old_view = GfxBaseptr->ActiView;
-	
+
 	/* 1. Prepare the View structure, and give it a pointer to */
 	/*    the first ViewPort:                                  */
 	InitView( &view );
 	view.Modes |= HIRES;//LACE;
-	
+
 	/* 4. Prepare the BitMap: */
 	InitBitMap( &my_bit_map, DEPTH, WIDTH, 256 );
-	
+
 	/* Allocate memory for the Raster: */
 	for( loop = 0; loop < DEPTH; loop++ )
 	{
 		my_bit_map.Planes[ loop ] = (PLANEPTR) AllocRaster( WIDTH, 256 );
 		BltClear( my_bit_map.Planes[ loop ], RASSIZE( WIDTH, 256 ), 0 );
 	}
-	
+
 	/* 5. Prepare the RasInfo structure: */
 	rasInfo.BitMap = &my_bit_map; /* Pointer to the BitMap structure.  */
 	rasInfo.RxOffset = 0;         /* The top left corner of the Raster */
@@ -570,12 +570,12 @@ int init_display()
 	viewPort.Modes=HIRES;// | LACE;
 
 	cm =(struct ColorMap *) GetColorMap(COLOURS);
-	
+
 	/* Attach the ColorMap, old 1.3-style */
 	viewPort.ColorMap = cm;
-	
+
 	LoadRGB4(&viewPort, colortable, 4);
-	
+
 	/* 6. Create the display: */
 	MakeVPort( &view, &viewPort );
 	MrgCop( &view );
@@ -588,7 +588,7 @@ int init_display()
 	my_rast_port.BitMap = &my_bit_map;
 	SetAPen( &my_rast_port,   1 );
 	screen_buffer_aligned=my_bit_map.Planes[ 0 ];
-	
+
 	yr= get_vid_mode();
 	if(yr>290)
 	{
@@ -602,7 +602,7 @@ int init_display()
 	}
 
 	disablemousepointer();
-	
+
 	init_buffer();
 
 	//Delay(100);

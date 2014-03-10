@@ -509,9 +509,7 @@ char save_cfg_file(unsigned char * sdfecfg_file)
 		fl_fseek(file , 0 , SEEK_SET);
 
 		// Update the file header
-		//fl_fread(sdfecfg_file, 1, 512 , file);
-
-		cfgfile_ptr=(cfgfile * )cfgfile_header;//sdfecfg_file;
+		cfgfile_ptr=(cfgfile * )cfgfile_header;
 		cfgfile_ptr->number_of_slot=number_of_slot;
 		cfgfile_ptr->slot_index=slot_index;
 
@@ -527,6 +525,7 @@ char save_cfg_file(unsigned char * sdfecfg_file)
 		hxc_printf_box(0,"ERROR: Create file failed!");
 		ret=1;
 	}
+
 	// Close file
 	fl_fclose(file);
 
@@ -589,11 +588,6 @@ void enter_sub_dir(disk_in_drive *disk_ptr)
 			currentPathLength--;
 		}
 		while ( currentPath[ currentPathLength ] != (unsigned char)'/' );
-
-		/*if ( currentPath[ currentPathLength-1 ] != (unsigned char)':' )
-		{
-			currentPath[ currentPathLength ] = 0;
-		}*/
 	}
 	else
 	{
@@ -617,10 +611,6 @@ void enter_sub_dir(disk_in_drive *disk_ptr)
 			}
 
 			currentPathLength = strlen( currentPath );
-			/*if ( currentPath[ currentPathLength-1-1 ] != (unsigned char)':' )
-			{
-				strcat( currentPath, "/" );
-			}*/
 
 			if( currentPath[ currentPathLength-1] != '/')
 			strcat( currentPath, "/" );
@@ -628,7 +618,6 @@ void enter_sub_dir(disk_in_drive *disk_ptr)
 			strcat( currentPath, folder );
 		}
 
-		//strcat( currentPath, "/" );
 	}
 
 	displayFolder();
@@ -703,14 +692,10 @@ int main(int argc, char* argv[])
 
 	rbfint = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC|MEMF_CLEAR);
 	rbfint->is_Node.ln_Type = NT_INTERRUPT;      /* Init interrupt node. */
-	//strcpy(rbfdata->rd_Name, allocname);
 	rbfint->is_Node.ln_Name = "HxCFESelectorTimerInt";
 	rbfint->is_Data = 0;//(APTR)rbfdata;
 	rbfint->is_Code = ithandler;
-                                                                        /* Save state of RBF and */
-	//priorenable = custom.intenar & INTF_RBF ? TRUE : FALSE; /* interrupt */
-	//custom.intena = INTF_RBF;                             /* disable it. */
-	//priorint = SetIntVector(INTB_PORTS, rbfint);
+
 	AddIntServer(5,rbfint);
 	#ifdef DBGMODE
 		hxc_printf(0,0,0,"-- Init display Done --");

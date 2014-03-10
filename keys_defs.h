@@ -117,6 +117,6 @@ keyboard_funct_mapper char_keysmap[]=
 	{' ',0x40},
 	{'.',0x39},
 	{'\n',0x44},
-	
+
 	{0xFF,0x00},
 };
