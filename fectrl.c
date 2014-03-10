@@ -716,21 +716,18 @@ int main(int argc, char* argv[])
 		hxc_printf(0,0,0,"-- Init display Done --");
 	#endif
 
-	bootdev = 0;//argv[1][0]-'0';
-
-	switch(bootdev)
+	bootdev = 0;
+	while( bootdev<4 && !test_drive(bootdev) )
 	{
-	case 0:
-		init_amiga_fdc(0);
-		break;
-	case 1:
-		init_amiga_fdc(1);
-		break;
-	default:
-		hxc_printf_box(0,"ERROR: Bad parameter !");
-		for(;;);
-		break;
+		bootdev++;
 	}
+
+	if(bootdev >= 4)
+	{
+		bootdev = 0;
+	}
+
+	init_amiga_fdc(bootdev);
 
 	#ifdef DBGMODE
 		hxc_printf(0,0,0,"-- init_amiga_fdc Done --");
