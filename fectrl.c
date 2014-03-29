@@ -97,6 +97,7 @@ extern unsigned char  NUMBER_OF_FILE_ON_DISPLAY;
 
 struct Interrupt *rbfint, *priorint;
 unsigned long timercnt;
+extern unsigned char keyup;
 
 void print_hex(unsigned char * buffer, int size)
 {
@@ -675,6 +676,11 @@ void show_all_slots(void)
 void ithandler(void)
 {
 	timercnt++;
+	
+	if( ( Keyboard() & 0x80 )  && !Joystick())
+	{
+		keyup  = 2;
+	}
 }
 
 int main(int argc, char* argv[])
@@ -1058,9 +1064,9 @@ int main(int argc, char* argv[])
 
 							hxc_printf(1,0,HELP_Y_POS+(i*8), "---Press Space to exit---");
 							i=i+2;
-							hxc_printf(1,0,HELP_Y_POS+(i*8), "SDCard HxC Floppy Emulator file selector for Amiga");
+							hxc_printf(1,0,HELP_Y_POS+(i*8), "SD HxC Floppy Emulator file selector for Amiga");
 							i++;
-							hxc_printf(1,0,HELP_Y_POS+(i*8), "(c) 2006-2011 HxC2001 / Jean-Francois DEL NERO");
+							hxc_printf(1,0,HELP_Y_POS+(i*8), "(c) 2006-2014 HxC2001 / Jean-Francois DEL NERO");
 							i++;
 							hxc_printf(1,0,HELP_Y_POS+(i*8), "Check for updates on :");
 							i++;
