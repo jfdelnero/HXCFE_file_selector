@@ -106,6 +106,8 @@ static unsigned char validcache;
 
 unsigned short sector_pos[16];
 
+unsigned char keyup;
+
 void waitus(int centus)
 {
 	int cnt;
@@ -968,6 +970,12 @@ unsigned char wait_function_key()
 	unsigned char function_code,key_code;
 
 	function_code=FCT_NO_FUNCTION;
+
+	if( keyup == 1 )
+	{
+		waitms(250);
+	}
+
 	do
 	{
 		c=1;
@@ -980,6 +988,8 @@ unsigned char wait_function_key()
 				if(key&0x80 && !joy)
 				{
 					c=1;
+
+					keyup = 2;
 				}
 			}while(key&0x80 && !joy);
 
@@ -988,6 +998,9 @@ unsigned char wait_function_key()
 			c--;
 
 		}while(c);
+
+		if(keyup)
+			keyup--;
 
 		if(joy)
 		{
