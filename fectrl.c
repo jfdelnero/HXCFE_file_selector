@@ -1003,7 +1003,7 @@ int main(int argc, char* argv[])
 							hxc_printf(0,0,HELP_Y_POS+(i*8), "Function Keys (1/2):");
 
 							i=2;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "Up/Down/Right/Left: Browse the SDCard files");
+							hxc_printf(0,0,HELP_Y_POS+(i*8), "Up/Down/Right/Left: Browse the SD/USB files");
 							i++;
 							hxc_printf(0,0,HELP_Y_POS+(i*8), "Right Shift       : Go back to the top of the folder");
 							i++;
@@ -1064,9 +1064,9 @@ int main(int argc, char* argv[])
 
 							hxc_printf(1,0,HELP_Y_POS+(i*8), "---Press Space to exit---");
 							i=i+2;
-							hxc_printf(1,0,HELP_Y_POS+(i*8), "SD HxC Floppy Emulator file selector for Amiga");
+							hxc_printf(1,0,HELP_Y_POS+(i*8), "HxC Floppy Emulator file selector for Amiga");
 							i++;
-							hxc_printf(1,0,HELP_Y_POS+(i*8), "(c) 2006-2014 HxC2001 / Jean-Francois DEL NERO");
+							hxc_printf(1,0,HELP_Y_POS+(i*8), "(c) 2006-2015 HxC2001 / Jean-Francois DEL NERO");
 							i++;
 							hxc_printf(1,0,HELP_Y_POS+(i*8), "Check for updates on :");
 							i++;
@@ -1098,7 +1098,7 @@ int main(int argc, char* argv[])
 							cfgfile_ptr=(cfgfile * )cfgfile_header;
 
 							i=0;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "SD HxC Floppy Emulator settings:");
+							hxc_printf(0,0,HELP_Y_POS+(i*8), "HxC Floppy Emulator settings:");
 
 							i=2;
 							hxc_printf(0,0,HELP_Y_POS+(i*8), "Track step sound :");
@@ -1113,7 +1113,7 @@ int main(int argc, char* argv[])
 							hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s",cfgfile_ptr->back_light_tmr);
 
 							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "SDCard Standby:");
+							hxc_printf(0,0,HELP_Y_POS+(i*8), "SD/USB Standby:");
 							hxc_printf(0,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s",cfgfile_ptr->standby_tmr);
 
 							i++;
