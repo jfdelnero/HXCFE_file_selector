@@ -92,7 +92,7 @@ struct NewScreen screen_cfg =
 		NULL, /* no special display modes */
 		CUSTOMSCREEN, /* the screen type */
 		&MyFont, /* use my own font */
-		"SD HxC Floppy Emulator Manager", /* this declaration is compiled as a text pointer */
+		"HxC Floppy Emulator Manager", /* this declaration is compiled as a text pointer */
 		NULL, /* no special screen gadgets */
 		NULL, /* no special CustomBitMap */
 };
@@ -467,14 +467,14 @@ void init_buffer()
 
 	hxc_printf(0,0,SCREEN_YRESOL-(8*1),"Ver %s",VERSIONCODE);
 
-	hxc_printf(1,0,0,"SDCard HxC Floppy Emulator Manager for Amiga");
+	hxc_printf(1,0,0,"HxC Floppy Emulator Manager for Amiga");
 	h_line(SCREEN_YRESOL-(48+20)+24-2,0xFFFF) ;
 	hxc_printf(1,0,SCREEN_YRESOL-(48+20)+24,">>>Press HELP key for the function key list<<<");
 
 	i=1;
-	hxc_printf(1,0,HELP_Y_POS+(i*8), "SDCard HxC Floppy Emulator file selector for Amiga");
+	hxc_printf(1,0,HELP_Y_POS+(i*8), "HxC Floppy Emulator file selector for Amiga");
 	i++;
-	hxc_printf(1,0,HELP_Y_POS+(i*8), "(c) 2009-2014 HxC2001 / Jean-Francois DEL NERO");
+	hxc_printf(1,0,HELP_Y_POS+(i*8), "(c) 2009-2015 HxC2001 / Jean-Francois DEL NERO");
 	i++;
 	hxc_printf(1,0,HELP_Y_POS+(i*8), "Check for updates on :");
 	i++;

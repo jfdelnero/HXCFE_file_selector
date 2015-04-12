@@ -10,5 +10,5 @@ void box(unsigned short x_p1,unsigned short y_p1,unsigned short x_p2,unsigned sh
 int init_display();
 void set_color_scheme(unsigned char color);
 
-#define VERSIONCODE "1.10a"
-#define DATECODE "03/17/2014"
+#define VERSIONCODE "1.11a"
+#define DATECODE "04/12/2015"
