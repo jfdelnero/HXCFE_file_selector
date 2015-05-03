@@ -451,11 +451,10 @@ int writetrack(unsigned short * track,unsigned short size,unsigned char waiti)
 }
 
 // Fast Bin to MFM converter
-int BuildCylinder(unsigned char * mfm_buffer,int mfm_size,unsigned char * track_data,int track_size)
+int BuildCylinder(unsigned char * mfm_buffer,int mfm_size,unsigned char * track_data,int track_size,unsigned short lastbit,unsigned short * retlastbit)
 {
 	int i,l;
 	unsigned char byte;
-	unsigned short lastbit;
 	unsigned short mfm_code;
 
 	if(track_size*2>mfm_size)
@@ -464,7 +463,6 @@ int BuildCylinder(unsigned char * mfm_buffer,int mfm_size,unsigned char * track_
 	}
 
 	// MFM Encoding
-	lastbit=0x7FFF;
 	i=0;
 	for(l=0;l<track_size;l++)
 	{
@@ -478,15 +476,18 @@ int BuildCylinder(unsigned char * mfm_buffer,int mfm_size,unsigned char * track_
 		lastbit=~(MFM_tab[byte]<<15);
 	}
 
+	if(retlastbit)
+		*retlastbit = lastbit;
+
 	return track_size;
 }
 
 unsigned char writesector(unsigned char sectornum,unsigned char * data)
 {
-	unsigned short i,j,len,retry,retry2;
+	unsigned short i,j,len,retry,retry2,lastbit;
 	unsigned char sectorfound;
 	unsigned char c;
-	unsigned char CRC16_High,CRC16_Low;
+	unsigned char CRC16_High,CRC16_Low,byte;
 
 	Forbid();
 
@@ -495,21 +496,37 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 	i=0;
 	validcache=0;
 
+	CRC16_Init(&CRC16_High, &CRC16_Low);
+	for(j=0;j<3;j++)
+	{
+		CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
+	}
+
+	CRC16_Update(&CRC16_High,&CRC16_Low,0xFB);
+
+	for(j=0;j<512;j++)
+	{
+		CRC16_Update(&CRC16_High,&CRC16_Low,data[j]);
+	}
+
 	for(j=0;j<12;j++)
 		track_buffer_wr[i++]=0xAAAA;
 
 	track_buffer_wr[i++]=0x4489;
 	track_buffer_wr[i++]=0x4489;
 	track_buffer_wr[i++]=0x4489;
-	track_buffer_wr[i++]=0x5545;
-
-	BuildCylinder((unsigned char*)&track_buffer_wr[i],512*2,data,512);
-
+	lastbit = 0x7FFF;
+	byte = 0xFB;
+	BuildCylinder((unsigned char*)&track_buffer_wr[i++],1*2,&byte,1,lastbit,&lastbit);
+	BuildCylinder((unsigned char*)&track_buffer_wr[i],512*2,data,512,lastbit,&lastbit);
 	i=i+512;
-	track_buffer_wr[i++]=0xAAAA;
-	track_buffer_wr[i++]=0xAAAA;
-	track_buffer_wr[i++]=0xAAAA;
-	track_buffer_wr[i++]=0xAAAA;
+	BuildCylinder((unsigned char*)&track_buffer_wr[i++],1*2,&CRC16_High,1,lastbit,&lastbit);
+	BuildCylinder((unsigned char*)&track_buffer_wr[i++],1*2,&CRC16_Low,1,lastbit,&lastbit);
+	byte = 0x4E;
+	for(j=0;j<4;j++)
+	{
+		BuildCylinder((unsigned char*)&track_buffer_wr[i++],1*2,&byte,1,lastbit,&lastbit);
+	}
 
 	len=i;
 
@@ -518,7 +535,6 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 
 	if(sectornum)
 	{
-
 		do
 		{
 
@@ -659,7 +675,6 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 
 			do
 			{
-
 				i=sector_pos[sectornum&0xF];
 				if(i<16*1024)
 				{
@@ -673,7 +688,6 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 							c=MFMTOBIN(track_buffer[i+j]);
 							CRC16_Update(&CRC16_High, &CRC16_Low,c);
 						}
-
 
 						if(!CRC16_High && !CRC16_Low)
 						{
@@ -689,7 +703,8 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 										i=i+41;
 
 										CRC16_Init(&CRC16_High, &CRC16_Low);
-										for(j=0;j<3;j++)CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
+										for(j=0;j<3;j++)
+											CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
 
 										CRC16_Update(&CRC16_High,&CRC16_Low,MFMTOBIN(track_buffer[i]));
 										i++;
@@ -699,7 +714,7 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 
 											tc = MFMTOBIN(track_buffer[i]);
 
-											//	CRC16_Update(&CRC16_High, &CRC16_Low,tc);
+											//CRC16_Update(&CRC16_High, &CRC16_Low,tc);
 											i++;
 											data[j]=tc;
 										}
@@ -707,7 +722,7 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 										for(j=0;j<2;j++)
 										{
 											c = MFMTOBIN(track_buffer[i++]);
-											CRC16_Update(&CRC16_High, &CRC16_Low,c);
+											//CRC16_Update(&CRC16_High, &CRC16_Low,c);
 										}
 
 										if(1)//!CRC16_High && !CRC16_Low)
