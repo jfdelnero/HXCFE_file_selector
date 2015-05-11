@@ -673,10 +673,32 @@ void show_all_slots(void)
 }
 
 
+int getext(char * path,char * exttodest)
+{
+	int i;
+
+	i = 0;
+	while(path[i] && path[i]!='.' && i<256)
+	{
+		i++;
+	}
+
+	if(path[i]=='.')
+	{
+		i++;
+		exttodest[0] = path[i];
+		exttodest[1] = path[i+1];
+		exttodest[2] = path[i+2];
+		exttodest[3] = 0;
+	}
+
+	return 0;
+}
+
 void ithandler(void)
 {
 	timercnt++;
-	
+
 	if( ( Keyboard() & 0x80 )  && !Joystick())
 	{
 		keyup  = 2;
@@ -827,8 +849,18 @@ int main(int argc, char* argv[])
 							y_pos=y_pos+8;
 							dir_entry.filename[127]=0;
 							sprintf(DirectoryEntry_tab[i].longName,"%s",dir_entry.filename);
-							dir_entry.filename[11]=0;
-							sprintf(DirectoryEntry_tab[i].name,"%s",dir_entry.filename);
+
+							// Get the short name - with the file name extension !
+							DirectoryEntry_tab[i].name[8+3] = 0;
+							memset(DirectoryEntry_tab[i].name,' ',8+3);
+							getext(dir_entry.filename,&DirectoryEntry_tab[i].name[8]);
+
+							j = 0;
+							while(j<8 && dir_entry.filename[j] != 0 && dir_entry.filename[j] != '.')
+							{
+								DirectoryEntry_tab[i].name[j] = dir_entry.filename[j];
+								j++;
+							}
 
 							DirectoryEntry_tab[i].firstCluster = ENDIAN_32BIT(dir_entry.cluster) ;
 							DirectoryEntry_tab[i].size =  ENDIAN_32BIT(dir_entry.size);
