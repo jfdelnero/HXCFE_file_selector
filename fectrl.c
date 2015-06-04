@@ -678,9 +678,14 @@ int getext(char * path,char * exttodest)
 	int i;
 
 	i = 0;
-	while(path[i] && path[i]!='.' && i<256)
+	while(path[i] && i<256)
 	{
 		i++;
+	}
+
+	while( i && path[i]!='.')
+	{
+		i--;
 	}
 
 	if(path[i]=='.')
