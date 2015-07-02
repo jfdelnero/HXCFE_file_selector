@@ -390,7 +390,7 @@ void clear_line(unsigned short y_pos,unsigned short val)
 		h_line(y_pos+i,val);
 }
 
-void invert_line(unsigned short y_pos)
+void invert_line(unsigned short x_pos,unsigned short y_pos)
 {
 	unsigned char i,j;
 	unsigned short *ptr_dst;
@@ -399,7 +399,7 @@ void invert_line(unsigned short y_pos)
 	for(j=0;j<8;j++)
 	{
 		ptr_dst=(unsigned short*)screen_buffer_aligned;
-		ptroffset=40* (y_pos+j);
+		ptroffset=(40* (y_pos+j))+x_pos;
 
 		for(i=0;i<40;i++)
 		{
