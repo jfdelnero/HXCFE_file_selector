@@ -1,7 +1,8 @@
 #CC=i386-pc-linux-gcc
 CC=m68k-amigaos-gcc.exe
-CFLAGS= -O3 -I . -noixemul -I ./fat32
-LDFLAGS=-s  -Wl,-Map,foo.map   -noixemul  -amiga-debug-hunk
+AS=m68k-amigaos-as.exe
+CFLAGS= -O3 -I . -noixemul -I ./fat32 -m68000
+LDFLAGS=-s  -Wl,-Map,foo.map   -noixemul  -amiga-debug-hunk -m68000
 EXEC=HXCFEMNG
 
 all: $(EXEC)
@@ -10,8 +11,11 @@ all: $(EXEC)
 	mv $(EXEC) "D:\SDHxCFloppySelector.amigados"
 	cmd /c 'startfe.bat' &
 
-HXCFEMNG:      fectrl.o gui_utils.o amiga_hw.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o
+HXCFEMNG:      fectrl.o gui_utils.o amiga_hw.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o reboot.o
 	$(CC) -o $@    $^ $(LDFLAGS)
+
+reboot.o: reboot.S
+	$(AS) -o $@ $< 
 
 fectrl.o: fectrl.c
 	$(CC) -o $@ -c $< $(CFLAGS)

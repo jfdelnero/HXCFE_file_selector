@@ -39,6 +39,7 @@
 #include <intuition/screens.h>
 #include <intuition/preferences.h>
 #include <stdio.h>
+#include <string.h>
 
 
 #include "keysfunc_defs.h"
@@ -1077,43 +1078,12 @@ void disablemousepointer()
 	WRITEREG_W( DMACON ,0x20);
 }
 
-void _reboot();
+extern unsigned long _reboot();
 
 void reboot()
 {
-//ColdReboot();
-Supervisor(_reboot);
+	_reboot();
+	for(;;);
 }
-asm (
-".globl	__reboot;"
-".align 4 ;"//IMPORTANT! Longword align!
-"__reboot:                              ;"
-//"                movea.l  #4,a6        ;"//Pointer to the Exec library base
-//"                cmp.w   #36,0x14(a6) ;"//LIB_VERSION
-//"                blt.s   old_exec     ;"
-//"                jmp     superrst ;"
 
-//"                jmp     -726(a6)     ;"//Let Exec do it...
-//"                jmp failreboot;"
-
-//---- manually reset the Amiga ---------------------------------------------
-
-"superrst:    ;"
-"               move.w	#0x2700,sr          ;"
-"		lea	0x0FC0000,a0       ;"
-//"		lea	0x01000004,a0       ;"
-//"		sub.l	-0x1C(a0),a0        ;"
-//"		movea.l	(a0),a0             ;"
-//"		subq.l	#2,a0               ;"
-//"		move.l	#0xFFFFFFFF,(4).w   ;"
-"		bra.s	resetinst           ;"
-".align 4 ;"//IMPORTANT! Longword align!
-"resetinst:	            ;"
-"               reset       ;"
-"		jmp	(a0);"
-
-"failreboot:       ;"
-"                rts;"
-
-);
 
