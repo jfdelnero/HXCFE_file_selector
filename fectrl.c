@@ -85,8 +85,8 @@ static short slotselectorpos;
 static short slotselectorpage;
 static unsigned char read_entry;
 
-static disk_in_drive disks_slot_a[NUMBER_OF_SLOT];
-static disk_in_drive disks_slot_b[NUMBER_OF_SLOT];
+static disk_in_drive disks_slot_a[MAX_NUMBER_OF_SLOT];
+static disk_in_drive disks_slot_b[MAX_NUMBER_OF_SLOT];
 static DirectoryEntry DirectoryEntry_tab[40];
 
 static struct fs_dir_list_status file_list_status;
@@ -99,7 +99,7 @@ extern unsigned short SCREEN_YRESOL;
 extern unsigned char  NUMBER_OF_FILE_ON_DISPLAY;
 
 struct Interrupt *rbfint, *priorint;
-unsigned long timercnt;
+unsigned long timercnt,config_file_number_max_of_slot;
 unsigned char bkstr[40][80+8];
 extern unsigned char keyup;
 
@@ -389,6 +389,7 @@ char read_cfg_file(unsigned char * sdfecfg_file)
 	char ret;
 	unsigned char number_of_slot;
 	unsigned short i;
+	int file_cfg_size;
 	cfgfile * cfgfile_ptr;
 	FL_FILE *file;
 
@@ -396,17 +397,30 @@ char read_cfg_file(unsigned char * sdfecfg_file)
 		hxc_printf(0,0,0,"-- read_cfg_file E --");
 	#endif
 
-	memset((void*)&disks_slot_a,0,sizeof(disk_in_drive)*NUMBER_OF_SLOT);
-	memset((void*)&disks_slot_b,0,sizeof(disk_in_drive)*NUMBER_OF_SLOT);
+	memset((void*)&disks_slot_a,0,sizeof(disk_in_drive)*MAX_NUMBER_OF_SLOT);
+	memset((void*)&disks_slot_b,0,sizeof(disk_in_drive)*MAX_NUMBER_OF_SLOT);
 
 	ret=0;
 	file = fl_fopen("/HXCSDFE.CFG", "r");
 	if (file)
 	{
+		fl_fseek( file, 0, SEEK_END );
+		file_cfg_size = fl_ftell( file );
+		config_file_number_max_of_slot = ( ( file_cfg_size - 0x400 ) / (64 * 2) ) - 1;
+		fl_fseek( file, 0, SEEK_SET );
+		if( config_file_number_max_of_slot > MAX_NUMBER_OF_SLOT )
+			config_file_number_max_of_slot = MAX_NUMBER_OF_SLOT;
+
 		cfgfile_ptr=(cfgfile * )cfgfile_header;
 
 		fl_fread(cfgfile_header, 1, 512 , file);
 		number_of_slot = cfgfile_ptr->number_of_slot;
+		
+		if( number_of_slot > MAX_NUMBER_OF_SLOT )
+			number_of_slot = MAX_NUMBER_OF_SLOT - 1;
+		
+		if( number_of_slot > config_file_number_max_of_slot )
+			number_of_slot = config_file_number_max_of_slot - 1;
 
 		fl_fseek(file , 1024 , SEEK_SET);
 
@@ -495,7 +509,7 @@ char save_cfg_file(unsigned char * sdfecfg_file)
 			}
 
 			i++;
-		}while(i<NUMBER_OF_SLOT);
+		}while(i<config_file_number_max_of_slot);
 
 		if(number_of_slot&0x3)
 		{
@@ -556,7 +570,7 @@ void clear_list(unsigned char add)
 void next_slot()
 {
 	slotnumber++;
-	if(slotnumber>(NUMBER_OF_SLOT-1))  slotnumber=1;
+	if(slotnumber> ( config_file_number_max_of_slot - 1) )  slotnumber=1;
 	printslotstatus(slotnumber, (disk_in_drive *) &disks_slot_a[slotnumber], (disk_in_drive *) &disks_slot_b[slotnumber]) ;
 }
 
@@ -666,7 +680,7 @@ void show_all_slots(int drive)
 
 	for ( i = 1; i < NUMBER_OF_FILE_ON_DISPLAY; i++ )
 	{
-		if(i + (slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1)) < NUMBER_OF_SLOT)
+		if(i + (slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1)) < config_file_number_max_of_slot)
 		{
 			tmp_str[0]=0; 
 			if( drive_slots_ptr[i + (slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))].DirEnt.size)
@@ -756,6 +770,7 @@ int main(int argc, char* argv[])
 	selectorpos = 0;
 	slotselectorpos = 0;
 	slotselectorpage = 0;
+	config_file_number_max_of_slot = 0;
 
 	bootdev = 0;
 	while( bootdev<4 && !test_drive(bootdev) )
@@ -1038,7 +1053,7 @@ int main(int argc, char* argv[])
 										break;
 										case FCT_DOWN_KEY: // Down
 											
-											if(slotselectorpos + (slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1)) < NUMBER_OF_SLOT )
+											if(slotselectorpos + (slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1)) < config_file_number_max_of_slot )
 											{
 												slotselectorpos++;
 												if(slotselectorpos>(NUMBER_OF_FILE_ON_DISPLAY-1))
@@ -1059,7 +1074,7 @@ int main(int argc, char* argv[])
 										break;
 										
 										case FCT_RIGHT_KEY: // Right
-											if(slotselectorpos + ((slotselectorpage+1) * (NUMBER_OF_FILE_ON_DISPLAY-1)) < NUMBER_OF_SLOT )
+											if(slotselectorpos + ((slotselectorpage+1) * (NUMBER_OF_FILE_ON_DISPLAY-1)) < config_file_number_max_of_slot )
 											{
 												slotselectorpage++;
 											}
