@@ -314,7 +314,7 @@ int test_drive(int drive)
 			}
 
 			c++;
-		}while( (t != 40) && c < 4 );
+		}while( (t != 40) && c < 2 );
 
 		if(t == 40)
 		{
