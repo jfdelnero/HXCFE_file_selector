@@ -273,14 +273,14 @@ int test_drive(int drive)
 
 	waitms(100);
 
-	// Track 0
+	// Jump to Track 0 ("Slow")
 	t = 0;
 	while((READREG_B(CIAAPRA) & CIAAPRA_DSKTRACK0) && (t<260))
 	{
 		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | (CIABPRB_DSKSEL0<<(drive&3))  | CIABPRB_DSKSTEP));
-		waitus(2);
+		waitus(10);
 		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | (CIABPRB_DSKSEL0<<(drive&3)) ) );
-		waitus(2);
+		waitus(80);
 
 		t++;
 	}
@@ -290,30 +290,33 @@ int test_drive(int drive)
 		c = 0;
 		do
 		{
-			// Track 30
-			for(j=0;j<30;j++)
+			// Jump to Track 30 (Fast)
+			for(j=0;j<40;j++)
 			{
 				WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | (CIABPRB_DSKSEL0<<(drive&3)) | CIABPRB_DSKDIREC |CIABPRB_DSKSTEP) );
-				waitus(2);
+				waitus(8);
 				WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | (CIABPRB_DSKSEL0<<(drive&3)) | CIABPRB_DSKDIREC ) );
-				waitus(2);
+				waitus(8);
 			}
 
+			waitus(200);
+
+			// And go back to Track 30 (Slow)
 			t = 0;
-			while((READREG_B(CIAAPRA) & CIAAPRA_DSKTRACK0) && (t<30))
+			while((READREG_B(CIAAPRA) & CIAAPRA_DSKTRACK0) && (t<40))
 			{
 				WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | (CIABPRB_DSKSEL0<<(drive&3))  | CIABPRB_DSKSTEP));
-				waitus(2);
+				waitus(10);
 				WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | (CIABPRB_DSKSEL0<<(drive&3)) ) );
-				waitus(2);
+				waitus(80);
 
 				t++;
 			}
 
 			c++;
-		}while( (t != 30) && c < 4 );
+		}while( (t != 40) && c < 4 );
 
-		if(t == 30)
+		if(t == 40)
 		{
 			WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | (CIABPRB_DSKSEL0<<(drive&3)) ) );
 
