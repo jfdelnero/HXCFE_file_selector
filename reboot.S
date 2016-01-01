@@ -23,36 +23,36 @@
 |       may result in improper operation under certain system configurations.
 |
 |   RESULT
-|	This function never returns.
+|   This function never returns.
 |
-|	(Some minors modifications done on the code to make is work with GNU GCC/AS)
+|   (Some minors modifications done on the code to make is work with GNU GCC/AS)
 |
 
-		.globl	__reboot
-		.align 4
-		.text
+        .globl __reboot
+        .align 4
+        .text
 
-		_LVOSupervisor	 = -30
+        _LVOSupervisor   = -30
 
-		ABSEXECBASE      = 4          |Pointer to the Exec library base
-		LIB_VERSION      = 6
-		MAGIC_ROMEND     = 0x01000000 |End of Kickstart ROM
-		MAGIC_SIZEOFFSET = -0x14      |Offset from end of ROM to Kickstart size
-		V36_EXEC         = 36         |Exec with the ColdReboot() function
-		TEMP_ColdReboot  = -726       |Offset of the V36 ColdReboot function
+        ABSEXECBASE      = 4          |Pointer to the Exec library base
+        LIB_VERSION      = 6
+        MAGIC_ROMEND     = 0x01000000 |End of Kickstart ROM
+        MAGIC_SIZEOFFSET = -0x14      |Offset from end of ROM to Kickstart size
+        V36_EXEC         = 36         |Exec with the ColdReboot() function
+        TEMP_ColdReboot  = -726       |Offset of the V36 ColdReboot function
 
 __reboot:
-				move.l  ABSEXECBASE,a6
+                move.l  ABSEXECBASE,a6
 
-				jmp     old_exec				| For the moment just use the old method cause
-												| the following part doesn't seems to work properly...
+                jmp     old_exec                | For the moment just use the old method cause
+                                                | the following part doesn't seems to work properly...
 
-				cmp.w   #V36_EXEC,LIB_VERSION(a6)
+                cmp.w   #V36_EXEC,LIB_VERSION(a6)
                 blt.s   old_exec
 
-				jmp     TEMP_ColdReboot(a6)     | Let Exec do it...
+                jmp     TEMP_ColdReboot(a6)     | Let Exec do it...
                 |NOTE: Control flow never returns to here
-		jmp	__reboot
+                jmp     __reboot
 
 
 |---- manually reset the Amiga ---------------------------------------------
@@ -61,10 +61,10 @@ old_exec:       lea.l   GoAway(pc),a5           |address of code to execute
                 |NOTE: Control flow never returns to here
 
 |-------------- MagicResetCode ---------DO NOT CHANGE-----------------------
-				.align 4						|IMPORTANT! Longword align!
+                .align 4                        |IMPORTANT! Longword align!
 
 GoAway:
-				lea.l   MAGIC_ROMEND,a0         |(end of ROM)
+                lea.l   MAGIC_ROMEND,a0         |(end of ROM)
                 sub.l   MAGIC_SIZEOFFSET(a0),a0 |(end of ROM)-(ROM size)=PC
                 move.l  4(a0),a0                |Get Initial Program Counter
                 subq.l  #2,a0                   |now points to second RESET
