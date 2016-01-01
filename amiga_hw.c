@@ -1,6 +1,6 @@
 /*
 //
-// Copyright (C) 2009-2014 Jean-François DEL NERO
+// Copyright (C) 2009-2016 Jean-François DEL NERO
 //
 // This file is part of the HxCFloppyEmulator file selector.
 //
@@ -48,6 +48,10 @@
 #include "amiga_regs.h"
 
 #include "crc.h"
+
+//#define DBGMODE 1
+
+extern volatile unsigned short io_floppy_timeout;
 
 extern unsigned short SCREEN_YRESOL;
 
@@ -333,21 +337,33 @@ int test_drive(int drive)
 	return 0;
 }
 
-void waitindex()
+int waitindex()
 {
+	int timeout;
+
+	timeout = 0;
+
+	io_floppy_timeout = 0;
+
 	do{
 		asm("nop");
-	}while(!(READREG_B(CIAB_ICR)&0x10));
+	}while( (!(READREG_B(CIAB_ICR)&0x10)) && ( io_floppy_timeout < 0x200 ) );
 
 	do
 	{
 		asm("nop");
-	}while(READREG_B(CIAB_ICR)&0x10);
+	}while( (READREG_B(CIAB_ICR)&0x10) && ( io_floppy_timeout < 0x200 ) );
 
 	do{
 		asm("nop");
-	}while(!(READREG_B(CIAB_ICR)&0x10));
+	}while((!(READREG_B(CIAB_ICR)&0x10)) && ( io_floppy_timeout < 0x200 ) );
 
+	if(!(io_floppy_timeout < 0x200 ))
+	{
+		timeout = 1;
+	}
+
+	return timeout;
 }
 
 
@@ -396,7 +412,14 @@ int readtrack(unsigned short * track,unsigned short size,unsigned char waiti)
 	WRITEREG_W( DSKSYNC,0x4489);
 	WRITEREG_W( INTREQ, 0x0002);
 
-	if(waiti) waitindex();
+	if(waiti)
+	{
+		if(waitindex())
+		{
+			hxc_printf_box(0,"ERROR: READ - No Index Timeout ! (state %d)",(READREG_B(CIAB_ICR)&0x10)>>4);
+			lockup();
+		}
+	}
 
 	//Put the value you want into the DSKLEN register
 	WRITEREG_W( DSKLEN ,size | 0x8000);
@@ -436,8 +459,14 @@ int writetrack(unsigned short * track,unsigned short size,unsigned char waiti)
 
 	if(waiti)
 	{
-		while(READREG_B(CIAB_ICR)&0x10);
-		while(!(READREG_B(CIAB_ICR)&0x10));
+		io_floppy_timeout = 0;
+		while( READREG_B(CIAB_ICR)&0x10 && ( io_floppy_timeout < 0x200 ) );
+		while( !(READREG_B(CIAB_ICR)&0x10) && ( io_floppy_timeout < 0x200 ) );
+		if(!( io_floppy_timeout < 0x200 ))
+		{
+			hxc_printf_box(0,"ERROR: WRITE - No Index Timeout ! (state %d)",(READREG_B(CIAB_ICR)&0x10)>>4);
+			lockup();
+		}
 	}
 
 	//Put the value you want into the DSKLEN register
@@ -564,7 +593,9 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 				{
 
 					CRC16_Init(&CRC16_High, &CRC16_Low);
-					for(j=0;j<3;j++)CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
+
+					for(j=0;j<3;j++)
+						CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
 
 					for(j=0;j<(1+4+2);j++)
 					{

@@ -1,6 +1,6 @@
 /*
 //
-// Copyright (C) 2009-2014 Jean-François DEL NERO
+// Copyright (C) 2009-2016 Jean-François DEL NERO
 //
 // This file is part of the HxCFloppyEmulator file selector.
 //
@@ -102,6 +102,8 @@ struct Interrupt *rbfint, *priorint;
 unsigned long timercnt,config_file_number_max_of_slot;
 unsigned char bkstr[40][80+8];
 extern unsigned char keyup;
+
+volatile unsigned short io_floppy_timeout;
 
 void print_hex(unsigned char * buffer, int size)
 {
@@ -724,6 +726,8 @@ void ithandler(void)
 {
 	timercnt++;
 
+	io_floppy_timeout++;
+
 	if( ( Keyboard() & 0x80 )  && !Joystick())
 	{
 		keyup  = 2;
@@ -767,6 +771,7 @@ int main(int argc, char* argv[])
 		hxc_printf(0,0,0,"-- Init display Done --");
 	#endif
 
+	io_floppy_timeout = 0;
 	selectorpos = 0;
 	slotselectorpos = 0;
 	slotselectorpage = 0;
