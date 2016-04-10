@@ -573,20 +573,20 @@ void next_slot()
 {
 	slotnumber++;
 	if(slotnumber> ( config_file_number_max_of_slot - 1) )  slotnumber=1;
-	printslotstatus(slotnumber, (disk_in_drive *) &disks_slot_a[slotnumber], (disk_in_drive *) &disks_slot_b[slotnumber]) ;
+	//printslotstatus(slotnumber, (disk_in_drive *) &disks_slot_a[slotnumber], (disk_in_drive *) &disks_slot_b[slotnumber]) ;
 }
 
 void displayFolder()
 {
 	int i;
-	hxc_printf(0,SCREEN_XRESOL/2,CURDIR_Y_POS,"Current directory:");
+	hxc_printf(0,0,CURDIR_Y_POS,"Current directory:");
 
-	for(i=SCREEN_XRESOL/2;i<SCREEN_XRESOL;i=i+8) hxc_printf(0,i,CURDIR_Y_POS+8," ");
+	for(i=18*8;i<SCREEN_XRESOL;i=i+8) hxc_printf(0,i,CURDIR_Y_POS," ");
 
 	if(strlen(currentPath)<32)
-		hxc_printf(0,SCREEN_XRESOL/2,CURDIR_Y_POS+8,"%s",currentPath);
+		hxc_printf(0,18*8,CURDIR_Y_POS,"%s",currentPath);
 	else
-        hxc_printf(0,SCREEN_XRESOL/2,CURDIR_Y_POS+8,"...%s    ",&currentPath[strlen(currentPath)-32]);
+        hxc_printf(0,18*8,CURDIR_Y_POS,"...%s    ",&currentPath[strlen(currentPath)-32]);
 }
 
 void enter_sub_dir(disk_in_drive *disk_ptr)
@@ -734,6 +734,93 @@ void ithandler(void)
 	}
 }
 
+void print_help()
+{
+	int i;
+	
+	clear_list(5);
+
+	i=0;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "Function Keys (1/2):");
+
+	i=2;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), ">>Into the files browser<<");
+	i += 2;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "Up/Down/Right/Left: Browse the SD/USB files");
+	i++;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "Right Shift       : Go back to the top of the folder");
+	i++;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "F7                : Insert the selected file in the slot to 1 and restart the");
+	i++;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "                    computer with this disk.");
+	i++;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "ENTER             : Enter a subfolder/ Select an Image and Enter the slots ");
+	i++;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "                    selection");
+	i += 2;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), ">>Into the slots browser<<");
+	i += 2;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "Up/Down/Right/Left: Browse the slots selection");
+	i++;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "BACKSPACE         : Clear the current slot");
+	i++;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "ENTER             : Set the current slot and leave the slots browser");
+	i++;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "ESCAPE            : Leave the slots browser");
+	i++;
+	
+	i=i+2;
+
+	hxc_printf(1,0,HELP_Y_POS+(i*8), "---Press Space to continue---");
+
+	do
+	{
+
+	}while(wait_function_key()!=FCT_OK);
+
+	clear_list(5);
+
+	i=0;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "Function Keys (2/2):");
+
+	i=2;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "F1                : Search files in the current folder");
+	i++;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "                    Type the word to search then enter");
+	i++;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "                    Excape to abord the search");
+	i++;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "F2                : Change color");
+	i++;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "F3                : Settings menu");
+	i++;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "F8                : Reboot");
+	i++;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "F9                : Save");
+	i++;
+	hxc_printf(0,0,HELP_Y_POS+(i*8), "F10               : Save and Reboot");
+
+	i=i+2;
+
+	hxc_printf(1,0,HELP_Y_POS+(i*8), "---Press Space to exit---");
+	i=i+2;
+	hxc_printf(1,0,HELP_Y_POS+(i*8), "HxC Floppy Emulator file selector for Amiga");
+	i++;
+	hxc_printf(1,0,HELP_Y_POS+(i*8), "(c) 2006-2016 HxC2001 / Jean-Francois DEL NERO");
+	i++;
+	hxc_printf(1,0,HELP_Y_POS+(i*8), "Check for updates on :");
+	i++;
+	hxc_printf(1,0,HELP_Y_POS+(i*8), "http://hxc2001.free.fr/floppy_drive_emulator/");
+	i++;
+	hxc_printf(1,0,HELP_Y_POS+(i*8), "Email : hxc2001@free.fr");
+	i++;
+	hxc_printf(1,0,HELP_Y_POS+(i*8), "V%s - %s",VERSIONCODE,DATECODE);
+
+	do
+	{
+
+	}while(wait_function_key()!=FCT_OK);	
+}
 void restorestr()
 {
 	int i;
@@ -833,7 +920,7 @@ int main(int argc, char* argv[])
 		displayFolder();
 
 		slotnumber=1;
-		printslotstatus(slotnumber, (disk_in_drive *) &disks_slot_a[slotnumber], (disk_in_drive *) &disks_slot_b[slotnumber]) ;
+		//printslotstatus(slotnumber, (disk_in_drive *) &disks_slot_a[slotnumber], (disk_in_drive *) &disks_slot_b[slotnumber]) ;
 
 		colormode=0;
 		read_entry=0;
@@ -1001,11 +1088,6 @@ int main(int argc, char* argv[])
 							read_entry=1;
 							break;
 
-						case FCT_NEXTSLOT:
-							next_slot();
-							wait_released_key();
-							break;
-
 						case FCT_SAVE:
 							hxc_printf_box(0,"Saving selection...");
 							save_cfg_file(sdfecfg_file);
@@ -1015,9 +1097,8 @@ int main(int argc, char* argv[])
 							read_entry=1;
 							break;
 
-						case FCT_SELECT_FILE_DRIVEB:
-							slots_list_drive = 1;
 						case FCT_SELECT_FILE_DRIVEA:
+						case FCT_SHOWSLOTS:
 							disk_ptr=(disk_in_drive * )&DirectoryEntry_tab[selectorpos];
 
 							if(disk_ptr->DirEnt.attributes&0x10)
@@ -1123,36 +1204,32 @@ int main(int argc, char* argv[])
 											}
 										
 										break;
-										
+										case FCT_HELP:
+											print_help();
+											clear_list(5);
+											init_buffer();
+											clear_list(0);
+											show_all_slots(slots_list_drive);
+											displayFolder();
+											invert_line(0,FILELIST_Y_POS+(slotselectorpos*8));
+										break;
+
 									}
-								}while(key != FCT_SELECT_FILE_DRIVEA);
+								}while(key != FCT_SELECT_FILE_DRIVEA && key != FCT_ESCAPE );
 
 								clear_list(0);
 								show_all_slots(slots_list_drive);
 								clear_list(0);
 								restorestr();
-								if(!slots_list_drive)
-									memcpy((void*)&disks_slot_a[slotselectorpos + (slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))],(void*)&DirectoryEntry_tab[selectorpos],sizeof(disk_in_drive));
-								else
-									memcpy((void*)&disks_slot_b[slotselectorpos + (slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))],(void*)&DirectoryEntry_tab[selectorpos],sizeof(disk_in_drive));
-
+								if(key != FCT_ESCAPE)
+								{
+									if(!slots_list_drive)
+										memcpy((void*)&disks_slot_a[slotselectorpos + (slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))],(void*)&DirectoryEntry_tab[selectorpos],sizeof(disk_in_drive));
+									else
+										memcpy((void*)&disks_slot_b[slotselectorpos + (slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))],(void*)&DirectoryEntry_tab[selectorpos],sizeof(disk_in_drive));
+								}
 
 							}
-							break;
-
-						case FCT_SELECT_FILE_DRIVEA_AND_NEXTSLOT:
-							disk_ptr=(disk_in_drive * )&DirectoryEntry_tab[selectorpos];
-
-							if(disk_ptr->DirEnt.attributes&0x10)
-							{
-								enter_sub_dir(disk_ptr);
-							}
-							else
-							{
-								memcpy((void*)&disks_slot_a[slotnumber],(void*)&DirectoryEntry_tab[selectorpos],sizeof(disk_in_drive));
-								next_slot();
-							}
-							wait_released_key();
 							break;
 
 						case FCT_SELECTSAVEREBOOT:
@@ -1177,94 +1254,10 @@ int main(int argc, char* argv[])
 							break;
 
 						case FCT_HELP:
-							clear_list(5);
-
-							i=0;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "Function Keys (1/2):");
-
-							i=2;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "Up/Down/Right/Left: Browse the SD/USB files");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "Right Shift       : Go back to the top of the folder");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "Left A / ENTER    : Insert the selected file in the current slot to A:");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "                    Enter a subfolder");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "Right A           : Insert the selected file in the current slot to B:");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "Left ALT          : Insert the selected file in the current slot to A: and ");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "                    select the next slot");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "F7                : Insert the selected file in the slot to 1 and restart the");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "                    computer with this disk.");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "Right ALT         : Select the the next slot");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "BACKSPACE         : Clear the current slot");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "DEL               : Clear the current slot and Select the the next slot");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "TAB               : Show all slots selections");
-
-							i=i+2;
-
-							hxc_printf(1,0,HELP_Y_POS+(i*8), "---Press Space to continue---");
-
-							do
-							{
-
-							}while(wait_function_key()!=FCT_OK);
-
-							clear_list(5);
-
-							i=0;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "Function Keys (2/2):");
-
-							i=2;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "F1                : Search files in the current folder");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "                    Type the word to search then enter");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "                    Excape to abord the search");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "F2                : Change color");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "F3                : Settings menu");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "F8                : Reboot");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "F9                : Save");
-							i++;
-							hxc_printf(0,0,HELP_Y_POS+(i*8), "F10               : Save and Reboot");
-
-							i=i+2;
-
-							hxc_printf(1,0,HELP_Y_POS+(i*8), "---Press Space to exit---");
-							i=i+2;
-							hxc_printf(1,0,HELP_Y_POS+(i*8), "HxC Floppy Emulator file selector for Amiga");
-							i++;
-							hxc_printf(1,0,HELP_Y_POS+(i*8), "(c) 2006-2015 HxC2001 / Jean-Francois DEL NERO");
-							i++;
-							hxc_printf(1,0,HELP_Y_POS+(i*8), "Check for updates on :");
-							i++;
-							hxc_printf(1,0,HELP_Y_POS+(i*8), "http://hxc2001.free.fr/floppy_drive_emulator/");
-							i++;
-							hxc_printf(1,0,HELP_Y_POS+(i*8), "Email : hxc2001@free.fr");
-							i++;
-							hxc_printf(1,0,HELP_Y_POS+(i*8), "V%s - %s",VERSIONCODE,DATECODE);
-
-
-							do
-							{
-
-							}while(wait_function_key()!=FCT_OK);
+							print_help();
 
        						clear_list(5);
 							init_buffer();
-							printslotstatus(slotnumber, (disk_in_drive *) &disks_slot_a[slotnumber], (disk_in_drive *) &disks_slot_b[slotnumber]) ;
 							displayFolder();
 
 							memcpy(&file_list_status ,&file_list_status_tab[page_number&0x1FF],sizeof(struct fs_dir_list_status));
@@ -1401,7 +1394,7 @@ int main(int argc, char* argv[])
 
 							clear_list(5);
 							init_buffer();
-							printslotstatus(slotnumber, (disk_in_drive *) &disks_slot_a[slotnumber], (disk_in_drive *) &disks_slot_b[slotnumber]) ;
+							//printslotstatus(slotnumber, (disk_in_drive *) &disks_slot_a[slotnumber], (disk_in_drive *) &disks_slot_b[slotnumber]) ;
 							displayFolder();
 
 							memcpy(&file_list_status ,&file_list_status_tab[page_number&0x1FF],sizeof(struct fs_dir_list_status));
@@ -1409,33 +1402,6 @@ int main(int argc, char* argv[])
 							read_entry=1;
 
 						break;
-
-						case FCT_SHOWSLOTS:
-							clear_list(5);
-							show_all_slots(0);
-							clear_list(5);
-
-							init_buffer();
-							printslotstatus(slotnumber, (disk_in_drive *) &disks_slot_a[slotnumber], (disk_in_drive *) &disks_slot_b[slotnumber]) ;
-							displayFolder();
-
-							memcpy(&file_list_status ,&file_list_status_tab[page_number&0x1FF],sizeof(struct fs_dir_list_status));
-							clear_list(0);
-							read_entry=1;
-							break;
-
-						case FCT_CLEARSLOT:
-							memset((void*)&disks_slot_a[slotnumber],0,sizeof(disk_in_drive));
-							memset((void*)&disks_slot_b[slotnumber],0,sizeof(disk_in_drive));
-							printslotstatus(slotnumber, (disk_in_drive *) &disks_slot_a[slotnumber], (disk_in_drive *) &disks_slot_b[slotnumber]) ;
-							break;
-
-						case FCT_CLEARSLOT_AND_NEXTSLOT:
-							memset((void*)&disks_slot_a[slotnumber],0,sizeof(disk_in_drive));
-							memset((void*)&disks_slot_b[slotnumber],0,sizeof(disk_in_drive));
-							next_slot();
-							wait_released_key();
-							break;
 
 						case FCT_SAVEREBOOT:
 							hxc_printf_box(0,"Saving selection and restart...");
@@ -1468,7 +1434,7 @@ int main(int argc, char* argv[])
 							break;
 						case FCT_SEARCH:
 							filtermode=0xFF;
-							hxc_printf(0,SCREEN_XRESOL/2,CURDIR_Y_POS+16,"Search:                     ");
+							hxc_printf(0,(SCREEN_XRESOL/2)+8*8,CURDIR_Y_POS,"Search:                     ");
 							flush_char();
 							i=0;
 							do
@@ -1478,7 +1444,7 @@ int main(int argc, char* argv[])
 								if(c!='\n')
 								{
 									filter[i]=c;
-									hxc_printf(0,SCREEN_XRESOL/2+(8*8)+(8*i),CURDIR_Y_POS+16,"%c",c);
+									hxc_printf(0,(SCREEN_XRESOL/2)+(8*8)+(8*8)+(8*i),CURDIR_Y_POS,"%c",c);
 								}
 								i++;
 							}while(c!='\n' && i<16);
@@ -1487,7 +1453,7 @@ int main(int argc, char* argv[])
 
 							//get_str(&filter);
 							strlwr(filter);
-							hxc_printf(0,SCREEN_XRESOL/2+(8*8),CURDIR_Y_POS+16,"[%s]",filter);
+							hxc_printf(0,SCREEN_XRESOL/2+(8*8)+(8*8),CURDIR_Y_POS,"[%s]",filter);
 							selectorpos=0;
 							page_number=0;
 							memcpy(&file_list_status ,&file_list_status_tab[0],sizeof(struct fs_dir_list_status));

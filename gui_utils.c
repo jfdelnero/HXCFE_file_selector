@@ -462,7 +462,7 @@ void init_buffer()
 	display_sprite(screen_buffer_aligned, bitmap_sdhxcfelogo_bmp,(SCREEN_XRESOL-bitmap_sdhxcfelogo_bmp->Xsize)/2, (SCREEN_YRESOL-bitmap_sdhxcfelogo_bmp->Ysize));
 
 	h_line(SCREEN_YRESOL-34,0xFFFF) ;
-	h_line(SCREEN_YRESOL-((48+(3*8))+2),0xFFFF) ;
+	h_line(SCREEN_YRESOL-((48+8)+2),0xFFFF) ;
 	h_line(8,0xFFFF) ;
 
 	hxc_printf(0,0,SCREEN_YRESOL-(8*1),"Ver %s",VERSIONCODE);
@@ -593,12 +593,12 @@ int init_display()
 	if(yr>290)
 	{
 		SCREEN_YRESOL=256;
-		NUMBER_OF_FILE_ON_DISPLAY=21;// 19-5 //19 -240
+		NUMBER_OF_FILE_ON_DISPLAY=23;// 19-5 //19 -240
 	}
 	else
 	{
 		SCREEN_YRESOL=200;
-		NUMBER_OF_FILE_ON_DISPLAY=19-5;// 19-5 //19 -240
+		NUMBER_OF_FILE_ON_DISPLAY=21-5;// 19-5 //19 -240
 	}
 
 	disablemousepointer();

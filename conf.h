@@ -8,4 +8,4 @@
 #define HELP_Y_POS 12
 
 #define SLOT_Y_POS SCREEN_YRESOL-(48+(3*8))
-#define CURDIR_Y_POS  SCREEN_YRESOL-(48+(3*8))
+#define CURDIR_Y_POS  SCREEN_YRESOL-(48+(1*8))
