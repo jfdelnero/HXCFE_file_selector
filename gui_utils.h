@@ -1,4 +1,9 @@
 
+#define LEFT_ALIGNED 0
+#define CENTER_ALIGNED 1
+#define RIGHT_ALIGNED 2
+
+int hxc_print(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char * chaine);
 int hxc_printf(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char * chaine, ...);
 int hxc_printf_box(unsigned char mode,char * chaine, ...);
 void restore_box();

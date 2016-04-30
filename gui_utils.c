@@ -106,12 +106,6 @@ struct TagItem vcTags[] =
 		{VTAG_END_CM, NULL }
 };
 
-	#define BLACK 0x002           /*  RGB values for the four colors used.   */
-	#define RED   0xFFF
-	#define GREEN 0x0f0
-	#define BLUE  0x00f
-
-
 	#define WIDTH  SCREEN_XRESOL /* 640 pixels wide (high resolution)                */
 	//#define HEIGHT SCREEN_YRESOL /* 200 lines high (non interlaced NTSC display)     */
 	#define DEPTH    2 /* 1 BitPlanes should be used, gives eight colours. */
@@ -136,42 +130,40 @@ struct TagItem vcTags[] =
 	#define BLUE  0x00f
 
 static UWORD colortable[] = {
-								0x002, 0xFFF, 0x0f0, 0x00f,
-								0x000, 0xFFF, 0x0f0, 0x00f,
-								0xFFF, 0x000, 0x0f0, 0x00f,
-								0x030, 0xFFF, 0x0f0, 0x00f,
-								0x300, 0xFFF, 0x0f0, 0x00f,
-								0x303, 0xFFF, 0x0f0, 0x00f,
-								0x999, 0x000, 0x0f0, 0x00f,
-								0xFFF, 0x343, 0x0f0, 0x00f,
-								0xF33, 0xFFF, 0x0f0, 0x00f,
-								0xF0F, 0xFFF, 0x0f0, 0x00f,
-								0xFFF, 0x0F0, 0x0f0, 0x00f,
-								0x330, 0xFFF, 0x0f0, 0x00f,
-								0x000, 0xF00, 0x0f0, 0x00f,
-								0x000, 0x0F0, 0x0f0, 0x00f,
-								0x000, 0x00F, 0x0f0, 0x00f,
-								0x004, 0xFFF, 0x0f0, 0x00f,
+	0x002, 0xFFF, 0x0f0, 0x00f,
+	0x000, 0xFFF, 0x0f0, 0x00f,
+	0xFFF, 0x000, 0x0f0, 0x00f,
+	0x030, 0xFFF, 0x0f0, 0x00f,
+	0x300, 0xFFF, 0x0f0, 0x00f,
+	0x303, 0xFFF, 0x0f0, 0x00f,
+	0x999, 0x000, 0x0f0, 0x00f,
+	0xFFF, 0x343, 0x0f0, 0x00f,
+	0xF33, 0xFFF, 0x0f0, 0x00f,
+	0xF0F, 0xFFF, 0x0f0, 0x00f,
+	0xFFF, 0x0F0, 0x0f0, 0x00f,
+	0x330, 0xFFF, 0x0f0, 0x00f,
+	0x000, 0xF00, 0x0f0, 0x00f,
+	0x000, 0x0F0, 0x0f0, 0x00f,
+	0x000, 0x00F, 0x0f0, 0x00f,
+	0x004, 0xFFF, 0x0f0, 0x00f,
 
-								0x036, 0xFFF, 0x0f0, 0x00f,
-								0x444, 0x037, 0x0f0, 0x00f,
-								0x000, 0xFF0, 0x0f0, 0x00f,
-								0x404, 0x743, 0x0f0, 0x00f,
-								0xFFF, 0x700, 0x0f0, 0x00f,
-								0x000, 0x222, 0x0f0, 0x00f,
-								0x000, 0x333, 0x0f0, 0x00f,
-								0x000, 0x444, 0x0f0, 0x00f,
-								0x000, 0x555, 0x0f0, 0x00f,
-								0x000, 0x666, 0x0f0, 0x00f,
-								0x000, 0x777, 0x0f0, 0x00f,
-								0x222, 0x000, 0x0f0, 0x00f,
-								0x333, 0x000, 0x0f0, 0x00f,
-								0x444, 0x000, 0x0f0, 0x00f,
-								0x555, 0x000, 0x0f0, 0x00f,
-								0x666, 0x000, 0x0f0, 0x00f,
-
+	0x036, 0xFFF, 0x0f0, 0x00f,
+	0x444, 0x037, 0x0f0, 0x00f,
+	0x000, 0xFF0, 0x0f0, 0x00f,
+	0x404, 0x743, 0x0f0, 0x00f,
+	0xFFF, 0x700, 0x0f0, 0x00f,
+	0x000, 0x222, 0x0f0, 0x00f,
+	0x000, 0x333, 0x0f0, 0x00f,
+	0x000, 0x444, 0x0f0, 0x00f,
+	0x000, 0x555, 0x0f0, 0x00f,
+	0x000, 0x666, 0x0f0, 0x00f,
+	0x000, 0x777, 0x0f0, 0x00f,
+	0x222, 0x000, 0x0f0, 0x00f,
+	0x333, 0x000, 0x0f0, 0x00f,
+	0x444, 0x000, 0x0f0, 0x00f,
+	0x555, 0x000, 0x0f0, 0x00f,
+	0x666, 0x000, 0x0f0, 0x00f
 };
-
 
 void initpal()
 {
@@ -221,7 +213,6 @@ void print_char(unsigned char * membuffer, bmaptype * font,unsigned short x, uns
 	ptr_dst=(unsigned short*)membuffer;
 	ptr_src=(unsigned short*)&font->data[0];
 	x=(x>>3) & (~0x1);
-	// x=((x&(~0x1))<<1)+(x&1);//  0 1   2 3
 
 	l=(y*80)+ x;
 	k=((c>>4)*(16*16))+(c&0xF);
@@ -232,32 +223,7 @@ void print_char(unsigned char * membuffer, bmaptype * font,unsigned short x, uns
 		k=k+(16);
 		l=l+(40);
 	}
-
 }
-
-/*
-void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, unsigned short y,unsigned char c)
-{
-  unsigned short j,k,l,c1;
-  unsigned char *ptr_src;
-  unsigned char *ptr_dst;
-
-  ptr_dst=(unsigned char*)membuffer;
-  ptr_src=(unsigned char*)&font->data[0];
-
-  x=x>>3;
-  //x=((x&(~0x1))<<1)+(x&1);//  0 1   2 3
-  l=(y*80)+ (x);
-  k=((c>>4)*(8*8*2))+(c&0xF);
-  for(j=0;j<8;j++)
-  {
-    ptr_dst[l]  =ptr_src[k];
-    k=k+(16);
-    l=l+(80);
-  }
-
-}
-  */
 
 void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, unsigned short y,unsigned char c)
 {
@@ -278,18 +244,17 @@ void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, 
 		ptr_src=ptr_src+16;
 		ptr_dst=ptr_dst+80;
 	}
-
 }
 
-void print_str(unsigned char * membuffer,int maxsize,char * buf,unsigned short x_pos,unsigned short y_pos)
+void print_str(unsigned char * membuffer,char * buf,unsigned short maxsize,unsigned short x_pos,unsigned short y_pos)
 {
 	unsigned short i;
 	unsigned short x_offset,y_offset;
-	i=0;
 
 	x_offset = x_pos;
 	y_offset = y_pos;
 
+	i = 0;
 	while(buf[i] && i < maxsize)
 	{
 		if(x_offset<=(SCREEN_XRESOL-8))
@@ -309,56 +274,77 @@ void print_str(unsigned char * membuffer,int maxsize,char * buf,unsigned short x
 	}
 }
 
+int hxc_print(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char * string)
+{
+	int line_size,i,linenb;
+	unsigned short x_offset;
+
+	switch(mode)
+	{
+		case LEFT_ALIGNED: // Left aligned
+			print_str(screen_buffer_aligned,string,MAXTXTSIZE,x_pos,y_pos);
+		break;
+		case CENTER_ALIGNED: // Center aligned
+		case RIGHT_ALIGNED: // Right aligned
+			linenb = 0;
+			i = 0;
+			while(string[i])
+			{
+				line_size = 0;
+				while( string[i + line_size] != '\n' && string[i + line_size] != 0)
+				{
+					line_size++;
+				}
+
+				x_offset = (SCREEN_XRESOL-(line_size*8));
+				if(mode == CENTER_ALIGNED)
+					x_offset /= 2;
+
+				print_str(screen_buffer_aligned,&string[i],line_size,x_offset,y_pos + (linenb*8));
+
+				if(string[i + line_size] == '\n')
+					i += (line_size + 1);
+				else
+					i += line_size;
+
+				linenb++;
+			}
+		break;
+	}
+
+	return 0;
+}
+
 int hxc_printf(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char * chaine, ...)
 {
-	int line_size,i;
+	int line_size,i,linenb;
+	unsigned short x_offset;
 	char temp_buffer[MAXTXTSIZE];
 
 	va_list marker;
 	va_start( marker, chaine );
 
-	vsnprintf(temp_buffer,1024,chaine,marker);
-
-	switch(mode)
-	{
-		case 0:
-			print_str(screen_buffer_aligned,MAXTXTSIZE,temp_buffer,x_pos,y_pos);
-		break;
-		case 1:
-			i = 0;
-			line_size = 0;
-			while(temp_buffer[i])
-			{
-				line_size = 0;
-				while( temp_buffer[i + line_size] != '\n' && temp_buffer[i + line_size] != 0)
-				{
-					line_size++;
-				}
-				print_str(screen_buffer_aligned,line_size,temp_buffer,(SCREEN_XRESOL-(strlen(temp_buffer)*8))/2,y_pos);
-			}
-		break;
-		case 2:
-			print_str(screen_buffer_aligned,-1,temp_buffer,(SCREEN_XRESOL-(strlen(temp_buffer)*8)),y_pos);
-		break;
-	}
+	vsnprintf(temp_buffer,MAXTXTSIZE,chaine,marker);
 
 	va_end( marker );
+
+	hxc_print(mode,x_pos,y_pos,temp_buffer);
 
 	return 0;
 }
 
 void h_line(unsigned short y_pos,unsigned short val)
 {
-  unsigned short *ptr_dst;
-  unsigned short i,ptroffset;
+	unsigned short *ptr_dst;
+	unsigned short i,ptroffset;
 
-  ptr_dst=(unsigned short*)screen_buffer_aligned;
-  ptroffset=40* y_pos;
+	ptr_dst=(unsigned short*)screen_buffer_aligned;
+	ptroffset=40* y_pos;
 
-  for(i=0;i<40;i++)
-  {
-     ptr_dst[ptroffset+i]=val;
-  }
+	for(i=0;i<40;i++)
+	{
+		ptr_dst[ptroffset+i]=val;
+	}
 }
 
 
@@ -429,23 +415,23 @@ int hxc_printf_box(unsigned char mode,char * chaine, ...)
 
 	for(i=0;i< str_size;i=i+8)
 	{
-        print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+i,80-8,8);
+		print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+i,80-8,8);
 	}
 	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+(i-8),80-8,3);
 	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2),80-8,2);
 
 	for(i=0;i< str_size;i=i+8)
 	{
-        print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+i,80,' ');
+		print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+i,80,' ');
 	}
 
-	print_str(screen_buffer_aligned,temp_buffer,((SCREEN_XRESOL-str_size)/2)+(2*8),80);
+	print_str(screen_buffer_aligned,temp_buffer,MAXTXTSIZE,((SCREEN_XRESOL-str_size)/2)+(2*8),80);
 	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+(i-8),80,7);
 	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2),80,6);
 
 	for(i=0;i< str_size;i=i+8)
 	{
-        print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+i,80+8,9);
+		print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+i,80+8,9);
 	}
 	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+(i-8),80+8,5);
 	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2),80+8,4);
@@ -467,27 +453,14 @@ void init_buffer()
 	h_line(SCREEN_YRESOL-((48+8)+2),0xFFFF) ;
 
 	// Footprint : Current software / firmware version and title
-	hxc_printf(0,0,SCREEN_YRESOL - ( 8 + 2 ),"FW Ver -------");
-	hxc_printf(1,0,SCREEN_YRESOL - ( 8 + 2 ),"Amiga HxC Floppy Emulator Manager v%s",VERSIONCODE);
+	hxc_print(LEFT_ALIGNED,0,SCREEN_YRESOL - ( 8 + 2 ),"FW Ver -------");
+	hxc_print(CENTER_ALIGNED,0,SCREEN_YRESOL - ( 8 + 2 ),"Amiga HxC Floppy Emulator Manager v" VERSIONCODE);
 
-	h_line(SCREEN_YRESOL-(48+20)+24-2,0xFFFF) ;
-	hxc_printf(1,0,SCREEN_YRESOL-(48+20)+24,">>>Press HELP key for the function key list<<<");
-	
-	hxc_printf(1,0,HELP_Y_POS+8, startup_msg);
-	/*
-	hxc_printf(1,0,HELP_Y_POS+(i*8), "HxC Floppy Emulator file selector for Amiga");
-	i++;
-	hxc_printf(1,0,HELP_Y_POS+(i*8), "(c) 2009-2015 HxC2001 / Jean-Francois DEL NERO");
-	i++;
-	hxc_printf(1,0,HELP_Y_POS+(i*8), "Check for updates on :");
-	i++;
-	hxc_printf(1,0,HELP_Y_POS+(i*8), "http://hxc2001.free.fr/floppy_drive_emulator/");
-	i++;
-	hxc_printf(1,0,HELP_Y_POS+(i*8), "Email : hxc2001@free.fr");
-	i++;
-	hxc_printf(1,0,HELP_Y_POS+(i*8), "V%s - %s",VERSIONCODE,DATECODE);
-*/
+	h_line(SCREEN_YRESOL-(48+20)+24-2,0xFFFF);
 
+	hxc_print(CENTER_ALIGNED,0,SCREEN_YRESOL-(48+20)+24,">>>Press HELP key for the function key list<<<");
+
+	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+8, startup_msg);
 }
 
 void DestroyScrn ()

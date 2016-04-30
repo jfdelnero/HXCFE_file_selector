@@ -8,10 +8,10 @@ EXEC=HXCFEMNG
 all: $(EXEC)
 	#m68k-atari-mint-strip -s $(EXEC)
 	#./upx  -9 $(EXEC)
-	mv $(EXEC) "D:\SDHxCFloppySelector.amigados"
+	mv $(EXEC) "H:\SDHxCFloppySelector.amigados"
 	cmd /c 'startfe.bat' &
 
-HXCFEMNG:      fectrl.o gui_utils.o amiga_hw.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o reboot.o
+HXCFEMNG:      fectrl.o gui_utils.o amiga_hw.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o reboot.o msg_txt.o
 	$(CC) -o $@    $^ $(LDFLAGS)
 
 reboot.o: reboot.S
@@ -21,6 +21,9 @@ fectrl.o: fectrl.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 gui_utils.o: gui_utils.c
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+msg_txt.o: msg_txt.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 amiga_hw.o: amiga_hw.c
