@@ -558,7 +558,7 @@ void next_slot()
 void displayFolder()
 {
 	int i;
-	hxc_print(LEFT_ALIGNED,0,CURDIR_Y_POS,cur_folder_msg);
+	hxc_print(LEFT_ALIGNED,0,CURDIR_Y_POS,(char*)cur_folder_msg);
 
 	for(i=15*8;i<SCREEN_XRESOL;i=i+8)
 		hxc_print(LEFT_ALIGNED,i,CURDIR_Y_POS," ");
@@ -663,12 +663,11 @@ void show_all_slots(int drive)
 	{
 		if(i + (slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1)) < config_file_number_max_of_slot)
 		{
-			tmp_str[0]=0; 
+			memset(tmp_str,0,sizeof(tmp_str));
 			if( drive_slots_ptr[i + (slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))].DirEnt.size)
 			{
-				memcpy(tmp_str,&drive_slots_ptr[i + (slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))].DirEnt.longName,41);	
+				memcpy(tmp_str,&drive_slots_ptr[i + (slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))].DirEnt.longName,17+8);	
 			}
-			tmp_str[80]=0;
 			hxc_printf(LEFT_ALIGNED,0,FILELIST_Y_POS + (i*8),"%.3d:%s", i + (slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1)), tmp_str);
 		}
 	}
@@ -719,15 +718,15 @@ void print_help()
 	
 	clear_list(0);
 
-	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS, help_scr1_msg);
+	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS, (char*)help_scr1_msg);
 
 	while(wait_function_key()!=FCT_OK);
 
 	clear_list(0);
 
-	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS, help_scr2_msg);
+	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS, (char*)help_scr2_msg);
 
-	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS + 12*8, help_scr3_msg);
+	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS + 12*8, (char*)help_scr3_msg);
 
 	while(wait_function_key()!=FCT_OK);
 }
@@ -1157,7 +1156,7 @@ int main(int argc, char* argv[])
 								hxc_printf_box("Saving selection and restart...");
 								save_cfg_file(sdfecfg_file);
 								restore_box();
-								hxc_printf_box(reboot_msg);
+								hxc_printf_box((char*)reboot_msg);
 								sleep(1);
 								jumptotrack(0);
 								reboot();
@@ -1317,14 +1316,14 @@ int main(int argc, char* argv[])
 							hxc_printf_box("Saving selection and restart...");
 							save_cfg_file(sdfecfg_file);
 							restore_box();
-							hxc_printf_box(reboot_msg);
+							hxc_printf_box((char*)reboot_msg);
 							sleep(1);
 							jumptotrack(0);
 							reboot();
 							break;
 
 						case FCT_REBOOT:
-							hxc_printf_box(reboot_msg);
+							hxc_printf_box((char*)reboot_msg);
 							sleep(1);
 							jumptotrack(0);
 							reboot();

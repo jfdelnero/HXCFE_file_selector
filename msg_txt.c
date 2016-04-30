@@ -68,13 +68,17 @@ const char help_scr3_msg[]=
 	"\n"
 	"\n"
 	"HxC Floppy Emulator file selector for Amiga\n"
+	"V" VERSIONCODE " - " DATECODE "\n"
 	"(c) 2006-2016 HxC2001 / Jean-Francois DEL NERO\n"
+	"\n"
 	"Check for updates on :\n"
 	"http://hxc2001.free.fr/floppy_drive_emulator/\n"
+	"http://hxc2001.com\n"
+	"\n"
+	"Forum : http://torlus.com/floppy/forum\n"
 	"Email : hxc2001@free.fr\n"
-	"V" VERSIONCODE " - " DATECODE
 };
 
 const char cur_folder_msg[]= "Current folder:";
 const char reboot_msg[]= ">>>>>Rebooting...<<<<<";
-
+const char title_msg[]= { "Amiga HxC Floppy Emulator Manager v" VERSIONCODE};

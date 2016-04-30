@@ -101,10 +101,10 @@ struct NewScreen screen_cfg =
 
 struct TagItem vcTags[] =
 {
-		{VTAG_ATTACH_CM_SET, NULL },
-		{VTAG_VIEWPORTEXTRA_SET, NULL },
-		{VTAG_NORMAL_DISP_SET, NULL },
-		{VTAG_END_CM, NULL }
+	{VTAG_ATTACH_CM_SET, NULL },
+	{VTAG_VIEWPORTEXTRA_SET, NULL },
+	{VTAG_NORMAL_DISP_SET, NULL },
+	{VTAG_END_CM, NULL }
 };
 
 	#define WIDTH  SCREEN_XRESOL /* 640 pixels wide (high resolution)                */
@@ -462,10 +462,10 @@ void init_buffer()
 
 	// Footprint : Current software / firmware version and title
 	hxc_printf(LEFT_ALIGNED,0,SCREEN_YRESOL - ( 8 + 2 ),"FW Ver %s",FIRMWAREVERSION);
-	hxc_print(CENTER_ALIGNED,0,SCREEN_YRESOL - ( 8 + 2 ),"Amiga HxC Floppy Emulator Manager v" VERSIONCODE);
-	hxc_print(LEFT_ALIGNED,0,CURDIR_Y_POS,cur_folder_msg);
+	hxc_print(CENTER_ALIGNED,0,SCREEN_YRESOL - ( 8 + 2 ),(char*)title_msg);
+	hxc_print(LEFT_ALIGNED,0,CURDIR_Y_POS, (char*)cur_folder_msg);
 
-	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+8, startup_msg);
+	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+8, (char*)startup_msg);
 }
 
 void DestroyScrn ()

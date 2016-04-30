@@ -1057,7 +1057,8 @@ unsigned char wait_function_key()
 			if(joy&0x10)
 			{
 				while(Joystick()&0x10);
-				return FCT_SELECTSAVEREBOOT;
+
+				return FCT_SELECT_FILE_DRIVEA;
 			}
 			if(joy&2)
 				return FCT_DOWN_KEY;

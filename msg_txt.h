@@ -7,3 +7,4 @@ extern const char help_scr3_msg[];
 
 extern const char cur_folder_msg[];
 extern const char reboot_msg[];
+extern const char title_msg[];
