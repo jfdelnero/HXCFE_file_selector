@@ -51,7 +51,6 @@
 #include "cfg_file.h"
 #include "hxcfeda.h"
 
-
 #include "amiga_hw.h"
 #include "amiga_regs.h"
 
@@ -59,6 +58,10 @@
 #include "fat_misc.h"
 #include "fat_defs.h"
 #include "fat_filelib.h"
+
+#include "msg_txt.h"
+
+#include "version.h"
 
 #include "conf.h"
 

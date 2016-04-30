@@ -56,8 +56,9 @@
 #include <clib/dos_protos.h>
 
 #include "graphx/data_bmp_hxc2001_smalllogo_bmp.h"
-#include "graphx/data_bmp_font_bmp.h"
 #include "graphx/data_bmp_font8x8_bmp.h"
+
+#include "msg_txt.h"
 
 #include "gui_utils.h"
 
@@ -66,6 +67,7 @@
 #include "amiga_hw.h"
 #include "amiga_regs.h"
 
+#include "version.h"
 
 static unsigned char * screen_buffer_aligned;
 static unsigned char * screen_buffer_backup_aligned;
@@ -279,73 +281,70 @@ void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, 
 
 }
 
-
-
-void print_str(unsigned char * membuffer,char * buf,unsigned short x_pos,unsigned short y_pos,unsigned char font)
+void print_str(unsigned char * membuffer,int maxsize,char * buf,unsigned short x_pos,unsigned short y_pos)
 {
 	unsigned short i;
+	unsigned short x_offset,y_offset;
 	i=0;
 
-	switch(font)
+	x_offset = x_pos;
+	y_offset = y_pos;
+
+	while(buf[i] && i < maxsize)
 	{
-	case 8:
-		while(buf[i])
+		if(x_offset<=(SCREEN_XRESOL-8))
 		{
-			if(x_pos<=(SCREEN_XRESOL-8))
+			if(buf[i] == '\n')
 			{
-				print_char8x8(membuffer,bitmap_font8x8_bmp,x_pos,y_pos,buf[i]);
-				x_pos=x_pos+8;
+				x_offset = x_pos;
+				y_offset += 8;
 			}
-			i++;
-		}
-	break;
-	case 16:
-		while(buf[i])
-		{
-			if(x_pos<=(SCREEN_XRESOL-16))
+			else
 			{
-				print_char(membuffer,bitmap_font_bmp,x_pos,y_pos,buf[i]);
-				x_pos=x_pos+16;
+				print_char8x8(membuffer,bitmap_font8x8_bmp,x_offset,y_offset,buf[i]);
+				x_offset=x_offset+8;
 			}
-			i++;
 		}
-	break;
+		i++;
 	}
 }
 
 int hxc_printf(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char * chaine, ...)
 {
-      char temp_buffer[1024];
+	int line_size,i;
+	char temp_buffer[MAXTXTSIZE];
 
-      va_list marker;
-      va_start( marker, chaine );
+	va_list marker;
+	va_start( marker, chaine );
 
-      vsnprintf(temp_buffer,1024,chaine,marker);
-      switch(mode)
-      {
-        case 0:
-        print_str(screen_buffer_aligned,temp_buffer,x_pos,y_pos,8);
-        break;
-        case 1:
-        print_str(screen_buffer_aligned,temp_buffer,(SCREEN_XRESOL-(strlen(temp_buffer)*8))/2,y_pos,8);
-        break;
-        case 2:
-        print_str(screen_buffer_aligned,temp_buffer,(SCREEN_XRESOL-(strlen(temp_buffer)*8)),y_pos,8);
-        break;
-        case 4:
-        print_str(screen_buffer_aligned,temp_buffer,x_pos,y_pos,16);
-        break;
-        case 5:
-        print_str(screen_buffer_aligned,temp_buffer,(SCREEN_XRESOL-(strlen(temp_buffer)*16))/2,y_pos,16);
-        break;
-        case 6:
-        print_str(screen_buffer_aligned,temp_buffer,(SCREEN_XRESOL-(strlen(temp_buffer)*16)),y_pos,16);
-        break;
-      }
+	vsnprintf(temp_buffer,1024,chaine,marker);
 
-      va_end( marker );
+	switch(mode)
+	{
+		case 0:
+			print_str(screen_buffer_aligned,MAXTXTSIZE,temp_buffer,x_pos,y_pos);
+		break;
+		case 1:
+			i = 0;
+			line_size = 0;
+			while(temp_buffer[i])
+			{
+				line_size = 0;
+				while( temp_buffer[i + line_size] != '\n' && temp_buffer[i + line_size] != 0)
+				{
+					line_size++;
+				}
+				print_str(screen_buffer_aligned,line_size,temp_buffer,(SCREEN_XRESOL-(strlen(temp_buffer)*8))/2,y_pos);
+			}
+		break;
+		case 2:
+			print_str(screen_buffer_aligned,-1,temp_buffer,(SCREEN_XRESOL-(strlen(temp_buffer)*8)),y_pos);
+		break;
+	}
 
-      return 0;
+	va_end( marker );
+
+	return 0;
 }
 
 void h_line(unsigned short y_pos,unsigned short val)
@@ -440,7 +439,7 @@ int hxc_printf_box(unsigned char mode,char * chaine, ...)
         print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+i,80,' ');
 	}
 
-	print_str(screen_buffer_aligned,temp_buffer,((SCREEN_XRESOL-str_size)/2)+(2*8),80,8);
+	print_str(screen_buffer_aligned,temp_buffer,((SCREEN_XRESOL-str_size)/2)+(2*8),80);
 	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+(i-8),80,7);
 	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2),80,6);
 
@@ -473,8 +472,9 @@ void init_buffer()
 
 	h_line(SCREEN_YRESOL-(48+20)+24-2,0xFFFF) ;
 	hxc_printf(1,0,SCREEN_YRESOL-(48+20)+24,">>>Press HELP key for the function key list<<<");
-
-	i=1;
+	
+	hxc_printf(1,0,HELP_Y_POS+8, startup_msg);
+	/*
 	hxc_printf(1,0,HELP_Y_POS+(i*8), "HxC Floppy Emulator file selector for Amiga");
 	i++;
 	hxc_printf(1,0,HELP_Y_POS+(i*8), "(c) 2009-2015 HxC2001 / Jean-Francois DEL NERO");
@@ -486,7 +486,7 @@ void init_buffer()
 	hxc_printf(1,0,HELP_Y_POS+(i*8), "Email : hxc2001@free.fr");
 	i++;
 	hxc_printf(1,0,HELP_Y_POS+(i*8), "V%s - %s",VERSIONCODE,DATECODE);
-
+*/
 
 }
 
