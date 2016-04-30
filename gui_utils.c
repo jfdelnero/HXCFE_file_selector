@@ -72,7 +72,8 @@
 static unsigned char * screen_buffer_aligned;
 static unsigned char * screen_buffer_backup_aligned;
 unsigned short SCREEN_YRESOL;
-unsigned char NUMBER_OF_FILE_ON_DISPLAY;// 19-5 //19 -240
+unsigned char NUMBER_OF_FILE_ON_DISPLAY;
+extern char FIRMWAREVERSION[16];
 
 struct TextAttr MyFont =
 {
@@ -246,7 +247,7 @@ void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, 
 	}
 }
 
-void print_str(unsigned char * membuffer,char * buf,unsigned short maxsize,unsigned short x_pos,unsigned short y_pos)
+void print_str(unsigned char * membuffer,char * buf,unsigned short maxsize,unsigned short x_pos,unsigned short y_pos,int linefeed)
 {
 	unsigned short i;
 	unsigned short x_offset,y_offset;
@@ -259,7 +260,7 @@ void print_str(unsigned char * membuffer,char * buf,unsigned short maxsize,unsig
 	{
 		if(x_offset<=(SCREEN_XRESOL-8))
 		{
-			if(buf[i] == '\n')
+			if(buf[i] == '\n' && linefeed)
 			{
 				x_offset = x_pos;
 				y_offset += 8;
@@ -278,11 +279,17 @@ int hxc_print(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char 
 {
 	int line_size,i,linenb;
 	unsigned short x_offset;
+	int linefeed;
 
-	switch(mode)
+	if(mode&DONTPARSE)
+		linefeed = 0;
+	else
+		linefeed = 1;
+	
+	switch(mode & 0xF)
 	{
 		case LEFT_ALIGNED: // Left aligned
-			print_str(screen_buffer_aligned,string,MAXTXTSIZE,x_pos,y_pos);
+			print_str(screen_buffer_aligned,string,MAXTXTSIZE,x_pos,y_pos,linefeed);
 		break;
 		case CENTER_ALIGNED: // Center aligned
 		case RIGHT_ALIGNED: // Right aligned
@@ -300,7 +307,7 @@ int hxc_print(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char 
 				if(mode == CENTER_ALIGNED)
 					x_offset /= 2;
 
-				print_str(screen_buffer_aligned,&string[i],line_size,x_offset,y_pos + (linenb*8));
+				print_str(screen_buffer_aligned,&string[i],line_size,x_offset,y_pos + (linenb*8),linefeed);
 
 				if(string[i + line_size] == '\n')
 					i += (line_size + 1);
@@ -369,7 +376,7 @@ void box(unsigned short x_p1,unsigned short y_p1,unsigned short x_p2,unsigned sh
 
 void clear_line(unsigned short y_pos,unsigned short val)
 {
-	unsigned char i;
+	unsigned short i;
 	for(i=0;i<8;i++)
 		h_line(y_pos+i,val);
 }
@@ -397,7 +404,7 @@ void restore_box()
 	memcpy(&screen_buffer_aligned[160*70],screen_buffer_backup_aligned, (8*1000) + 256);
 }
 
-int hxc_printf_box(unsigned char mode,char * chaine, ...)
+int hxc_printf_box(char * chaine, ...)
 {
 	char temp_buffer[1024];
 	int str_size;
@@ -425,7 +432,7 @@ int hxc_printf_box(unsigned char mode,char * chaine, ...)
 		print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+i,80,' ');
 	}
 
-	print_str(screen_buffer_aligned,temp_buffer,MAXTXTSIZE,((SCREEN_XRESOL-str_size)/2)+(2*8),80);
+	print_str(screen_buffer_aligned,temp_buffer,MAXTXTSIZE,((SCREEN_XRESOL-str_size)/2)+(2*8),80,0);
 	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+(i-8),80,7);
 	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2),80,6);
 
@@ -449,16 +456,14 @@ void init_buffer()
 	                                    (SCREEN_YRESOL-bitmap_hxc2001_smalllogo_bmp->Ysize));
 
 	// Horizontal separator lines
-	h_line(SCREEN_YRESOL-(bitmap_hxc2001_smalllogo_bmp->Ysize + 1),0xFFFF) ;
-	h_line(SCREEN_YRESOL-((48+8)+2),0xFFFF) ;
+	h_line(0,0xFFFF);
+	h_line(9,0xFFFF);
+	h_line(SCREEN_YRESOL-(bitmap_hxc2001_smalllogo_bmp->Ysize + 1),0xFFFF);
 
 	// Footprint : Current software / firmware version and title
-	hxc_print(LEFT_ALIGNED,0,SCREEN_YRESOL - ( 8 + 2 ),"FW Ver -------");
+	hxc_printf(LEFT_ALIGNED,0,SCREEN_YRESOL - ( 8 + 2 ),"FW Ver %s",FIRMWAREVERSION);
 	hxc_print(CENTER_ALIGNED,0,SCREEN_YRESOL - ( 8 + 2 ),"Amiga HxC Floppy Emulator Manager v" VERSIONCODE);
-
-	h_line(SCREEN_YRESOL-(48+20)+24-2,0xFFFF);
-
-	hxc_print(CENTER_ALIGNED,0,SCREEN_YRESOL-(48+20)+24,">>>Press HELP key for the function key list<<<");
+	hxc_print(LEFT_ALIGNED,0,CURDIR_Y_POS,cur_folder_msg);
 
 	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+8, startup_msg);
 }
@@ -569,13 +574,14 @@ int init_display()
 	if(yr>290)
 	{
 		SCREEN_YRESOL=256;
-		NUMBER_OF_FILE_ON_DISPLAY=23;// 19-5 //19 -240
 	}
 	else
 	{
 		SCREEN_YRESOL=200;
-		NUMBER_OF_FILE_ON_DISPLAY=21-5;// 19-5 //19 -240
 	}
+
+	// Number of free line to display the file list.
+	NUMBER_OF_FILE_ON_DISPLAY = ( (SCREEN_YRESOL - (bitmap_hxc2001_smalllogo_bmp->Ysize + 1 ) ) - 10 ) / 8;
 
 	disablemousepointer();
 

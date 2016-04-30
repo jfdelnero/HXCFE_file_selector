@@ -3,19 +3,28 @@
 const char startup_msg[]=
 {
 	"HxC Floppy Emulator file selector for Amiga\n"
+	"V" VERSIONCODE " - " DATECODE "\n"
 	"(c) 2009-2016 HxC2001 / Jean-Francois DEL NERO\n"
+	"\n"
 	"Check for updates on :\n"
 	"http://hxc2001.free.fr/floppy_drive_emulator/\n"
 	"http://hxc2001.com\n"
+	"\n"
+	"Forum : http://torlus.com/floppy/forum\n"
+	"\n"
     "Email : hxc2001@free.fr\n"
-	"V" VERSIONCODE " - " DATECODE
+	"\n"
+	"\n"
+	"\n"
+	"\n"	
+	">>> Press HELP key for the function key list <<<"
 };
 
 const char help_scr1_msg[]=
 {
 	"Function Keys (1/2):\n"
 	"\n"
-	">>Into the files browser<<\n"
+	"-> Into the files browser :\n"
 	"\n"
 	"Up/Down/Right/Left: Browse the SD/USB files\n"
 	"Right Shift       : Go back to the top of the folder\n"
@@ -24,7 +33,8 @@ const char help_scr1_msg[]=
 	"ENTER             : Enter a subfolder/ Select an Image and Enter the slots\n"
 	"                    selection\n"
 	"\n"
-	">>Into the slots browser<<\n"
+	"\n"
+	"->Into the slots browser :\n"
 	"\n"
 	"Up/Down/Right/Left: Browse the slots selection\n"
 	"BACKSPACE         : Clear the current slot\n"
@@ -33,7 +43,7 @@ const char help_scr1_msg[]=
 	"\n"
 	"\n"
 	"\n"
-	"---Press Space to continue---"
+	"                        ---Press Space to continue---"
 };
 
 const char help_scr2_msg[]=
@@ -64,3 +74,7 @@ const char help_scr3_msg[]=
 	"Email : hxc2001@free.fr\n"
 	"V" VERSIONCODE " - " DATECODE
 };
+
+const char cur_folder_msg[]= "Current folder:";
+const char reboot_msg[]= ">>>>>Rebooting...<<<<<";
+

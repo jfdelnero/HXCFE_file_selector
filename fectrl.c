@@ -106,6 +106,7 @@ unsigned long timercnt,config_file_number_max_of_slot;
 unsigned char bkstr[40][80+8];
 extern unsigned char keyup;
 
+char FIRMWAREVERSION[16];
 volatile unsigned short io_floppy_timeout;
 
 void print_hex(unsigned char * buffer, int size)
@@ -190,7 +191,7 @@ int setlbabase(unsigned long lba)
 	ret=writesector( 0,(unsigned char *)&sector);
 	if(!ret)
 	{
-		hxc_printf_box(0,"ERROR: Write CTRL ERROR !");
+		hxc_printf_box("ERROR: Write CTRL ERROR !");
 		lockup();
 	}
 
@@ -214,7 +215,7 @@ int test_floppy_if()
 		setlbabase(last_setlbabase);
 		if(!readsector(0,sector,1))
 		{
-			hxc_printf_box(LEFT_ALIGNED,"read sector %d error !",last_setlbabase);
+			hxc_printf_box("read sector %d error !",last_setlbabase);
 			for(;;);
 		}
 
@@ -224,7 +225,7 @@ int test_floppy_if()
 
 		if(last_setlbabase!=L_INDIAN(dass->lba_base))
 		{
-			hxc_printf_box(LEFT_ALIGNED,"LBA Change Test Failed ! Write Issue ?");
+			hxc_printf_box("LBA Change Test Failed ! Write Issue ?");
 			for(;;);
 		}
 
@@ -253,7 +254,8 @@ int media_init()
 		dass=(direct_access_status_sector *)sector;
 		if(!strcmp(dass->DAHEADERSIGNATURE,"HxCFEDA"))
 		{
-			hxc_printf(LEFT_ALIGNED,0,SCREEN_YRESOL-30,"Firmware %s" ,dass->FIRMWAREVERSION);
+			strncpy(FIRMWAREVERSION,dass->FIRMWAREVERSION,sizeof(FIRMWAREVERSION));
+			hxc_printf(LEFT_ALIGNED,0,SCREEN_YRESOL - ( 8 + 2 ),"FW Ver %s",FIRMWAREVERSION);
 
 			test_floppy_if();
 
@@ -268,7 +270,7 @@ int media_init()
 			return 1;
 		}
 
-		hxc_printf_box(LEFT_ALIGNED,"Bad signature - HxC Floppy Emulator not found!");
+		hxc_printf_box("Bad signature - HxC Floppy Emulator not found!");
 
 		#ifdef DBGMODE
 			hxc_print(LEFT_ALIGNED,0,0,"-- media_init L --");
@@ -277,7 +279,7 @@ int media_init()
 		return 0;
 	}
 
-	hxc_printf_box(0,"ERROR: Floppy Access error!  [%d]",ret);
+	hxc_printf_box("ERROR: Floppy Access error!  [%d]",ret);
 
 	#ifdef DBGMODE
 		hxc_print(LEFT_ALIGNED,0,0,"-- media_init L --");
@@ -298,7 +300,7 @@ int media_read(unsigned long sector, unsigned char *buffer)
 	#endif
 
 
-	hxc_printf(LEFT_ALIGNED,8*79,0,"%c",23);
+	hxc_printf(LEFT_ALIGNED,8*79,1,"%c",23);
 
 	ret=0;
 
@@ -311,7 +313,7 @@ int media_read(unsigned long sector, unsigned char *buffer)
 
 		if(!readsector(0,buffer,0))
 		{
-			hxc_printf_box(0,"ERROR: Read ERROR ! fsector %d",(sector-last_setlbabase)+1);
+			hxc_printf_box("ERROR: Read ERROR ! fsector %d",(sector-last_setlbabase)+1);
 		}
 		last_setlbabase = L_INDIAN(dass->lba_base);
 
@@ -319,11 +321,11 @@ int media_read(unsigned long sector, unsigned char *buffer)
 
 	if(!readsector((sector-last_setlbabase)+1,buffer,0))
 	{
-		hxc_printf_box(0,"ERROR: Read ERROR ! fsector %d",(sector-last_setlbabase)+1);
+		hxc_printf_box("ERROR: Read ERROR ! fsector %d",(sector-last_setlbabase)+1);
 		lockup();
 	}
 
-	hxc_print(LEFT_ALIGNED,8*79,0," ");
+	hxc_print(LEFT_ALIGNED,8*79,1," ");
 
 	#ifdef DBGMODE
 		hxc_print(LEFT_ALIGNED,0,0,"-- media_read L --");
@@ -341,7 +343,7 @@ int media_write(unsigned long sector, unsigned char *buffer)
 		hxc_print(LEFT_ALIGNED,0,0,"-- media_write E --");
 	#endif
 
-	hxc_printf(LEFT_ALIGNED,8*79,0,"%c",23);
+	hxc_printf(LEFT_ALIGNED,8*79,1,"%c",23);
 
 	if((sector-last_setlbabase)>=8)
 	{
@@ -351,11 +353,11 @@ int media_write(unsigned long sector, unsigned char *buffer)
 
 	if(!writesector((sector-last_setlbabase)+1,buffer))
 	{
-		hxc_printf_box(0,"ERROR: Write sector ERROR !");
+		hxc_printf_box("ERROR: Write sector ERROR !");
 		lockup();
 	}
 
-	hxc_print(LEFT_ALIGNED,8*79,0," ");
+	hxc_print(LEFT_ALIGNED,8*79,1," ");
 
 	#ifdef DBGMODE
 		hxc_print(LEFT_ALIGNED,0,0,"-- media_write L --");
@@ -363,31 +365,6 @@ int media_write(unsigned long sector, unsigned char *buffer)
 
 	return 1;
 }
-
-void printslotstatus(unsigned char slotnumber,  disk_in_drive * disks_a,  disk_in_drive * disks_b)
-{
-	char tmp_str[17];
-
-	hxc_printf(LEFT_ALIGNED,0,SLOT_Y_POS,"Slot %.2d:", slotnumber);
-
-	//clear_line(SLOT_Y_POS+8,0);
-	hxc_print(LEFT_ALIGNED,0,SLOT_Y_POS+8,"Drive A:                 ");
-	if( disks_a->DirEnt.size)
-	{
-		memcpy(tmp_str,disks_a->DirEnt.longName,16);
-		tmp_str[16]=0;
-		hxc_printf(LEFT_ALIGNED,0,SLOT_Y_POS+8,"Drive A: %s", tmp_str);
-	}
-
-	//clear_line(SLOT_Y_POS+16,0);
-	hxc_print(LEFT_ALIGNED,0,SLOT_Y_POS+16,"Drive B:                 ");
-	if(disks_b->DirEnt.size)
-	{
-		memcpy(tmp_str,disks_b->DirEnt.longName,16);
-		tmp_str[16]=0;
-		hxc_printf(LEFT_ALIGNED,0,SLOT_Y_POS+16,"Drive B: %s", tmp_str);
-	}
-};
 
 char read_cfg_file(unsigned char * sdfecfg_file)
 {
@@ -453,7 +430,7 @@ char read_cfg_file(unsigned char * sdfecfg_file)
 
 	if(ret)
 	{
-		hxc_printf_box(0,"ERROR: Access HXCSDFE.CFG file failed! [%d]",ret);
+		hxc_printf_box("ERROR: Access HXCSDFE.CFG file failed! [%d]",ret);
 	}
 
 	#ifdef DBGMODE
@@ -504,7 +481,7 @@ char save_cfg_file(unsigned char * sdfecfg_file)
 					// Save the sector
 					if (fl_fswrite((unsigned char*)sdfecfg_file, 1,sect_nb, file) != 1)
 					{
-						hxc_printf_box(0,"ERROR: Write file failed!");
+						hxc_printf_box("ERROR: Write file failed!");
 						ret=1;
 					}
 					// Next sector
@@ -520,7 +497,7 @@ char save_cfg_file(unsigned char * sdfecfg_file)
 		{
 			if (fl_fswrite((unsigned char*)sdfecfg_file, 1,sect_nb, file) != 1)
 			{
-				hxc_printf_box(0,"ERROR: Write file failed!");
+				hxc_printf_box("ERROR: Write file failed!");
 				ret=1;
 			}
 		}
@@ -539,14 +516,14 @@ char save_cfg_file(unsigned char * sdfecfg_file)
 
 		if (fl_fswrite((unsigned char*)cfgfile_header, 1,0, file) != 1)
 		{
-			hxc_printf_box(0,"ERROR: Write file failed!");
+			hxc_printf_box("ERROR: Write file failed!");
 			ret=1;
 		}
 
 	}
 	else
 	{
-		hxc_printf_box(0,"ERROR: Create file failed!");
+		hxc_printf_box("ERROR: Create file failed!");
 		ret=1;
 	}
 
@@ -564,7 +541,7 @@ void clear_list(unsigned char add)
 {
 	unsigned char y_pos,i;
 
-	y_pos=FILELIST_Y_POS;
+	y_pos = FILELIST_Y_POS;
 	for(i=0;i<NUMBER_OF_FILE_ON_DISPLAY+add;i++)
 	{
 		clear_line(y_pos,0);
@@ -576,21 +553,20 @@ void next_slot()
 {
 	slotnumber++;
 	if(slotnumber> ( config_file_number_max_of_slot - 1) )  slotnumber=1;
-	//printslotstatus(slotnumber, (disk_in_drive *) &disks_slot_a[slotnumber], (disk_in_drive *) &disks_slot_b[slotnumber]) ;
 }
 
 void displayFolder()
 {
 	int i;
-	hxc_print(LEFT_ALIGNED,0,CURDIR_Y_POS,"Current directory:");
+	hxc_print(LEFT_ALIGNED,0,CURDIR_Y_POS,cur_folder_msg);
 
-	for(i=18*8;i<SCREEN_XRESOL;i=i+8)
+	for(i=15*8;i<SCREEN_XRESOL;i=i+8)
 		hxc_print(LEFT_ALIGNED,i,CURDIR_Y_POS," ");
 
 	if(strlen(currentPath)<32)
-		hxc_printf(LEFT_ALIGNED,18*8,CURDIR_Y_POS,"%s",currentPath);
+		hxc_printf(LEFT_ALIGNED,15*8,CURDIR_Y_POS,"%s",currentPath);
 	else
-		hxc_printf(LEFT_ALIGNED,18*8,CURDIR_Y_POS,"...%s    ",&currentPath[strlen(currentPath)-32]);
+		hxc_printf(LEFT_ALIGNED,15*8,CURDIR_Y_POS,"...%s    ",&currentPath[strlen(currentPath)-32]);
 }
 
 void enter_sub_dir(disk_in_drive *disk_ptr)
@@ -642,7 +618,6 @@ void enter_sub_dir(disk_in_drive *disk_ptr)
 
 			strcat( currentPath, folder );
 		}
-
 	}
 
 	displayFolder();
@@ -742,13 +717,13 @@ void print_help()
 {
 	int i;
 	
-	clear_list(5);
+	clear_list(0);
 
 	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS, help_scr1_msg);
 
 	while(wait_function_key()!=FCT_OK);
 
-	clear_list(5);
+	clear_list(0);
 
 	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS, help_scr2_msg);
 
@@ -763,7 +738,7 @@ void restorestr()
 
 	for(i=0;i<NUMBER_OF_FILE_ON_DISPLAY;i++)
 	{
-		hxc_print(LEFT_ALIGNED,0,FILELIST_Y_POS+(i*8),bkstr[i+1]);
+		hxc_print(LEFT_ALIGNED| DONTPARSE,0,FILELIST_Y_POS+(i*8),bkstr[i+1]);
 	}
 
 	invert_line(0,FILELIST_Y_POS+(selectorpos*8));
@@ -780,6 +755,8 @@ int main(int argc, char* argv[])
 	int slots_list_drive;
 
 	FILE *f;
+
+	strcpy(FIRMWAREVERSION,"-------");
 
 	init_display();
 
@@ -833,7 +810,7 @@ int main(int argc, char* argv[])
 		/* Attach media access functions to library*/
 		if (fl_attach_media(media_read, media_write) != FAT_INIT_OK)
 		{
-			hxc_printf_box(0,"ERROR: Media attach failed !");
+			hxc_printf_box("ERROR: Media attach failed !");
 			for(;;);
 		}
 
@@ -841,7 +818,7 @@ int main(int argc, char* argv[])
 			hxc_print(LEFT_ALIGNED,0,0,"-- fl_attach_media done --");
 		#endif
 
-		hxc_printf_box(0,"Reading HXCSDFE.CFG ...");
+		hxc_printf_box("Reading HXCSDFE.CFG ...");
 
 		read_cfg_file(sdfecfg_file);
 
@@ -856,7 +833,6 @@ int main(int argc, char* argv[])
 		displayFolder();
 
 		slotnumber=1;
-		//printslotstatus(slotnumber, (disk_in_drive *) &disks_slot_a[slotnumber], (disk_in_drive *) &disks_slot_b[slotnumber]) ;
 
 		colormode=0;
 		read_entry=0;
@@ -918,7 +894,7 @@ int main(int argc, char* argv[])
 							}
 
 							snprintf(bkstr[y_pos/8],80," %c%s",entrytype,dir_entry.filename);
-							hxc_printf(LEFT_ALIGNED,0,y_pos," %c%s",entrytype,dir_entry.filename);
+							hxc_printf(LEFT_ALIGNED | DONTPARSE,0,y_pos," %c%s",entrytype,dir_entry.filename);
 
 							y_pos=y_pos+8;
 							dir_entry.filename[127]=0;
@@ -1025,7 +1001,7 @@ int main(int argc, char* argv[])
 							break;
 
 						case FCT_SAVE:
-							hxc_printf_box(0,"Saving selection...");
+							hxc_printf_box("Saving selection...");
 							save_cfg_file(sdfecfg_file);
 							restore_box();
 							memcpy(&file_list_status ,&file_list_status_tab[page_number&0x1FF],sizeof(struct fs_dir_list_status));
@@ -1178,10 +1154,10 @@ int main(int argc, char* argv[])
 							else
 							{
 								memcpy((void*)&disks_slot_a[1],(void*)&DirectoryEntry_tab[selectorpos],sizeof(disk_in_drive));
-								hxc_printf_box(0,"Saving selection and restart...");
+								hxc_printf_box("Saving selection and restart...");
 								save_cfg_file(sdfecfg_file);
 								restore_box();
-								hxc_printf_box(0,">>>>>Rebooting...<<<<<");
+								hxc_printf_box(reboot_msg);
 								sleep(1);
 								jumptotrack(0);
 								reboot();
@@ -1329,7 +1305,6 @@ int main(int argc, char* argv[])
 
 							clear_list(5);
 							init_buffer();
-							//printslotstatus(slotnumber, (disk_in_drive *) &disks_slot_a[slotnumber], (disk_in_drive *) &disks_slot_b[slotnumber]) ;
 							displayFolder();
 
 							memcpy(&file_list_status ,&file_list_status_tab[page_number&0x1FF],sizeof(struct fs_dir_list_status));
@@ -1339,17 +1314,17 @@ int main(int argc, char* argv[])
 						break;
 
 						case FCT_SAVEREBOOT:
-							hxc_printf_box(0,"Saving selection and restart...");
+							hxc_printf_box("Saving selection and restart...");
 							save_cfg_file(sdfecfg_file);
 							restore_box();
-							hxc_printf_box(0,">>>>>Rebooting...<<<<<");
+							hxc_printf_box(reboot_msg);
 							sleep(1);
 							jumptotrack(0);
 							reboot();
 							break;
 
 						case FCT_REBOOT:
-							hxc_printf_box(0,">>>>>Rebooting...<<<<<");
+							hxc_printf_box(reboot_msg);
 							sleep(1);
 							jumptotrack(0);
 							reboot();

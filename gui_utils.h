@@ -1,11 +1,13 @@
 
-#define LEFT_ALIGNED 0
-#define CENTER_ALIGNED 1
-#define RIGHT_ALIGNED 2
+#define LEFT_ALIGNED 0x00
+#define CENTER_ALIGNED 0x01
+#define RIGHT_ALIGNED 0x02
+#define DONTPARSE 0x10
+
 
 int hxc_print(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char * chaine);
 int hxc_printf(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char * chaine, ...);
-int hxc_printf_box(unsigned char mode,char * chaine, ...);
+int hxc_printf_box(char * chaine, ...);
 void restore_box();
 
 void h_line(unsigned short y_pos,unsigned short val);
