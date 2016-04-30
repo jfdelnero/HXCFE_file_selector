@@ -55,10 +55,9 @@
 #include <clib/exec_protos.h>
 #include <clib/dos_protos.h>
 
-#include "graphx/data_bmp_hxc2001logo_bmp.h"
+#include "graphx/data_bmp_hxc2001_smalllogo_bmp.h"
 #include "graphx/data_bmp_font_bmp.h"
 #include "graphx/data_bmp_font8x8_bmp.h"
-#include "graphx/data_bmp_sdhxcfelogo_bmp.h"
 
 #include "gui_utils.h"
 
@@ -458,16 +457,20 @@ int hxc_printf_box(unsigned char mode,char * chaine, ...)
 void init_buffer()
 {
 	int i;
-	display_sprite(screen_buffer_aligned, bitmap_hxc2001logo_bmp,(SCREEN_XRESOL-bitmap_hxc2001logo_bmp->Xsize), (SCREEN_YRESOL-bitmap_hxc2001logo_bmp->Ysize));
-	display_sprite(screen_buffer_aligned, bitmap_sdhxcfelogo_bmp,(SCREEN_XRESOL-bitmap_sdhxcfelogo_bmp->Xsize)/2, (SCREEN_YRESOL-bitmap_sdhxcfelogo_bmp->Ysize));
 
-	h_line(SCREEN_YRESOL-34,0xFFFF) ;
+	// HxC2001 logo
+	display_sprite(screen_buffer_aligned, bitmap_hxc2001_smalllogo_bmp,
+	                                    (SCREEN_XRESOL-bitmap_hxc2001_smalllogo_bmp->Xsize), 
+	                                    (SCREEN_YRESOL-bitmap_hxc2001_smalllogo_bmp->Ysize));
+
+	// Horizontal separator lines
+	h_line(SCREEN_YRESOL-(bitmap_hxc2001_smalllogo_bmp->Ysize + 1),0xFFFF) ;
 	h_line(SCREEN_YRESOL-((48+8)+2),0xFFFF) ;
-	h_line(8,0xFFFF) ;
 
-	hxc_printf(0,0,SCREEN_YRESOL-(8*1),"Ver %s",VERSIONCODE);
+	// Footprint : Current software / firmware version and title
+	hxc_printf(0,0,SCREEN_YRESOL - ( 8 + 2 ),"FW Ver -------");
+	hxc_printf(1,0,SCREEN_YRESOL - ( 8 + 2 ),"Amiga HxC Floppy Emulator Manager v%s",VERSIONCODE);
 
-	hxc_printf(1,0,0,"HxC Floppy Emulator Manager for Amiga");
 	h_line(SCREEN_YRESOL-(48+20)+24-2,0xFFFF) ;
 	hxc_printf(1,0,SCREEN_YRESOL-(48+20)+24,">>>Press HELP key for the function key list<<<");
 
