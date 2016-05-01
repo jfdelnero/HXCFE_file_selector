@@ -724,7 +724,9 @@ void restorestr(ui_context * uicontext)
 {
 	int i;
 
-	for(i=0;i<NUMBER_OF_FILE_ON_DISPLAY;i++)
+	hxc_printf(CENTER_ALIGNED,0,FILELIST_Y_POS,bkstr[1]);
+
+	for(i=1;i<NUMBER_OF_FILE_ON_DISPLAY;i++)
 	{
 		hxc_print(LEFT_ALIGNED| DONTPARSE,0,FILELIST_Y_POS+(i*8),bkstr[i+1]);
 	}
@@ -968,10 +970,10 @@ int ui_command_menu(ui_context * uicontext)
 			case FCT_SELECT_FILE_DRIVEA:
 				if(!uicontext->slotselectorpos)
 				{
-					uicontext->slots_list_drive++;
+					uicontext->page_mode_index++;
 
-					if(uicontext->slots_list_drive>2)
-						uicontext->slots_list_drive = 0;
+					if(uicontext->page_mode_index>3)
+						uicontext->page_mode_index = 0;
 				}
 
 			break;
@@ -1002,6 +1004,7 @@ int ui_command_menu(ui_context * uicontext)
 		{
 			case 0:
 				clear_list(0);
+				restorestr(uicontext);
 				return 0;
 			break;
 
@@ -1048,7 +1051,7 @@ int ui_slots_menu(ui_context * uicontext)
 	////////////////////
 	// Slots list menu
 	clear_list(0);
-	show_all_slots(uicontext,uicontext->slots_list_drive);
+	show_all_slots(uicontext,uicontext->page_mode_index);
 
 	invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
 
@@ -1074,7 +1077,7 @@ int ui_slots_menu(ui_context * uicontext)
 					}
 
 					clear_list(0);
-					show_all_slots(uicontext,uicontext->slots_list_drive);
+					show_all_slots(uicontext,uicontext->page_mode_index);
 					invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
 				}
 			break;
@@ -1089,7 +1092,7 @@ int ui_slots_menu(ui_context * uicontext)
 						uicontext->slotselectorpage++;
 
 						clear_list(0);
-						show_all_slots(uicontext,uicontext->slots_list_drive);
+						show_all_slots(uicontext,uicontext->page_mode_index);
 						invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
 					}
 					else
@@ -1106,7 +1109,7 @@ int ui_slots_menu(ui_context * uicontext)
 					uicontext->slotselectorpage++;
 				}
 				clear_list(0);
-				show_all_slots(uicontext,uicontext->slots_list_drive);
+				show_all_slots(uicontext,uicontext->page_mode_index);
 				invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
 			break;
 
@@ -1114,35 +1117,35 @@ int ui_slots_menu(ui_context * uicontext)
 				if(uicontext->slotselectorpage)
 					uicontext->slotselectorpage--;
 				clear_list(0);
-				show_all_slots(uicontext,uicontext->slots_list_drive);
+				show_all_slots(uicontext,uicontext->page_mode_index);
 				invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
 			break;
 
 			case FCT_CLEARSLOT:
-				if(!uicontext->slots_list_drive)
+				if(!uicontext->page_mode_index)
 					memset((void*)&disks_slot_a[uicontext->slotselectorpos + (uicontext->slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))],0,sizeof(disk_in_drive));
 				else
 					memset((void*)&disks_slot_b[uicontext->slotselectorpos + (uicontext->slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))],0,sizeof(disk_in_drive));
 
 				clear_list(0);
-				show_all_slots(uicontext,uicontext->slots_list_drive);
+				show_all_slots(uicontext,uicontext->page_mode_index);
 				invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
 			break;
 
 			case FCT_SELECT_FILE_DRIVEA:
 				if(!uicontext->slotselectorpos)
 				{
-					uicontext->slots_list_drive++;
+					uicontext->page_mode_index++;
 
-					if(uicontext->slots_list_drive>2)
-						uicontext->slots_list_drive = 0;
+					if(uicontext->page_mode_index>3)
+						uicontext->page_mode_index = 0;
 				}
 			break;
 
 			case FCT_HELP:
 				print_help();
 				clear_list(0);
-				show_all_slots(uicontext,uicontext->slots_list_drive);
+				show_all_slots(uicontext,uicontext->page_mode_index);
 				invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
 			break;
 
@@ -1168,9 +1171,9 @@ int ui_slots_menu(ui_context * uicontext)
 
 	clear_list(0);
 	restorestr(uicontext);
-	if( ( key != FCT_ESCAPE ) && ( uicontext->slots_list_drive < 2 ) )
+	if( ( key != FCT_ESCAPE ) && ( uicontext->page_mode_index < 2 ) )
 	{
-		if(!uicontext->slots_list_drive)
+		if(!uicontext->page_mode_index)
 			memcpy((void*)&disks_slot_a[uicontext->slotselectorpos + (uicontext->slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))],(void*)&DirectoryEntry_tab[uicontext->selectorpos],sizeof(disk_in_drive));
 		else
 			memcpy((void*)&disks_slot_b[uicontext->slotselectorpos + (uicontext->slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))],(void*)&DirectoryEntry_tab[uicontext->selectorpos],sizeof(disk_in_drive));
@@ -1190,6 +1193,8 @@ void ui_mainfileselector(ui_context * uicontext)
 
 	y_pos=FILELIST_Y_POS;
 
+	uicontext->page_mode_index = 3;
+
 	clear_list(0);
 	for(;;)
 	{
@@ -1200,10 +1205,14 @@ void ui_mainfileselector(ui_context * uicontext)
 			i++;
 		}while((i<NUMBER_OF_FILE_ON_DISPLAY));
 
-		i=0;
 		memset(bkstr,0,sizeof(bkstr));
-		y_pos=FILELIST_Y_POS;
 		last_file=0x00;
+
+		y_pos = FILELIST_Y_POS;
+		snprintf(bkstr[y_pos/8],80,"--- SD/USB Media ---");
+		hxc_printf(CENTER_ALIGNED,0,y_pos,bkstr[y_pos/8]);
+		y_pos += 8;
+		i = 1;
 		do
 		{
 			displayentry=0xFF;
@@ -1307,7 +1316,7 @@ void ui_mainfileselector(ui_context * uicontext)
 					uicontext->selectorpos++;
 					if(uicontext->selectorpos>=NUMBER_OF_FILE_ON_DISPLAY)
 					{
-						uicontext->selectorpos=0;
+						uicontext->selectorpos = 1;
 						clear_list(0);
 						uicontext->read_entry=1;
 						if(!last_file)uicontext->page_number++;
@@ -1346,9 +1355,14 @@ void ui_mainfileselector(ui_context * uicontext)
 					}
 					else
 					{
+						if(!uicontext->selectorpos || uicontext->page_mode_index>=2)
+							uicontext->page_mode_index = 0;
+
+						if(!uicontext->selectorpos)
+							uicontext->slotselectorpos = 0;
 						do
 						{
-							if(uicontext->slots_list_drive<2)
+							if(uicontext->page_mode_index<2)
 							{
 								ret = ui_slots_menu(uicontext);
 							}
@@ -1356,7 +1370,7 @@ void ui_mainfileselector(ui_context * uicontext)
 							{
 								ret = ui_command_menu(uicontext);
 							}
-						}while(!ret);
+						}while(!ret && uicontext->page_mode_index != 3 );
 
 					}
 					break;

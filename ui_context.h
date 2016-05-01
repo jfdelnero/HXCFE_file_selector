@@ -6,7 +6,7 @@ typedef struct ui_context_
 	disk_in_drive * disk_ptr;
 	cfgfile * cfgfile_ptr;
 	unsigned char colormode;
-	int slots_list_drive;
+	int page_mode_index;
 
 	unsigned short page_number;
 	char  selectorpos;
