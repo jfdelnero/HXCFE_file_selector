@@ -79,6 +79,18 @@ const char help_scr3_msg[]=
 	"Email : hxc2001@free.fr\n"
 };
 
+const char command_menu_msg[]=
+{
+	"--- Commands ---\n"
+	"\n"
+	"Save And Reboot\n"
+	"Save\n"
+	"Reboot\n"
+	"\n"
+	"Change colors\n"
+	"Drive Settings\n"
+};
+
 const char cur_folder_msg[]= "Current folder:";
 const char reboot_msg[]= ">>>>>Rebooting...<<<<<";
 const char title_msg[]= { "Amiga HxC Floppy Emulator Manager v" VERSIONCODE};

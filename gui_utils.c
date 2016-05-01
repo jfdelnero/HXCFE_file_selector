@@ -112,18 +112,18 @@ struct TagItem vcTags[] =
 	#define DEPTH    2 /* 1 BitPlanes should be used, gives eight colours. */
 	#define COLOURS  2 /* 2^1 = 2                                          */
 
-  struct Library * libptr;
-  struct IntuitionBase *IntuitionBase;
-  struct GfxBase *GfxBaseptr;
-  struct View * my_old_view;
-  struct View view;
-  struct ViewPort viewPort = { 0 };
-  struct RasInfo rasInfo;
-  struct BitMap my_bit_map;
-  struct RastPort my_rast_port;
-  struct Screen *screen;
-  UWORD  *pointer;
-  struct ColorMap *cm=NULL;
+	struct Library * libptr;
+	struct IntuitionBase *IntuitionBase;
+	struct GfxBase *GfxBaseptr;
+	struct View * my_old_view;
+	struct View view;
+	struct ViewPort viewPort = { 0 };
+	struct RasInfo rasInfo;
+	struct BitMap my_bit_map;
+	struct RastPort my_rast_port;
+	struct Screen *screen;
+	UWORD  *pointer;
+	struct ColorMap *cm=NULL;
 
 	#define BLACK 0x002           /*  RGB values for the four colors used.   */
 	#define RED   0xFFF
@@ -202,27 +202,6 @@ void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short 
 			l++;
 			k++;
 		}
-	}
-}
-
-void print_char(unsigned char * membuffer, bmaptype * font,unsigned short x, unsigned short y,unsigned char c)
-{
-	unsigned short j,k,l,c1;
-	unsigned short *ptr_src;
-	unsigned short *ptr_dst;
-
-	ptr_dst=(unsigned short*)membuffer;
-	ptr_src=(unsigned short*)&font->data[0];
-	x=(x>>3) & (~0x1);
-
-	l=(y*80)+ x;
-	k=((c>>4)*(16*16))+(c&0xF);
-
-	for(j=0;j<16;j++)
-	{
-		ptr_dst[l]=ptr_src[k];
-		k=k+(16);
-		l=l+(40);
 	}
 }
 
