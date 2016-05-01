@@ -2,9 +2,10 @@
 
 const char startup_msg[]=
 {
-	"HxC Floppy Emulator file selector for Amiga\n"
+	"Amiga HxC Floppy Emulator file selector\n"
 	"V" VERSIONCODE " - " DATECODE "\n"
 	"(c) 2009-2016 HxC2001 / Jean-Francois DEL NERO\n"
+	"Email : hxc2001@free.fr\n"
 	"\n"
 	"Check for updates on :\n"
 	"http://hxc2001.free.fr/floppy_drive_emulator/\n"
@@ -12,8 +13,7 @@ const char startup_msg[]=
 	"\n"
 	"Forum : http://torlus.com/floppy/forum\n"
 	"\n"
-    "Email : hxc2001@free.fr\n"
-	"\n"
+	"Sources on http://github.com/jfdelnero\n"
 	"\n"
 	"\n"
 	"\n"
@@ -63,14 +63,14 @@ const char help_scr2_msg[]=
 	"The joystick can be used to browse all the interface and select the images.\n"
 	"The keyboard is not required.\n"
 	"The first line of each page allows to switch to the next one :\n"
-	"Media files list -> Drive A slots list -> Drive B slots list -> Settings page\n"
+	"Media files list-> Drive A slots list-> Drive B slots list-> Save/Settings page\n"
 };
 
 const char help_scr3_msg[]=
 {
 	"---Press Enter / Fire to exit---\n"
 	"\n"
-	"HxC Floppy Emulator file selector for Amiga\n"
+	"Amiga HxC Floppy Emulator file selector\n"
 	"V" VERSIONCODE " - " DATECODE "\n"
 	"(c) 2006-2016 HxC2001 / Jean-Francois DEL NERO\n"
 	"Email : hxc2001@free.fr\n"
@@ -85,14 +85,14 @@ const char help_scr3_msg[]=
 
 const char command_menu_msg[]=
 {
-	"--- Commands ---\n"
+	"--- Save and Settings ---\n"
 	"\n"
-	"Save And Reboot\n"
+	"Save and Reboot\n"
 	"Save\n"
 	"Reboot\n"
 	"\n"
-	"Change colors\n"
-	"Drive Settings\n"
+	"Change display colors\n"
+	"HxC Drive Settings\n"
 	"\n"
 	"Help / About\n"
 };

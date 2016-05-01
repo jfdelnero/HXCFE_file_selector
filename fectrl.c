@@ -633,7 +633,7 @@ void show_all_slots(ui_context * uicontext,int drive)
 	if( drive >= 2 )
 		return;
 
-	hxc_printf(CENTER_ALIGNED,0,FILELIST_Y_POS,"--- Drive (%c) selection ---",'A'+drive);
+	hxc_printf(CENTER_ALIGNED,0,FILELIST_Y_POS,"--- Drive %c slots selection ---",'A'+drive);
 
 	switch(drive)
 	{
@@ -797,7 +797,7 @@ void ui_config_menu(ui_context * uicontext)
 	hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->startup_mode&0x04?"on":"off");
 
 	i=i+2;
-	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "---Exit---");
+	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "--- Exit ---");
 
 	i=2;
 	invert_line(0,HELP_Y_POS+(i*8));
@@ -1211,7 +1211,7 @@ void ui_mainfileselector(ui_context * uicontext)
 		last_file=0x00;
 
 		y_pos = FILELIST_Y_POS;
-		snprintf(bkstr[y_pos/8],80,"--- SD/USB Media ---");
+		snprintf(bkstr[y_pos/8],80,"--- SD/USB Media files ---");
 		hxc_printf(CENTER_ALIGNED,0,y_pos,bkstr[y_pos/8]);
 		y_pos += 8;
 		i = 1;
