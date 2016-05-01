@@ -916,10 +916,6 @@ void ui_config_menu(ui_context * uicontext)
 		}
 	}while( (c!=FCT_SELECT_FILE_DRIVEA) || i!=9 );
 
-	clear_list(0);
-	init_buffer();
-	displayFolder(uicontext);
-
 	memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number&0x1FF],sizeof(struct fs_dir_list_status));
 	clear_list(0);
 	uicontext->read_entry=1;
@@ -933,8 +929,8 @@ int ui_command_menu(ui_context * uicontext)
 
 	clear_list(0);
 	hxc_printf(CENTER_ALIGNED,0,FILELIST_Y_POS,(char*)command_menu_msg);
-
 	invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
+
 	do
 	{
 		key=wait_function_key();
@@ -1029,6 +1025,7 @@ int ui_command_menu(ui_context * uicontext)
 			break;
 			case 7:
 				ui_config_menu(uicontext);
+				return 0;
 			break;
 
 			default:
