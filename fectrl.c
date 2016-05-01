@@ -709,15 +709,15 @@ void print_help()
 
 	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS, (char*)help_scr1_msg);
 
-	while(wait_function_key()!=FCT_OK);
+	while(wait_function_key()!=FCT_SELECT_FILE_DRIVEA);
 
 	clear_list(0);
 
 	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS, (char*)help_scr2_msg);
 
-	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS + 12*8, (char*)help_scr3_msg);
+	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS + 16*8, (char*)help_scr3_msg);
 
-	while(wait_function_key()!=FCT_OK);
+	while(wait_function_key()!=FCT_SELECT_FILE_DRIVEA);
 }
 
 void restorestr(ui_context * uicontext)
@@ -1025,6 +1025,11 @@ int ui_command_menu(ui_context * uicontext)
 			break;
 			case 7:
 				ui_config_menu(uicontext);
+				return 0;
+			break;
+
+			case 9:
+				print_help();
 				return 0;
 			break;
 
