@@ -4,7 +4,6 @@
 #define RIGHT_ALIGNED 0x02
 #define DONTPARSE 0x10
 
-
 int hxc_print(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char * chaine);
 int hxc_printf(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char * chaine, ...);
 int hxc_printf_box(char * chaine, ...);
@@ -16,5 +15,6 @@ void invert_line_move(unsigned short x_pos,unsigned short y_pos_old,unsigned sho
 
 void clear_line(unsigned short y_pos,unsigned short val);
 void box(unsigned short x_p1,unsigned short y_p1,unsigned short x_p2,unsigned short y_p2,unsigned short fillval,unsigned char fill);
-int init_display();
+void init_display_buffer();
+
 void set_color_scheme(unsigned char color);

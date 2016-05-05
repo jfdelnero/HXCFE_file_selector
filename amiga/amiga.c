@@ -25,79 +25,54 @@
 //
 */
 
+//#define DBGMODE 1
+
+#include <intuition/intuitionbase.h>
+
+#include <graphics/gfxbase.h>
+#include <graphics/videocontrol.h>
+
 #include <devices/trackdisk.h>
 
-#include <dos/dos.h>
+#include <exec/interrupts.h>
 
-#include <exec/types.h>
+#include <clib/exec_protos.h>
+#include <clib/dos_protos.h>
 
-#include <libraries/commodities.h>
 
-#include <proto/commodities.h>
-#include <proto/exec.h>
-
-#include <intuition/screens.h>
-#include <intuition/preferences.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "conf.h"
 
 #include "keysfunc_defs.h"
 #include "keys_defs.h"
-#include "amiga_hw.h"
+#include "hardware.h"
 #include "amiga_regs.h"
+
+#include "reboot.h"
 
 #include "crc.h"
 
-//#define DBGMODE 1
+#include "color_table.h"
+#include "mfm_table.h"
 
-extern volatile unsigned short io_floppy_timeout;
 
-extern unsigned short SCREEN_YRESOL;
+#define DEPTH    2 /* 1 BitPlanes should be used, gives eight colours. */
+#define COLOURS  2 /* 2^1 = 2                                          */
+
+#define BLACK 0x002           /*  RGB values for the four colors used.   */
+#define RED   0xFFF
+#define GREEN 0x0f0
+#define BLUE  0x00f
+
+volatile unsigned short io_floppy_timeout;
+
+unsigned char * screen_buffer_aligned;
+unsigned char * screen_buffer_backup_aligned;
+unsigned short SCREEN_YRESOL;
 
 static unsigned char CIABPRB_DSKSEL;
-
-static const unsigned char MFM_short_tab[]=
-{
-	0xAA,0xA9,0xA4,0xA5,0x92,0x91,0x94,0x95,
-	0x4A,0x49,0x44,0x45,0x52,0x51,0x54,0x55
-};
-
-static const unsigned short MFM_tab[]=
-{
-	0xAAAA,0xAAA9,0xAAA4,0xAAA5,0xAA92,0xAA91,0xAA94,0xAA95,
-	0xAA4A,0xAA49,0xAA44,0xAA45,0xAA52,0xAA51,0xAA54,0xAA55,
-	0xA92A,0xA929,0xA924,0xA925,0xA912,0xA911,0xA914,0xA915,
-	0xA94A,0xA949,0xA944,0xA945,0xA952,0xA951,0xA954,0xA955,
-	0xA4AA,0xA4A9,0xA4A4,0xA4A5,0xA492,0xA491,0xA494,0xA495,
-	0xA44A,0xA449,0xA444,0xA445,0xA452,0xA451,0xA454,0xA455,
-	0xA52A,0xA529,0xA524,0xA525,0xA512,0xA511,0xA514,0xA515,
-	0xA54A,0xA549,0xA544,0xA545,0xA552,0xA551,0xA554,0xA555,
-	0x92AA,0x92A9,0x92A4,0x92A5,0x9292,0x9291,0x9294,0x9295,
-	0x924A,0x9249,0x9244,0x9245,0x9252,0x9251,0x9254,0x9255,
-	0x912A,0x9129,0x9124,0x9125,0x9112,0x9111,0x9114,0x9115,
-	0x914A,0x9149,0x9144,0x9145,0x9152,0x9151,0x9154,0x9155,
-	0x94AA,0x94A9,0x94A4,0x94A5,0x9492,0x9491,0x9494,0x9495,
-	0x944A,0x9449,0x9444,0x9445,0x9452,0x9451,0x9454,0x9455,
-	0x952A,0x9529,0x9524,0x9525,0x9512,0x9511,0x9514,0x9515,
-	0x954A,0x9549,0x9544,0x9545,0x9552,0x9551,0x9554,0x9555,
-	0x4AAA,0x4AA9,0x4AA4,0x4AA5,0x4A92,0x4A91,0x4A94,0x4A95,
-	0x4A4A,0x4A49,0x4A44,0x4A45,0x4A52,0x4A51,0x4A54,0x4A55,
-	0x492A,0x4929,0x4924,0x4925,0x4912,0x4911,0x4914,0x4915,
-	0x494A,0x4949,0x4944,0x4945,0x4952,0x4951,0x4954,0x4955,
-	0x44AA,0x44A9,0x44A4,0x44A5,0x4492,0x4491,0x4494,0x4495,
-	0x444A,0x4449,0x4444,0x4445,0x4452,0x4451,0x4454,0x4455,
-	0x452A,0x4529,0x4524,0x4525,0x4512,0x4511,0x4514,0x4515,
-	0x454A,0x4549,0x4544,0x4545,0x4552,0x4551,0x4554,0x4555,
-	0x52AA,0x52A9,0x52A4,0x52A5,0x5292,0x5291,0x5294,0x5295,
-	0x524A,0x5249,0x5244,0x5245,0x5252,0x5251,0x5254,0x5255,
-	0x512A,0x5129,0x5124,0x5125,0x5112,0x5111,0x5114,0x5115,
-	0x514A,0x5149,0x5144,0x5145,0x5152,0x5151,0x5154,0x5155,
-	0x54AA,0x54A9,0x54A4,0x54A5,0x5492,0x5491,0x5494,0x5495,
-	0x544A,0x5449,0x5444,0x5445,0x5452,0x5451,0x5454,0x5455,
-	0x552A,0x5529,0x5524,0x5525,0x5512,0x5511,0x5514,0x5515,
-	0x554A,0x5549,0x5544,0x5545,0x5552,0x5551,0x5554,0x5555
-};
 
 static unsigned char * mfmtobinLUT_L;
 static unsigned char * mfmtobinLUT_H;
@@ -113,6 +88,70 @@ unsigned short sector_pos[16];
 
 unsigned char keyup;
 
+unsigned long timercnt;
+
+struct Interrupt *rbfint, *priorint;
+
+struct Library * libptr;
+struct IntuitionBase *IntuitionBase;
+struct GfxBase *GfxBaseptr;
+struct View * my_old_view;
+struct View view;
+struct ViewPort viewPort = { 0 };
+struct RasInfo rasInfo;
+struct BitMap my_bit_map;
+struct RastPort my_rast_port;
+struct Screen *screen;
+UWORD  *pointer;
+struct ColorMap *cm=NULL;
+
+struct TextAttr MyFont =
+{
+		"topaz.font", // Font Name
+		TOPAZ_SIXTY, // Font Height
+		FS_NORMAL, // Style
+		FPF_ROMFONT, // Preferences
+};
+
+struct NewScreen screen_cfg =
+{
+		0, /* the LeftEdge should be equal to zero */
+		0, /* TopEdge */
+		SCREEN_XRESOL, /* Width (low-resolution) */
+		256, /* Height (non-interlace) */
+		1, /* Depth (4 colors will be available) */
+		0, 1, /* the DetailPen and BlockPen specifications */
+		NULL, /* no special display modes */
+		CUSTOMSCREEN, /* the screen type */
+		&MyFont, /* use my own font */
+		"HxC Floppy Emulator Manager", /* this declaration is compiled as a text pointer */
+		NULL, /* no special screen gadgets */
+		NULL, /* no special CustomBitMap */
+};
+
+struct TagItem vcTags[] =
+{
+	{VTAG_ATTACH_CM_SET, NULL },
+	{VTAG_VIEWPORTEXTRA_SET, NULL },
+	{VTAG_NORMAL_DISP_SET, NULL },
+	{VTAG_END_CM, NULL }
+};
+
+#ifndef BMAPTYPEDEF
+#define BMAPTYPEDEF
+
+typedef  struct _bmaptype
+{
+   int type;
+   int Xsize;
+   int Ysize;
+   int size;
+   int csize;
+   unsigned char * data;
+}bmaptype __attribute__ ((aligned (2)));
+
+#endif
+	
 void waitus(int centus)
 {
 	int cnt;
@@ -164,53 +203,15 @@ void testblink()
 	}
 }
 
-void setvideomode(int mode)
+void alloc_error()
 {
-	Forbid();
-
-	switch(mode)
-	{
-		case 0:
-			// PAL Mode
-			WRITEREG_W( BEAMCON0, READREG_W(BEAMCON0) | 0x0020);
-			//WRITEREG_W( BEAMCON0, 0x0020);
-			WRITEREG_W( DDFSTRT,  0x0038);
-			WRITEREG_W( DDFSTOP,  0x00D8);
-			WRITEREG_W( FMODE,    0x0003);
-			WRITEREG_W( DIWSTRT,  0x4481);
-			WRITEREG_W( DIWSTOP,  0x0CC1);
-			WRITEREG_W( BPLCON0,  0x0211);
-			WRITEREG_W( BPL1MOD,  0x0000);
-			WRITEREG_W( BPL2MOD,  0x0000);
-
-			//WRITEREG_W( DMACON,  0x0082);
-			//WRITEREG_W( DMACON,  0x8300);
-
-		break;
-		case 1:
-			// NTSC Mode
-			WRITEREG_W( BEAMCON0, READREG_W(BEAMCON0) & ~0x0020);
-			//WRITEREG_W( BEAMCON0, 0x0000);
-			WRITEREG_W( DDFSTRT,  0x0038);
-			WRITEREG_W( DDFSTOP,  0x00D8);
-			WRITEREG_W( FMODE,    0x0003);
-			WRITEREG_W( DIWSTRT,  0x2C81);
-			WRITEREG_W( DIWSTOP,  0xF4C1);
-			WRITEREG_W( BPLCON0,  0x0211);
-			WRITEREG_W( BPL1MOD,  0x0000);
-			WRITEREG_W( BPL2MOD,  0x0000);
-
-			//WRITEREG_W( DMACON,  0x0082);
-			//WRITEREG_W( DMACON,  0x8300);
-
-			break;
-	}
-
-	Permit();
+	hxc_printf_box(0,"ERROR: Memory Allocation Error -> No more free mem ?");
+	for(;;);
 }
 
-
-
+/********************************************************************************
+*                              FDC I/O     
+*********************************************************************************/
 int jumptotrack(unsigned char t)
 {
 	unsigned short i,j,k;
@@ -364,34 +365,6 @@ int waitindex()
 	}
 
 	return timeout;
-}
-
-
-static void setnoclick(ULONG unitnum, ULONG onoff)
-{
-	struct MsgPort *port;
-	port = CreateMsgPort();
-	if (port)
-	{
-		struct IOStdReq *ioreq;
-		ioreq = CreateIORequest(port, sizeof(*ioreq));
-		if (ioreq)
-		{
-			if (OpenDevice(TD_NAME, unitnum, (APTR) ioreq, 0) == 0)
-			{
-				struct TDU_PublicUnit *unit = (APTR) ioreq->io_Unit;
-				Forbid();
-				if (onoff)
-					unit->tdu_PubFlags |= TDPF_NOCLICK;
-				else
-					unit->tdu_PubFlags &= ~TDPF_NOCLICK;
-				Permit();
-				CloseDevice((APTR) ioreq);
-			}
-			DeleteIORequest((APTR) ioreq);
-		}
-		DeleteMsgPort(port);
-	}
 }
 
 int readtrack(unsigned short * track,unsigned short size,unsigned char waiti)
@@ -836,13 +809,34 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 	return sectorfound;
 }
 
-void alloc_error()
+static void setnoclick(ULONG unitnum, ULONG onoff)
 {
-	hxc_printf_box(0,"ERROR: Memory Allocation Error -> No more free mem ?");
-	for(;;);
+	struct MsgPort *port;
+	port = CreateMsgPort();
+	if (port)
+	{
+		struct IOStdReq *ioreq;
+		ioreq = CreateIORequest(port, sizeof(*ioreq));
+		if (ioreq)
+		{
+			if (OpenDevice(TD_NAME, unitnum, (APTR) ioreq, 0) == 0)
+			{
+				struct TDU_PublicUnit *unit = (APTR) ioreq->io_Unit;
+				Forbid();
+				if (onoff)
+					unit->tdu_PubFlags |= TDPF_NOCLICK;
+				else
+					unit->tdu_PubFlags &= ~TDPF_NOCLICK;
+				Permit();
+				CloseDevice((APTR) ioreq);
+			}
+			DeleteIORequest((APTR) ioreq);
+		}
+		DeleteMsgPort(port);
+	}
 }
 
-void init_amiga_fdc(unsigned char drive)
+void init_fdc(unsigned char drive)
 {
 	unsigned short i;
 
@@ -897,7 +891,7 @@ void init_amiga_fdc(unsigned char drive)
 
 	if(jumptotrack(255))
 	{
-		hxc_printf_box(0,"ERROR: init_amiga_fdc -> failure while seeking the track 00!");
+		hxc_printf_box(0,"ERROR: init_fdc -> failure while seeking the track 00!");
 		for(;;);
 	}
 	Delay(12);
@@ -905,6 +899,10 @@ void init_amiga_fdc(unsigned char drive)
 
 	Permit();
 }
+
+/********************************************************************************
+*                          Joystick / Keyboard I/O     
+*********************************************************************************/
 
 unsigned char Joystick()
 {
@@ -1083,7 +1081,168 @@ unsigned char wait_function_key()
 	return function_code;
 }
 
+/********************************************************************************
+*                              Display Output     
+*********************************************************************************/
 
+void setvideomode(int mode)
+{
+	Forbid();
+
+	switch(mode)
+	{
+		case 0:
+			// PAL Mode
+			WRITEREG_W( BEAMCON0, READREG_W(BEAMCON0) | 0x0020);
+			//WRITEREG_W( BEAMCON0, 0x0020);
+			WRITEREG_W( DDFSTRT,  0x0038);
+			WRITEREG_W( DDFSTOP,  0x00D8);
+			WRITEREG_W( FMODE,    0x0003);
+			WRITEREG_W( DIWSTRT,  0x4481);
+			WRITEREG_W( DIWSTOP,  0x0CC1);
+			WRITEREG_W( BPLCON0,  0x0211);
+			WRITEREG_W( BPL1MOD,  0x0000);
+			WRITEREG_W( BPL2MOD,  0x0000);
+
+			//WRITEREG_W( DMACON,  0x0082);
+			//WRITEREG_W( DMACON,  0x8300);
+
+		break;
+		case 1:
+			// NTSC Mode
+			WRITEREG_W( BEAMCON0, READREG_W(BEAMCON0) & ~0x0020);
+			//WRITEREG_W( BEAMCON0, 0x0000);
+			WRITEREG_W( DDFSTRT,  0x0038);
+			WRITEREG_W( DDFSTOP,  0x00D8);
+			WRITEREG_W( FMODE,    0x0003);
+			WRITEREG_W( DIWSTRT,  0x2C81);
+			WRITEREG_W( DIWSTOP,  0xF4C1);
+			WRITEREG_W( BPLCON0,  0x0211);
+			WRITEREG_W( BPL1MOD,  0x0000);
+			WRITEREG_W( BPL2MOD,  0x0000);
+
+			//WRITEREG_W( DMACON,  0x0082);
+			//WRITEREG_W( DMACON,  0x8300);
+
+			break;
+	}
+
+	Permit();
+}
+
+int init_display()
+{
+	unsigned short loop,yr;
+
+	memset(&view,0,sizeof(struct View));
+	memset(&viewPort,0,sizeof(struct ViewPort));
+	memset(&rasInfo,0,sizeof(struct RasInfo));
+	memset(&my_bit_map,0,sizeof(struct BitMap));
+	memset(&my_rast_port,0,sizeof(struct RastPort));
+	screen_buffer_backup_aligned=(unsigned char*)malloc(16*1024);
+
+	IntuitionBase= (struct IntuitionBase *) OpenLibrary( "intuition.library", 0 );
+	screen=(struct Screen *)OpenScreen(&screen_cfg);
+
+	/* Open the Graphics library: */
+	GfxBaseptr = (struct GfxBase *) OpenLibrary( "graphics.library", 0 );
+	if( !GfxBaseptr )  return -1;
+
+	/* Save the current View, so we can restore it later: */
+	my_old_view = GfxBaseptr->ActiView;
+
+	/* 1. Prepare the View structure, and give it a pointer to */
+	/*    the first ViewPort:                                  */
+	InitView( &view );
+	view.Modes |= HIRES;//LACE;
+
+	/* 4. Prepare the BitMap: */
+	InitBitMap( &my_bit_map, DEPTH, SCREEN_XRESOL, 256 );
+
+	/* Allocate memory for the Raster: */
+	for( loop = 0; loop < DEPTH; loop++ )
+	{
+		my_bit_map.Planes[ loop ] = (PLANEPTR) AllocRaster( SCREEN_XRESOL, 256 );
+		BltClear( my_bit_map.Planes[ loop ], RASSIZE( SCREEN_XRESOL, 256 ), 0 );
+	}
+
+	/* 5. Prepare the RasInfo structure: */
+	rasInfo.BitMap = &my_bit_map; /* Pointer to the BitMap structure.  */
+	rasInfo.RxOffset = 0;         /* The top left corner of the Raster */
+	rasInfo.RyOffset = 0;         /* should be at the top left corner  */
+	/* of the display.                   */
+	rasInfo.Next = NULL;          /* Single playfield - only one       */
+	/* RasInfo structure is necessary.   */
+
+	InitVPort(&viewPort);           /*  Initialize the ViewPort.  */
+	view.ViewPort = &viewPort;      /*  Link the ViewPort into the View.  */
+	viewPort.RasInfo = &rasInfo;
+	viewPort.DWidth = SCREEN_XRESOL;
+	viewPort.DHeight = 256;
+
+	/* Set the display mode the old-fashioned way */
+	viewPort.Modes=HIRES;// | LACE;
+
+	cm =(struct ColorMap *) GetColorMap(COLOURS);
+
+	/* Attach the ColorMap, old 1.3-style */
+	viewPort.ColorMap = cm;
+
+	LoadRGB4(&viewPort, colortable, 4);
+
+	/* 6. Create the display: */
+	MakeVPort( &view, &viewPort );
+	MrgCop( &view );
+	LoadView( &view );
+	WaitTOF();
+	WaitTOF();
+
+	/* 7. Prepare the RastPort, and give it a pointer to the BitMap. */
+	InitRastPort( &my_rast_port );
+	my_rast_port.BitMap = &my_bit_map;
+	SetAPen( &my_rast_port,   1 );
+	screen_buffer_aligned=my_bit_map.Planes[ 0 ];
+
+	yr= get_vid_mode();
+	if(yr>290)
+	{
+		SCREEN_YRESOL=256;
+	}
+	else
+	{
+		SCREEN_YRESOL=200;
+	}
+
+	// Number of free line to display the file list.
+
+	disablemousepointer();
+	
+	return 0;
+}
+
+void DestroyScrn ()
+{
+	WORD Cntr;
+
+	if (view.LOFCprList) FreeCprList(view.LOFCprList);
+	if (view.SHFCprList) FreeCprList(view.SHFCprList);
+
+	FreeVPortCopLists(&viewPort);
+
+	if (cm) FreeColorMap(cm);
+	//if (VpXtr) GfxFree (VpXtr);
+	for (Cntr = 0; Cntr < 8; Cntr++)
+	{
+		if (my_bit_map.Planes[Cntr])
+			FreeRaster (my_bit_map.Planes[Cntr], 640, 480);
+	}
+
+	/*if (VwXtr)
+	{ if (VwXtr->Monitor)
+	CloseMonitor (VwXtr->Monitor);
+	GfxFree (VwXtr);
+	}*/
+}
 
 unsigned short get_vid_mode()
 {
@@ -1113,7 +1272,126 @@ void disablemousepointer()
 	WRITEREG_W( DMACON ,0x20);
 }
 
-extern unsigned long _reboot();
+void initpal()
+{
+	volatile unsigned short * ptr;
+
+	ptr=(unsigned short *)0xFF8240;
+	*ptr=0x0000;
+	ptr=(unsigned short *)0xFF8242;
+	*ptr=0x0070;
+	ptr=(unsigned short *)0xFF8244;
+	*ptr=0x0700;
+	ptr=(unsigned short *)0xFF8246;
+	*ptr=0x0777;
+
+}
+
+void set_color_scheme(unsigned char color)
+{
+	LoadRGB4(&viewPort, &colortable[(color&0x1F)*4], 4);
+}
+
+void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, unsigned short y,unsigned char c)
+{
+	unsigned short j,k,l,c1;
+	unsigned char *ptr_src;
+	unsigned char *ptr_dst;
+
+	ptr_dst=(unsigned char*)membuffer;
+	ptr_src=(unsigned char*)&font->data[0];
+
+	x=x>>3;
+	//x=((x&(~0x1))<<1)+(x&1);//  0 1   2 3
+	ptr_dst=ptr_dst + ((y*80)+ x);
+	ptr_src=ptr_src + (((c>>4)*(8*8*2))+(c&0xF));
+	for(j=0;j<8;j++)
+	{
+		*ptr_dst=*ptr_src;
+		ptr_src=ptr_src+16;
+		ptr_dst=ptr_dst+80;
+	}
+}
+
+void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short x, unsigned short y)
+{
+	unsigned short i,j,k,l,x_offset,base_offset;
+	unsigned short *ptr_src;
+	unsigned short *ptr_dst;
+
+	ptr_dst=(unsigned short*)membuffer;
+	ptr_src=(unsigned short*)&sprite->data[0];
+
+	k=0;
+	l=0;
+	base_offset=((y*80)+ ((x>>3)))/2;
+	for(j=0;j<(sprite->Ysize);j++)
+	{
+		l=base_offset +(40*j);
+		for(i=0;i<(sprite->Xsize/16);i++)
+		{
+			ptr_dst[l]=ptr_src[k];
+			l++;
+			k++;
+		}
+	}
+}
+
+void h_line(unsigned short y_pos,unsigned short val)
+{
+	unsigned short *ptr_dst;
+	unsigned short i,ptroffset;
+
+	ptr_dst=(unsigned short*)screen_buffer_aligned;
+	ptroffset=40* y_pos;
+
+	for(i=0;i<40;i++)
+	{
+		ptr_dst[ptroffset+i]=val;
+	}
+}
+
+void box(unsigned short x_p1,unsigned short y_p1,unsigned short x_p2,unsigned short y_p2,unsigned short fillval,unsigned char fill)
+{
+	unsigned short *ptr_dst;
+	unsigned short i,j,ptroffset,x_size;
+
+	ptr_dst=(unsigned short*)screen_buffer_aligned;
+
+	x_size=((x_p2-x_p1)/16)*2;
+
+	for(j=0;j<(y_p2-y_p1);j++)
+	{
+		for(i=0;i<x_size;i++)
+		{
+			ptr_dst[ptroffset+i]=fillval;
+		}
+		ptroffset=80* (y_p1+j);
+	}
+}
+
+void invert_line(unsigned short x_pos,unsigned short y_pos)
+{
+	unsigned char i,j;
+	unsigned short *ptr_dst;
+	unsigned short ptroffset;
+
+	for(j=0;j<8;j++)
+	{
+		ptr_dst=(unsigned short*)screen_buffer_aligned;
+		ptroffset=(40* (y_pos+j))+x_pos;
+
+		for(i=0;i<40;i++)
+		{
+			ptr_dst[ptroffset+i]=ptr_dst[ptroffset+i]^0xFFFF;
+		}
+	}
+}
+
+void restore_box()
+{
+	memcpy(&screen_buffer_aligned[160*70],screen_buffer_backup_aligned, (8*1000) + 256);
+}
 
 void reboot()
 {
@@ -1121,4 +1399,25 @@ void reboot()
 	for(;;);
 }
 
+void ithandler(void)
+{
+	timercnt++;
 
+	io_floppy_timeout++;
+
+	if( ( Keyboard() & 0x80 )  && !Joystick())
+	{
+		keyup  = 2;
+	}
+}
+
+void init_timer()
+{
+	rbfint = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC|MEMF_CLEAR);
+	rbfint->is_Node.ln_Type = NT_INTERRUPT;      /* Init interrupt node. */
+	rbfint->is_Node.ln_Name = "HxCFESelectorTimerInt";
+	rbfint->is_Data = 0;//(APTR)rbfdata;
+	rbfint->is_Code = ithandler;
+	
+	AddIntServer(5,rbfint);
+}

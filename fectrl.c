@@ -25,23 +25,6 @@
 //
 */
 
-#include <devices/trackdisk.h>
-#include <dos/dos.h>
-#include <exec/types.h>
-#include <exec/memory.h>
-#include <libraries/commodities.h>
-
-#include <proto/commodities.h>
-#include <proto/exec.h>
-
-//#include <pragmas/commodities_pragmas.h>
-//#include <pragmas/exec_pragmas.h>
-
-#include <intuition/screens.h>
-#include <intuition/preferences.h>
-
-#include <exec/interrupts.h>
-
 #include <stdio.h>
 #include <string.h>
 
@@ -51,8 +34,7 @@
 #include "cfg_file.h"
 #include "hxcfeda.h"
 
-#include "amiga_hw.h"
-#include "amiga_regs.h"
+#include "hardware.h"
 
 #include "fat_opts.h"
 #include "fat_misc.h"
@@ -67,8 +49,6 @@
 #include "ui_context.h"
 
 //#define DBGMODE 1
-
-#define  INTB_PORTS	(3)
 
 static unsigned long last_setlbabase;
 static unsigned char sector[512];
@@ -89,8 +69,7 @@ extern struct fatfs _fs;
 extern unsigned short SCREEN_YRESOL;
 extern unsigned char  NUMBER_OF_FILE_ON_DISPLAY;
 
-struct Interrupt *rbfint, *priorint;
-unsigned long timercnt;
+extern unsigned long timercnt;
 unsigned char bkstr[40][80+8];
 extern unsigned char keyup;
 
@@ -687,18 +666,6 @@ int getext(char * path,char * exttodest)
 	}
 
 	return 0;
-}
-
-void ithandler(void)
-{
-	timercnt++;
-
-	io_floppy_timeout++;
-
-	if( ( Keyboard() & 0x80 )  && !Joystick())
-	{
-		keyup  = 2;
-	}
 }
 
 void print_help()
@@ -1410,7 +1377,7 @@ void ui_mainfileselector(ui_context * uicontext)
 					print_help();
 
 					clear_list(5);
-					init_buffer();
+					init_display_buffer();
 					displayFolder(uicontext);
 
 					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number&0x1FF],sizeof(struct fs_dir_list_status));
@@ -1488,15 +1455,12 @@ int main(int argc, char* argv[])
 
 	strcpy(FIRMWAREVERSION,"-------");
 
+	init_timer();
+
 	init_display();
+	
+	init_display_buffer();
 
-	rbfint = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC|MEMF_CLEAR);
-	rbfint->is_Node.ln_Type = NT_INTERRUPT;      /* Init interrupt node. */
-	rbfint->is_Node.ln_Name = "HxCFESelectorTimerInt";
-	rbfint->is_Data = 0;//(APTR)rbfdata;
-	rbfint->is_Code = ithandler;
-
-	AddIntServer(5,rbfint);
 	#ifdef DBGMODE
 		hxc_print(LEFT_ALIGNED,0,0,"-- Init display Done --");
 	#endif
@@ -1514,10 +1478,10 @@ int main(int argc, char* argv[])
 		bootdev = 0;
 	}
 
-	init_amiga_fdc(bootdev);
+	init_fdc(bootdev);
 
 	#ifdef DBGMODE
-		hxc_print(LEFT_ALIGNED,0,0,"-- init_amiga_fdc Done --");
+		hxc_print(LEFT_ALIGNED,0,0,"-- init_fdc Done --");
 	#endif
 
 	if(media_init())
