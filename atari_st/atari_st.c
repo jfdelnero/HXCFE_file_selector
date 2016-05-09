@@ -48,6 +48,7 @@
 
 #include "keysfunc_defs.h"
 #include "keys_defs.h"
+#include "keymap.h"
 #include "hardware.h"
 
 static unsigned char floppydrive;
