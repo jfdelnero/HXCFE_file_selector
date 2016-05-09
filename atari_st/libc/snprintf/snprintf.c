@@ -24,7 +24,7 @@ static char *end;
 
 #include "snprintf.h"
 
-int vplp_snprintf(str, count, fmt, args)
+int vsnprintf(str, count, fmt, args)
        char *str;
        size_t count;
        const char *fmt;
@@ -40,7 +40,7 @@ int vplp_snprintf(str, count, fmt, args)
 }
 
 /* VARARGS3 */
-int plp_snprintf (char *str,size_t count,const char *fmt,...)
+int snprintf (char *str,size_t count,const char *fmt,...)
 {
     VA_LOCAL_DECL
 
@@ -48,7 +48,7 @@ int plp_snprintf (char *str,size_t count,const char *fmt,...)
     VA_SHIFT (str, char *);
     VA_SHIFT (count, size_t );
     VA_SHIFT (fmt, char *);
-    (void) vplp_snprintf ( str, count, fmt, ap);
+    (void) vsnprintf ( str, count, fmt, ap);
     VA_END;
        return( strlen( str ) );
 }

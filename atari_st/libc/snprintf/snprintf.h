@@ -8,8 +8,8 @@
 #define VA_END          va_end(ap)
 
 /* you can have ANSI C definitions */
-int plp_snprintf (char *str, size_t count, const char *fmt, ...);
-int vplp_snprintf (char *str, size_t count, const char *fmt, va_list arg);
+int snprintf (char *str, size_t count, const char *fmt, ...);
+int vsnprintf (char *str, size_t count, const char *fmt, va_list arg);
 
-#define vsnprintf vplp_snprintf
+//#define vsnprintf vplp_snprintf
 

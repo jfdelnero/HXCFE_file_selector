@@ -33,7 +33,8 @@ all: $(EXEC)
 
 clean:
 	rm -rf $(EXEC) *.o *.asm fat32/*.o fat32/*.asm libc/*.o libc/*.asm libc/snprintf/*.o symbols.map
-
+	cd loader && make clean
+	
 push-mina: $(EXEC)
 	rsync --perms $< Gilles@mina.openvpn:/cygdrive/c/data/dropbox/emul/atari/hd/c/tmp/
 
@@ -47,6 +48,7 @@ push-gbo-pc: $(EXEC)
 
 $(EXEC):        libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o fectrl.o gui_utils.o atari_st.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o msg_txt.o
 	$(C)          $(LFLAGS)           $^ -o $@
+	cd loader   && make all
 
 atari_st.o:       atari_st.c
 	$(C)          $(CFLAGS)        -c $< -o $@ -Wall
