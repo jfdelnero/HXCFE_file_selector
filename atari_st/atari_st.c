@@ -60,11 +60,24 @@ unsigned long old_physical_adr;
 volatile unsigned short io_floppy_timeout;
 
 unsigned char * screen_buffer;
-unsigned char * screen_buffer_aligned;
-unsigned char * screen_buffer_backup;
-unsigned char * screen_buffer_backup_aligned;
+unsigned char screen_buffer_backup[8*1024];
 
+static short  _oldrez = 0xffff;
+
+unsigned short SCREEN_XRESOL;
 unsigned short SCREEN_YRESOL;
+unsigned short LINE_BYTES;					/* number of bytes per line     */
+unsigned short LINE_WORDS;					/* number of words per line     */
+unsigned short LINE_CHARS;					/* number of 8x8 chars per line */
+unsigned short NB_PLANES;					/* number of planes (1:2 colors */
+											/*  4:16 colors, 8: 256 colors) */
+unsigned short CHUNK_WORDS;					/* number of words for a 16-    */
+											/* pixel chunk =2*NB_PLANES     */
+unsigned short PLANES_ALIGNDEC;				/* number of left shifts to
+											   transform nbChucks to Bytes  */
+__LINEA *__aline;
+__FONT  **__fonts;
+short  (**__funcs) (void);
 
 static unsigned char CIABPRB_DSKSEL;
 
@@ -103,23 +116,52 @@ void waitus(int centus)
 {
 }
 
-  static unsigned long colortable[] = {
-	0x002, 0xFFF, 0x0f0, 0x00f,
-	0x000, 0xFFF, 0x0f0, 0x00f,
-	0xFFF, 0x000, 0x0f0, 0x00f,
-	0x030, 0xFFF, 0x0f0, 0x00f,
-	0x300, 0xFFF, 0x0f0, 0x00f,
-	0x303, 0xFFF, 0x0f0, 0x00f,
-	0x999, 0x000, 0x0f0, 0x00f,
-	0xFFF, 0x343, 0x0f0, 0x00f,
-	0xF33, 0xFFF, 0x0f0, 0x00f,
-	0xF0F, 0xFFF, 0x0f0, 0x00f,
-	0xFFF, 0x0F0, 0x0f0, 0x00f,
-	0xFF0, 0xFFF, 0x0f0, 0x00f,
-	0x000, 0xF00, 0x0f0, 0x00f,
-	0x000, 0x0F0, 0x0f0, 0x00f,
-	0x000, 0x00F, 0x0f0, 0x00f,
-	0x004, 0xFFF, 0x0f0, 0x00f
+/*
+-------+-----+-----------------------------------------------------+----------
+       |     |                                BIT 11111198 76543210|
+       |     |                                    543210           |
+       |     |                     ST color value .....RRr .GGr.BBb|
+       |     |                    STe color value ....rRRR gGGGbBBB|
+$FF8240|word |Video palette register 0              Lowercase = LSB|R/W
+    :  |  :  |  :      :       :     :                             | :
+$FF825E|word |Video palette register 15                            |R/W
+-------+-----+-----------------------------------------------------+----------
+*/
+
+static unsigned short colortable[] = {
+	0x002, 0xeee, 0x226, 0x567, // b ok blanc sur bleu nuit (nice)
+	0x300, 0xEEE, 0x00f, 0xee4, // b ok blanc sur rouge foncé (nice)
+	0x777, 0x300, 0x00f, 0x5f5, // w noir sur blanc, select vert (nice)
+	0xFFF, 0x343, 0x00f, 0x0f0, // w ok vert sombre sur blanc, select vert
+	0x000, 0x00F, 0x222, 0xdd1, // b ok bleu sur noir
+	0x000, 0xFFF, 0x00f, 0x3f3, // b ok blanc sur noir, select vert
+	0x303, 0xFFF, 0x00f, 0xee4, // w ok blanc sur mauve
+	0x030, 0xFFF, 0x00f, 0x0f0, // b ok vert
+	0x999, 0x000, 0x999, 0x333, // w ok gris sombre
+	0x330, 0xFFF, 0x77f, 0xcc0, // b ok caca d'oie
+	0xF33, 0xFFF, 0x777, 0xe11, // w ok blanc sur rose et rouge
+	0x000, 0xF00, 0x003, 0xd00, // b ok rouge sur noir
+	0xF0F, 0xFFF, 0x000, 0x44f, // w ok violet vif
+	0x000, 0x0E0, 0x00f, 0x0f0, // b ok vert sur noir
+	0xFFF, 0x0F0, 0x4c4, 0x0f0, // w ok vert sur blanc
+	0x004, 0xFFF, 0x00e, 0x5f5, // b ok blanc sur bleu marine
+
+	0x036, 0xFFF, 0x00f, 0x0f0, // b
+	0x444, 0x037, 0x00f, 0x0f0, // b
+	0x000, 0xFF0, 0x00f, 0x0f0, // b
+	0x404, 0x743, 0x00f, 0x0f0, // b
+	0xFFF, 0x700, 0x00f, 0x0f0, // w
+	0x000, 0x222, 0x00f, 0x0c0, // b
+	0x000, 0x333, 0x00f, 0x0d0, // b
+	0x000, 0x444, 0x00f, 0x0e0, // b
+	0x000, 0x555, 0x00f, 0x0f0, // b
+	0x000, 0x666, 0x00f, 0x0f0, // b
+	0x000, 0x777, 0x00f, 0x0f0, // b
+	0x222, 0x000, 0x00f, 0x0c0, // b
+	0x333, 0x000, 0x00f, 0x0d0, // w
+	0x444, 0x000, 0x00f, 0x0e0, // b
+	0x555, 0x000, 0x00f, 0x0f0, // w
+	0x666, 0x000, 0x00f, 0x0f0  // b
 };
 
 void waitms(int ms)
@@ -386,8 +428,43 @@ void initpal()
 
 void set_color_scheme(unsigned char color)
 {
-	g_color = color;
-    Supexec(initpal);
+	unsigned short * palette;
+	short tmpcolor;
+	int i,j;
+	int nbcols;
+	static unsigned short initialpalette[4] = {0xffff, 0xffff, 0xffff, 0xffff};
+
+	if (0xff == color) {
+		// cycle
+		color = g_color+1;
+		if ( color >= (sizeof(colortable))>>3 ) {
+			// reset to first
+			color = 0;
+		}
+	}
+	if (0xfe == color) {
+		// restore
+		palette = initialpalette;
+	} else {
+		g_color = color;
+		palette = &colortable[g_color<<2];
+	}
+	nbcols = 2<<(NB_PLANES-1);
+
+	for (i=0; i<4 && i<nbcols; i++) {
+		j = i;
+		if (i>=2) {
+			// the first two colors are always pal[0] and pal[1]
+			// the last two colors may be pal[2] and pal[3] in 2 planes, or pal[14] and pal[15] in 4 planes
+			j = nbcols - 4 + i;
+		}
+		tmpcolor = Setcolor(j, palette[i]);
+		if (0xffff == initialpalette[i]) {
+			initialpalette[i] = tmpcolor;
+		}
+	}
+
+	return g_color;
 }
 
 int init_display()
@@ -395,40 +472,37 @@ int init_display()
 	unsigned short loop,yr;
 	unsigned long k,i;
 
-	screen_buffer_backup_aligned=(unsigned char*)malloc(16*1024 + ((32*1024) + 256) + ((8*1000) + 256));
-//	memset(screen_buffer_backup_aligned,0,16*1024 + ((32*1024) + 256) + ((8*1000) + 256));
+	linea0();
 
-	SCREEN_YRESOL=200;
+	// Line-A : Hidemouse
+	// do not do : __asm__("dc.w 0xa00a"); (it clobbers registry)
+	lineaa();
 
-
-	old_physical_adr=(unsigned long)Physbase();
-
-	screen_buffer=(unsigned char*) (screen_buffer_backup_aligned + 16*1024) ;
-
-
-	screen_buffer_aligned = (unsigned char*)(((unsigned long)screen_buffer| 0xff)+1);
-
-	screen_buffer_backup=(unsigned char*)screen_buffer_backup_aligned + ( 16*1024 + ((32*1024) + 256) );
-	screen_buffer_backup_aligned = (unsigned char*)(((unsigned long)screen_buffer_backup| 0xff)+1);
-
-	Blitmode(1);
-
-    Setscreen( -1, screen_buffer_aligned, 1 );
-	g_color=0;
-    Supexec(initpal);
-
-	yr= get_vid_mode();
-	if(yr>290)
-	{
-		SCREEN_YRESOL=256;
+	if (V_X_MAX < 640) {
+		/*Blitmode(1) */;
+		_oldrez = Getrez();
+		Setscreen((unsigned char *) -1, (unsigned char *) -1, 1 );
 	}
-	else
-	{
-		SCREEN_YRESOL=200;
-	}
+
+	SCREEN_XRESOL = V_X_MAX;
+	SCREEN_YRESOL = V_Y_MAX;
+
+	LINE_BYTES    = V_BYTES_LIN;
+	LINE_WORDS    = V_BYTES_LIN/2;
+	LINE_CHARS    = SCREEN_XRESOL/8;
+	NB_PLANES     = __aline->_VPLANES;
+	CHUNK_WORDS   = NB_PLANES<<1;
+
+	for (i=NB_PLANES, k=0; i!=0; i>>=1, k++);
+
+	PLANES_ALIGNDEC = k;
+
+	screen_buffer = (unsigned long)Physbase();
+	memset(screen_buffer, 0, SCREEN_YRESOL * LINE_BYTES);
+
+	set_color_scheme(0);
 
 	// Number of free line to display the file list.
-
 	disablemousepointer();
 
 	return 0;
@@ -446,107 +520,101 @@ void disablemousepointer()
 
 void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, unsigned short y,unsigned char c)
 {
-	unsigned short j,k,l,c1;
+	unsigned short j,k;
 	unsigned char *ptr_src;
 	unsigned char *ptr_dst;
+	unsigned long base_offset;
 
-	ptr_dst = (unsigned char*)membuffer;
-	ptr_src = (unsigned char*)&font->data[0];
+	ptr_dst = membuffer;
+	ptr_src=(unsigned char*)&font->data[0];
 
-	x = x>>3;
-	x = ((x&(~0x1))<<1)+(x&1);//  0 1   2 3
-	l = (y*160) + (x);
-	k = ((c>>4)*(8*8*2))+(c&0xF);
+	k=((c>>4)*(8*8*2))+(c&0xF);
+
+	base_offset=((unsigned long) y*LINE_BYTES) + ((x>>4)<<PLANES_ALIGNDEC) + ((x&8)==8);
+	// in a 16-pixel chunk, there are 2 8-pixel chars, hence the x&8==8
 
 	for(j=0;j<8;j++)
 	{
-		ptr_dst[l]   = ptr_src[k];
-		ptr_dst[l+2] = ptr_src[k];
-		k = k + (16);
-		l = l + (160);
+		ptr_dst[base_offset] = ptr_src[k];
+		k=k+(16);
+		base_offset += LINE_BYTES;
 	}
 }
 
 void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short x, unsigned short y)
 {
-	unsigned short i,j,k,l,x_offset,base_offset;
+	unsigned short i,j,k;
 	unsigned short *ptr_src;
 	unsigned short *ptr_dst;
+	unsigned long  base_offset, l;
 
 	ptr_dst=(unsigned short*)membuffer;
 	ptr_src=(unsigned short*)&sprite->data[0];
 
 	k=0;
-	l=0;
-	base_offset=((y*160)+ (((x>>2)&(~0x3))))/2;
+
+	base_offset=( ((unsigned long) y*LINE_BYTES) + ((x>>4)<<PLANES_ALIGNDEC) )/2;
 	for(j=0;j<(sprite->Ysize);j++)
 	{
-		l=base_offset +(80*j);
-		for(i=0;i<(sprite->Xsize/16);i++)
+		l = base_offset;
+		for (i=0; i<(sprite->Xsize>>4); i++)
 		{
 			ptr_dst[l]=ptr_src[k];
-			l++;
-			ptr_dst[l]=ptr_src[k];
-			l++;
+			l += NB_PLANES;
 			k++;
 		}
+		base_offset += LINE_WORDS;
 	}
+
 }
 
 void h_line(unsigned short y_pos,unsigned short val)
 {
-	unsigned short *ptr_dst;
-	unsigned short i,ptroffset;
+	unsigned short * ptr_dst;
+	unsigned short i;
 
-	ptr_dst = (unsigned short*)screen_buffer_aligned;
-	ptroffset = 80 * y_pos;
+	ptr_dst=(unsigned short *) screen_buffer;
+	ptr_dst += (unsigned long) LINE_WORDS * y_pos;
 
-	for(i=0;i<80;i++)
+	for(i=0; i<LINE_WORDS; i+=NB_PLANES)
 	{
-		ptr_dst[ptroffset+i] = val;
+		*(ptr_dst) = val;
+		ptr_dst += NB_PLANES;
 	}
-}
 
-void box(unsigned short x_p1,unsigned short y_p1,unsigned short x_p2,unsigned short y_p2,unsigned short fillval,unsigned char fill)
-{
-	unsigned short *ptr_dst;
-	unsigned short i,j,ptroffset,x_size;
-
-	ptr_dst = (unsigned short*)screen_buffer_aligned;
-
-	x_size = ((x_p2-x_p1)/16)*2;
-
-	for(j=0;j<(y_p2-y_p1);j++)
-	{
-		for(i=0;i<x_size;i++)
-		{
-			ptr_dst[ptroffset+i] = fillval;
-		}
-		ptroffset = 80* (y_p1+j);
-	}
 }
 
 void invert_line(unsigned short x_pos,unsigned short y_pos)
 {
-	unsigned char i,j;
-	unsigned short *ptr_dst;
-	unsigned short ptroffset;
+	unsigned short i;
+	unsigned char j;
+	unsigned char  *ptr_dst;
+	unsigned short *ptr_dst2;
+
+	ptr_dst   = screen_buffer;
+	ptr_dst  += (unsigned long) LINE_BYTES* (y_pos);
+
+	ptr_dst2 = (unsigned short *)ptr_dst;
 
 	for(j=0;j<8;j++)
 	{
-		ptr_dst = (unsigned short*)screen_buffer_aligned;
-		ptroffset = 80* (y_pos+j);
-
-		for(i=0;i<80;i++)
+		for(i=0; i<LINE_WORDS; i+=1)
 		{
-			ptr_dst[ptroffset+i] = ptr_dst[ptroffset+i]^0xFFFF;
+			//*ptr_dst = (*ptr_dst ^ 0xFFFF);
+			*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
+			ptr_dst2++;
 		}
 	}
 }
 
+void save_box()
+{
+	memcpy(screen_buffer_backup,&screen_buffer[160*70], 8*1024);
+}
+
 void restore_box()
 {
-	memcpy(&screen_buffer_aligned[160*70],screen_buffer_backup_aligned, (8*1000) + 256);
+	memcpy(&screen_buffer[160*70],screen_buffer_backup, 8*1024);
 }
 
 void su_reboot()

@@ -66,6 +66,7 @@ static struct fat_dir_entry sfEntry;
 static struct fs_dir_ent dir_entry;
 extern struct fatfs _fs;
 
+extern unsigned short SCREEN_XRESOL;
 extern unsigned short SCREEN_YRESOL;
 extern unsigned char  NUMBER_OF_FILE_ON_DISPLAY;
 

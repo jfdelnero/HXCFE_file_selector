@@ -7,6 +7,8 @@
 int hxc_print(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char * chaine);
 int hxc_printf(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char * chaine, ...);
 int hxc_printf_box(char * chaine, ...);
+
+void save_box();
 void restore_box();
 
 void h_line(unsigned short y_pos,unsigned short val);

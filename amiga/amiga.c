@@ -70,8 +70,9 @@
 
 volatile unsigned short io_floppy_timeout;
 
-unsigned char * screen_buffer_aligned;
-unsigned char * screen_buffer_backup_aligned;
+unsigned char * screen_buffer;
+unsigned char * screen_buffer_backup;
+unsigned short SCREEN_XRESOL;
 unsigned short SCREEN_YRESOL;
 
 static unsigned char CIABPRB_DSKSEL;
@@ -119,7 +120,7 @@ struct NewScreen screen_cfg =
 {
 		0, /* the LeftEdge should be equal to zero */
 		0, /* TopEdge */
-		SCREEN_XRESOL, /* Width (low-resolution) */
+		640, /* Width (low-resolution) */
 		256, /* Height (non-interlace) */
 		1, /* Depth (4 colors will be available) */
 		0, 1, /* the DetailPen and BlockPen specifications */
@@ -1141,7 +1142,7 @@ int init_display()
 	memset(&rasInfo,0,sizeof(struct RasInfo));
 	memset(&my_bit_map,0,sizeof(struct BitMap));
 	memset(&my_rast_port,0,sizeof(struct RastPort));
-	screen_buffer_backup_aligned=(unsigned char*)malloc(16*1024);
+	screen_buffer_backup=(unsigned char*)malloc(8*1024);
 
 	IntuitionBase= (struct IntuitionBase *) OpenLibrary( "intuition.library", 0 );
 	screen=(struct Screen *)OpenScreen(&screen_cfg);
@@ -1203,8 +1204,9 @@ int init_display()
 	InitRastPort( &my_rast_port );
 	my_rast_port.BitMap = &my_bit_map;
 	SetAPen( &my_rast_port,   1 );
-	screen_buffer_aligned=my_bit_map.Planes[ 0 ];
+	screen_buffer = my_bit_map.Planes[ 0 ];
 
+	SCREEN_XRESOL = 640;
 	yr= get_vid_mode();
 	if(yr>290)
 	{
@@ -1344,7 +1346,7 @@ void h_line(unsigned short y_pos,unsigned short val)
 	unsigned short *ptr_dst;
 	unsigned short i,ptroffset;
 
-	ptr_dst=(unsigned short*)screen_buffer_aligned;
+	ptr_dst=(unsigned short*)screen_buffer;
 	ptroffset=40* y_pos;
 
 	for(i=0;i<40;i++)
@@ -1358,7 +1360,7 @@ void box(unsigned short x_p1,unsigned short y_p1,unsigned short x_p2,unsigned sh
 	unsigned short *ptr_dst;
 	unsigned short i,j,ptroffset,x_size;
 
-	ptr_dst=(unsigned short*)screen_buffer_aligned;
+	ptr_dst=(unsigned short*)screen_buffer;
 
 	x_size=((x_p2-x_p1)/16)*2;
 
@@ -1380,7 +1382,7 @@ void invert_line(unsigned short x_pos,unsigned short y_pos)
 
 	for(j=0;j<8;j++)
 	{
-		ptr_dst=(unsigned short*)screen_buffer_aligned;
+		ptr_dst=(unsigned short*)screen_buffer;
 		ptroffset=(40* (y_pos+j))+x_pos;
 
 		for(i=0;i<40;i++)
@@ -1390,9 +1392,14 @@ void invert_line(unsigned short x_pos,unsigned short y_pos)
 	}
 }
 
+void save_box()
+{
+	memcpy(screen_buffer_backup,&screen_buffer[160*70], 8*1024);
+}
+
 void restore_box()
 {
-	memcpy(&screen_buffer_aligned[160*70],screen_buffer_backup_aligned, (8*1000) + 256);
+	memcpy(&screen_buffer[160*70],screen_buffer_backup, 8*1024);
 }
 
 void reboot()

@@ -45,8 +45,8 @@
 
 extern char FIRMWAREVERSION[16];
 
-extern unsigned char * screen_buffer_aligned;
-extern unsigned char * screen_buffer_backup_aligned;
+extern unsigned char * screen_buffer;
+extern unsigned short SCREEN_XRESOL;
 extern unsigned short SCREEN_YRESOL;
 unsigned char NUMBER_OF_FILE_ON_DISPLAY;
 
@@ -92,7 +92,7 @@ int hxc_print(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char 
 	switch(mode & 0xF)
 	{
 		case LEFT_ALIGNED: // Left aligned
-			print_str(screen_buffer_aligned,string,MAXTXTSIZE,x_pos,y_pos,linefeed);
+			print_str(screen_buffer,string,MAXTXTSIZE,x_pos,y_pos,linefeed);
 		break;
 		case CENTER_ALIGNED: // Center aligned
 		case RIGHT_ALIGNED: // Right aligned
@@ -110,7 +110,7 @@ int hxc_print(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char 
 				if(mode == CENTER_ALIGNED)
 					x_offset /= 2;
 
-				print_str(screen_buffer_aligned,&string[i],line_size,x_offset,y_pos + (linenb*8),linefeed);
+				print_str(screen_buffer,&string[i],line_size,x_offset,y_pos + (linenb*8),linefeed);
 
 				if(string[i + line_size] == '\n')
 					i += (line_size + 1);
@@ -156,7 +156,7 @@ int hxc_printf_box(char * chaine, ...)
 	int str_size;
 	unsigned short i;
 
-	memcpy(screen_buffer_backup_aligned,&screen_buffer_aligned[160*70], (8*1000) + 256);
+	save_box();
 
 	va_list marker;
 	va_start( marker, chaine );
@@ -168,26 +168,26 @@ int hxc_printf_box(char * chaine, ...)
 
 	for(i=0;i< str_size;i=i+8)
 	{
-		print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+i,80-8,8);
+		print_char8x8(screen_buffer,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+i,80-8,8);
 	}
-	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+(i-8),80-8,3);
-	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2),80-8,2);
+	print_char8x8(screen_buffer,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+(i-8),80-8,3);
+	print_char8x8(screen_buffer,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2),80-8,2);
 
 	for(i=0;i< str_size;i=i+8)
 	{
-		print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+i,80,' ');
+		print_char8x8(screen_buffer,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+i,80,' ');
 	}
 
-	print_str(screen_buffer_aligned,temp_buffer,MAXTXTSIZE,((SCREEN_XRESOL-str_size)/2)+(2*8),80,0);
-	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+(i-8),80,7);
-	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2),80,6);
+	print_str(screen_buffer,temp_buffer,MAXTXTSIZE,((SCREEN_XRESOL-str_size)/2)+(2*8),80,0);
+	print_char8x8(screen_buffer,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+(i-8),80,7);
+	print_char8x8(screen_buffer,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2),80,6);
 
 	for(i=0;i< str_size;i=i+8)
 	{
-		print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+i,80+8,9);
+		print_char8x8(screen_buffer,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+i,80+8,9);
 	}
-	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+(i-8),80+8,5);
-	print_char8x8(screen_buffer_aligned,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2),80+8,4);
+	print_char8x8(screen_buffer,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2)+(i-8),80+8,5);
+	print_char8x8(screen_buffer,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2),80+8,4);
 
 	va_end( marker );
 }
@@ -197,7 +197,7 @@ void init_display_buffer()
 	int i;
 
 	// HxC2001 logo
-	display_sprite(screen_buffer_aligned, bitmap_hxc2001_smalllogo_bmp,
+	display_sprite(screen_buffer, bitmap_hxc2001_smalllogo_bmp,
 	                                    (SCREEN_XRESOL-bitmap_hxc2001_smalllogo_bmp->Xsize), 
 	                                    (SCREEN_YRESOL-bitmap_hxc2001_smalllogo_bmp->Ysize));
 
