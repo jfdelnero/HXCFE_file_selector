@@ -683,9 +683,13 @@ void print_help()
 
 	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS, (char*)help_scr2_msg);
 
-	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS + 16*8, (char*)help_scr3_msg);
-
 	while(wait_function_key()!=FCT_SELECT_FILE_DRIVEA);
+
+	clear_list(0);
+
+	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS, (char*)help_scr3_msg);
+
+	while(wait_function_key()!=FCT_SELECT_FILE_DRIVEA);	
 }
 
 void restorestr(ui_context * uicontext)
@@ -988,7 +992,7 @@ int ui_command_menu(ui_context * uicontext)
 				uicontext->colormode++;
 				set_color_scheme(uicontext->colormode);
 				cfgfile_header[256+128] = uicontext->colormode;
-				wait_released_key();
+				sleep(1);
 				return 0;
 			break;
 			case 7:
@@ -1395,7 +1399,7 @@ void ui_mainfileselector(ui_context * uicontext)
 					uicontext->colormode++;
 					set_color_scheme(uicontext->colormode);
 					cfgfile_header[256+128]=uicontext->colormode;
-					wait_released_key();
+					sleep(1);
 					break;
 
 				case FCT_TOP:

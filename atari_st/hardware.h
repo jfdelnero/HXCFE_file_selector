@@ -5,7 +5,6 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data);
 
 unsigned char Keyboard();
 unsigned char wait_function_key();
-void wait_released_key();
 
 void reboot();
 

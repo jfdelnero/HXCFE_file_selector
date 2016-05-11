@@ -79,20 +79,6 @@ __LINEA *__aline;
 __FONT  **__fonts;
 short  (**__funcs) (void);
 
-static unsigned char CIABPRB_DSKSEL;
-
-static unsigned char * mfmtobinLUT_L;
-static unsigned char * mfmtobinLUT_H;
-
-#define MFMTOBIN(W) ( mfmtobinLUT_H[W>>8] | mfmtobinLUT_L[W&0xFF] )
-
-static unsigned short * track_buffer;
-static unsigned short * track_buffer_wr;
-
-static unsigned char validcache;
-
-unsigned short sector_pos[16];
-
 unsigned char keyup;
 
 unsigned long timercnt;
@@ -183,7 +169,6 @@ void alloc_error()
 *********************************************************************************/
 int jumptotrack(unsigned char t)
 {
-	unsigned short i,j;
 	unsigned char data[512];
 
 	Floprd( &data, 0, floppydrive, 1, t, 0, 1 );
@@ -255,7 +240,7 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 
 void init_fdc(unsigned char drive)
 {
-	unsigned short i,ret;
+	unsigned short ret;
 
 	valid_cache = 0;
 	floppydrive = drive;
@@ -267,6 +252,20 @@ void init_fdc(unsigned char drive)
 /********************************************************************************
 *                          Joystick / Keyboard I/O
 *********************************************************************************/
+
+void su_toggleConterm()
+{
+	#define CONTERM *((unsigned char *) 0x484)
+
+	static unsigned char oldconterm = 0xff;
+	if (0xff == oldconterm) {
+		oldconterm = CONTERM;
+		CONTERM &= 0xFA;				/* disable key sound and bell */
+		CONTERM |= 8;					/* enable keyboard function to return shift/alt/ctrl status */
+	} else {
+		CONTERM = oldconterm;
+	}
+}
 
 unsigned char Joystick()
 {
@@ -288,14 +287,8 @@ void flush_char()
 {
 }
 
-void wait_released_key()
-{
-	while(!(Keyboard()&0x80));
-}
-
 unsigned char get_char()
 {
-	unsigned char buffer;
 	unsigned char key,i,c;
 	unsigned char function_code,key_code;
 
@@ -426,7 +419,7 @@ void initpal()
 	*ptr=colortable[((g_color&0xF)*4)+1];
 }
 
-void set_color_scheme(unsigned char color)
+unsigned char set_color_scheme(unsigned char color)
 {
 	unsigned short * palette;
 	short tmpcolor;
@@ -469,7 +462,6 @@ void set_color_scheme(unsigned char color)
 
 int init_display()
 {
-	unsigned short loop,yr;
 	unsigned long k,i;
 
 	linea0();
@@ -497,13 +489,15 @@ int init_display()
 
 	PLANES_ALIGNDEC = k;
 
-	screen_buffer = (unsigned long)Physbase();
+	screen_buffer = (unsigned char*)Physbase();
 	memset(screen_buffer, 0, SCREEN_YRESOL * LINE_BYTES);
 
 	set_color_scheme(0);
 
 	// Number of free line to display the file list.
 	disablemousepointer();
+
+	Supexec(su_toggleConterm);
 
 	return 0;
 }

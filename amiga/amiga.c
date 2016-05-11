@@ -969,11 +969,6 @@ void flush_char()
 {
 }
 
-void wait_released_key()
-{
-	while(!(Keyboard()&0x80));
-}
-
 unsigned char get_char()
 {
 	unsigned char buffer;
@@ -1291,9 +1286,10 @@ void initpal()
 
 }
 
-void set_color_scheme(unsigned char color)
+unsigned char set_color_scheme(unsigned char color)
 {
 	LoadRGB4(&viewPort, &colortable[(color&0x1F)*4], 4);
+	return color;
 }
 
 void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, unsigned short y,unsigned char c)

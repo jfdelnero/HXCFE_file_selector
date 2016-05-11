@@ -43,7 +43,6 @@ const char help_scr1_msg[]=
 	"ESCAPE                        : Leave the slots browser\n"
 	"\n"
 	"\n"
-	"\n"
 	"                   ---Press Enter / Fire to continue---"
 };
 
@@ -59,17 +58,21 @@ const char help_scr2_msg[]=
 	"F8                : Reboot\n"
 	"F9                : Save\n"
 	"F10               : Save and Reboot\n"
-	"\n"
+	"\n"	
 	"The joystick can be used to browse all the interface and select the images.\n"
 	"The keyboard is not required.\n"
 	"The first line of each page allows to switch to the next one :\n"
 	"Media files list-> Drive A slots list-> Drive B slots list-> Save/Settings page\n"
+	"\n"
+	"\n"
+	"                   ---Press Enter / Fire to continue---"
+
 };
 
 const char help_scr3_msg[]=
 {
-	"---Press Enter / Fire to exit---\n"
 	"\n"
+	"\n"	
 	"Amiga HxC Floppy Emulator file selector\n"
 	"V" VERSIONCODE " - " DATECODE "\n"
 	"(c) 2006-2016 HxC2001 / Jean-Francois DEL NERO\n"
@@ -81,6 +84,9 @@ const char help_scr3_msg[]=
 	"\n"
 	"Forum : http://torlus.com/floppy/forum\n"
 	"Sources on http://github.com/jfdelnero\n"
+	"\n"
+	"\n"
+	"---Press Enter / Fire to continue---"
 };
 
 const char command_menu_msg[]=
