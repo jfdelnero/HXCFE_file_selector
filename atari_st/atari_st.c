@@ -275,7 +275,7 @@ unsigned char Joystick()
 
 unsigned char Keyboard()
 {
-	return Cconin()>>16;
+	return Cnecin()>>16;
 }
 
 int kbhit()
@@ -403,20 +403,6 @@ unsigned char wait_function_key()
 void setvideomode(int mode)
 {
 
-}
-
-void initpal()
-{
-	volatile unsigned short * ptr;
-
-	ptr=(unsigned short *)0xFF8240;
-	*ptr=colortable[((g_color&0xF)*4)+0];
-	ptr=(unsigned short *)0xFF8242;
-	*ptr=colortable[((g_color&0xF)*4)+2];
-	ptr=(unsigned short *)0xFF8244;
-	*ptr=colortable[((g_color&0xF)*4)+3];
-	ptr=(unsigned short *)0xFF8246;
-	*ptr=colortable[((g_color&0xF)*4)+1];
 }
 
 unsigned char set_color_scheme(unsigned char color)
