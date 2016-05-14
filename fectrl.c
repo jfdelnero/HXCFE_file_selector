@@ -608,7 +608,7 @@ void show_all_slots(ui_context * uicontext,int drive)
 {
 	char tmp_str[81];
 	disk_in_drive * drive_slots_ptr;
-	unsigned short i;
+	unsigned short i,xoffset,slotnumber;
 
 	if( drive >= 2 )
 		return;
@@ -630,14 +630,33 @@ void show_all_slots(ui_context * uicontext,int drive)
 
 	for ( i = 1; i < NUMBER_OF_FILE_ON_DISPLAY; i++ )
 	{
-		if(i + (uicontext->slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1)) < uicontext->config_file_number_max_of_slot)
+		slotnumber = i + (uicontext->slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1));
+
+		if( slotnumber < uicontext->config_file_number_max_of_slot)
 		{
 			memset(tmp_str,0,sizeof(tmp_str));
-			if( drive_slots_ptr[i + (uicontext->slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))].DirEnt.size)
+			if( drive_slots_ptr[slotnumber].DirEnt.size)
 			{
-				memcpy(tmp_str,&drive_slots_ptr[i + (uicontext->slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))].DirEnt.longName,17+8);
+				memcpy(tmp_str,&drive_slots_ptr[slotnumber].DirEnt.longName,17+8);
 			}
-			hxc_printf(LEFT_ALIGNED,0,FILELIST_Y_POS + (i*8),"%.3d:%s", i + (uicontext->slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1)), tmp_str);
+			 
+			if( slotnumber > 99 )
+				xoffset = 0;
+			else
+			{
+				if( slotnumber > 9 )
+				{
+					xoffset = 8;
+					hxc_printf(LEFT_ALIGNED,0,FILELIST_Y_POS + (i*8),"0");
+				}
+				else
+				{
+					xoffset = 16;
+					hxc_printf(LEFT_ALIGNED,0,FILELIST_Y_POS + (i*8),"00");
+				}
+			}
+
+			hxc_printf(LEFT_ALIGNED,xoffset,FILELIST_Y_POS + (i*8),"%d:%s", slotnumber, tmp_str);
 		}
 	}
 }
@@ -1245,7 +1264,7 @@ void ui_mainfileselector(ui_context * uicontext)
 				i=NUMBER_OF_FILE_ON_DISPLAY;
 			}
 
-		}while((i<NUMBER_OF_FILE_ON_DISPLAY) && Keyboard()!=0x45);
+		}while( i < NUMBER_OF_FILE_ON_DISPLAY );
 
 		uicontext->filtermode=0;
 
@@ -1380,15 +1399,9 @@ void ui_mainfileselector(ui_context * uicontext)
 
 				case FCT_HELP:
 					print_help();
-
-					clear_list(5);
-					init_display_buffer();
-					displayFolder(uicontext);
-
 					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number&0x1FF],sizeof(struct fs_dir_list_status));
 					clear_list(0);
 					uicontext->read_entry=1;
-
 					break;
 
 				case FCT_EMUCFG:
