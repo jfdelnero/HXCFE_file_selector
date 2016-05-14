@@ -51,10 +51,14 @@
 #include "keymap.h"
 #include "hardware.h"
 
+# define _hz_200  ((unsigned long *) 0x4baL)
+
 static unsigned char floppydrive;
 static unsigned char datacache[512*9];
 static unsigned char valid_cache;
 unsigned char g_color;
+unsigned char g_joystick;
+unsigned long g_hz200;
 unsigned long old_physical_adr;
 
 volatile unsigned short io_floppy_timeout;
@@ -267,11 +271,46 @@ void su_toggleConterm()
 	}
 }
 
-unsigned char Joystick()
+void su_readjoystick()
 {
+	unsigned short joystick;
+
+	g_joystick = 0;
+
+	*(volatile unsigned short*)(0xfffc02) = 0x12; // turn off mouse
+	*(volatile unsigned short*)(0xfffc02) = 0x14; // turn off mouse
+
+	joystick = *(volatile unsigned short*)(0xfffc02);
+
+	if(!(joystick&0x80)) // Fire
+		g_joystick |= 0x10;
+		
+	if(!(joystick&0x02)) // Down
+		g_joystick |= 0x02;
+		
+	if(!(joystick&0x01)) // Up
+		g_joystick |= 0x01;
+
+	if(!(joystick&0x08)) // Right
+		g_joystick |= 0x04;
+
+	if(!(joystick&0x04)) // Left
+		g_joystick |= 0x08;
+
+}
+
+void su_get_hz200(void) 
+{
+	g_hz200 = *_hz_200;
 	return 0;
 }
 
+unsigned char Joystick()
+{
+	//Supexec(su_readjoystick);
+	g_joystick = 0;
+	return g_joystick;
+}
 
 unsigned char Keyboard()
 {
@@ -408,27 +447,13 @@ void setvideomode(int mode)
 unsigned char set_color_scheme(unsigned char color)
 {
 	unsigned short * palette;
-	short tmpcolor;
 	int i,j;
 	int nbcols;
-	static unsigned short initialpalette[4] = {0xffff, 0xffff, 0xffff, 0xffff};
 
-	if (0xff == color) {
-		// cycle
-		color = g_color+1;
-		if ( color >= (sizeof(colortable))>>3 ) {
-			// reset to first
-			color = 0;
-		}
-	}
-	if (0xfe == color) {
-		// restore
-		palette = initialpalette;
-	} else {
-		g_color = color;
-		palette = &colortable[g_color<<2];
-	}
+	palette = &colortable[(color<<2)&0x1F];
 	nbcols = 2<<(NB_PLANES-1);
+
+	g_color = color & 0x1F;
 
 	for (i=0; i<4 && i<nbcols; i++) {
 		j = i;
@@ -437,10 +462,8 @@ unsigned char set_color_scheme(unsigned char color)
 			// the last two colors may be pal[2] and pal[3] in 2 planes, or pal[14] and pal[15] in 4 planes
 			j = nbcols - 4 + i;
 		}
-		tmpcolor = Setcolor(j, palette[i]);
-		if (0xffff == initialpalette[i]) {
-			initialpalette[i] = tmpcolor;
-		}
+
+		Setcolor(j, palette[i]);
 	}
 
 	return g_color;
@@ -639,5 +662,14 @@ void init_timer()
 
 void sleep(int secs)
 {
+	unsigned long sec;
 
+	sec = secs;
+
+	Supexec(su_get_hz200);
+	sec = g_hz200 + sec * 200;
+	while(g_hz200 < sec)
+	{
+		Supexec(su_get_hz200);
+	}
 }
