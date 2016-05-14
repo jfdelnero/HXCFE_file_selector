@@ -570,10 +570,21 @@ void h_line(unsigned short y_pos,unsigned short val)
 	ptr_dst=(unsigned short *) screen_buffer;
 	ptr_dst += (unsigned long) LINE_WORDS * y_pos;
 
-	for(i=0; i<LINE_WORDS; i+=NB_PLANES)
+	if(val)
 	{
-		*(ptr_dst) = val;
-		ptr_dst += NB_PLANES;
+		for(i=0; i<LINE_WORDS; i+=NB_PLANES)
+		{
+			*(ptr_dst) = val;
+			ptr_dst += NB_PLANES;
+		}
+	}
+	else
+	{
+		for(i=0; i<LINE_WORDS; i++)
+		{
+			*(ptr_dst) = val;
+			ptr_dst ++;
+		}
 	}
 
 }
