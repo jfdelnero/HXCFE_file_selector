@@ -2,7 +2,7 @@
 
 const char startup_msg[]=
 {
-	"Amiga HxC Floppy Emulator file selector\n"
+	"HxC Floppy Emulator file selector\n"
 	"V" VERSIONCODE " - " DATECODE "\n"
 	"(c) 2009-2016 HxC2001 / Jean-Francois DEL NERO\n"
 	"Email : hxc2001@free.fr\n"
@@ -73,7 +73,7 @@ const char help_scr3_msg[]=
 {
 	"\n"
 	"\n"	
-	"Amiga HxC Floppy Emulator file selector\n"
+	"HxC Floppy Emulator file selector\n"
 	"V" VERSIONCODE " - " DATECODE "\n"
 	"(c) 2006-2016 HxC2001 / Jean-Francois DEL NERO\n"
 	"Email : hxc2001@free.fr\n"
@@ -105,4 +105,4 @@ const char command_menu_msg[]=
 
 const char cur_folder_msg[]= "Current folder:";
 const char reboot_msg[]= ">>>>>Rebooting...<<<<<";
-const char title_msg[]= { "Amiga HxC Floppy Emulator Manager v" VERSIONCODE};
+const char title_msg[]= { "HxC Floppy Emulator Manager v" VERSIONCODE};
