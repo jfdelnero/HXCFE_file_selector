@@ -57,8 +57,10 @@ static unsigned char floppydrive;
 static unsigned char datacache[512*9];
 static unsigned char valid_cache;
 unsigned char g_color;
-unsigned char g_joystick;
 unsigned long g_hz200;
+
+volatile unsigned char g_joydata[3];
+
 unsigned long old_physical_adr;
 
 volatile unsigned short io_floppy_timeout;
@@ -271,34 +273,6 @@ void su_toggleConterm()
 	}
 }
 
-void su_readjoystick()
-{
-	unsigned short joystick;
-
-	g_joystick = 0;
-
-	*(volatile unsigned short*)(0xfffc02) = 0x12; // turn off mouse
-	*(volatile unsigned short*)(0xfffc02) = 0x14; // turn off mouse
-
-	joystick = *(volatile unsigned short*)(0xfffc02);
-
-	if(!(joystick&0x80)) // Fire
-		g_joystick |= 0x10;
-		
-	if(!(joystick&0x02)) // Down
-		g_joystick |= 0x02;
-		
-	if(!(joystick&0x01)) // Up
-		g_joystick |= 0x01;
-
-	if(!(joystick&0x08)) // Right
-		g_joystick |= 0x04;
-
-	if(!(joystick&0x04)) // Left
-		g_joystick |= 0x08;
-
-}
-
 void su_get_hz200(void) 
 {
 	g_hz200 = *_hz_200;
@@ -307,9 +281,25 @@ void su_get_hz200(void)
 
 unsigned char Joystick()
 {
-	//Supexec(su_readjoystick);
-	g_joystick = 0;
-	return g_joystick;
+	unsigned char joystick;
+
+	joystick = 0;
+	if( (g_joydata[2]&0x80) ) // Fire
+		joystick |= 0x10;
+		
+	if((g_joydata[2]&0x02) ) // Down
+		joystick |= 0x02;
+		
+	if( (g_joydata[2]&0x01) ) // Up
+		joystick |= 0x01;
+
+	if( (g_joydata[2]&0x08) ) // Right
+		joystick |= 0x04;
+
+	if( (g_joydata[2]&0x04) ) // Left
+		joystick |= 0x08;
+		
+	return joystick;
 }
 
 unsigned char Keyboard()
@@ -469,6 +459,32 @@ unsigned char set_color_scheme(unsigned char color)
 	return g_color;
 }
 
+void joystick_reader(char *packet)
+{
+	// Get the Joystick packet
+	g_joydata[0] = *packet++; // 0xFF / 0xFE
+	g_joydata[1] = *packet++; // Joy 0 / Mouse
+	g_joydata[2] = *packet;   // Joy 1
+} 
+ 
+int install_joy_vector()
+{
+	_KBDVECS *table_addr;
+	int idx;
+
+	g_joydata[0] = 0;
+	g_joydata[1] = 0;
+	g_joydata[2] = 0;
+
+	table_addr = Kbdvbase();
+
+	table_addr->joyvec = joystick_reader;
+
+	Ikbdws(1, "\024");
+ 
+	return 0;
+}
+
 int init_display()
 {
 	unsigned long k,i;
@@ -507,6 +523,8 @@ int init_display()
 	disablemousepointer();
 
 	Supexec(su_toggleConterm);
+
+	install_joy_vector();
 
 	return 0;
 }
