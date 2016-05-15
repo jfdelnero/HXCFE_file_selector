@@ -550,9 +550,14 @@ unsigned char Joystick()
 
 unsigned char Keyboard()
 {
+	unsigned char c;
 	if ( Cconis() < 0 )
 	{
-		return Cnecin()>>16;
+		do
+		{
+			c = Cnecin()>>16;
+		}while( Cconis() < 0 ); // Flush the buffer...
+		return c;
 	}
 
 	return 0x80;
