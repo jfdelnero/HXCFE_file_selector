@@ -78,6 +78,8 @@ const char help_scr3_msg[]=
 	"(c) 2006-2016 HxC2001 / Jean-Francois DEL NERO\n"
 	"Email : hxc2001@free.fr\n"
 	"\n"
+	"Atari ST version optimized by Gilles Bouthenot\n"
+	"\n"
 	"Check for updates on :\n"
 	"http://hxc2001.free.fr/floppy_drive_emulator/\n"
 	"http://hxc2001.com\n"
