@@ -21,11 +21,10 @@ VASMOPT          = -Faout -showopt -m68000 -spaces -quiet
 C                = $(GCCBIN)
 CFLAGS           = $(GCCOPT) -mshort
 
-#LFLAGS           = $(GCLOPT) -s    # STRIP SYMBOLS
-LFLAGS           = $(GCLOPT)  	    # KEEP SYMBOLS (debug)
+LFLAGS           = $(GCLOPT) -s    # STRIP SYMBOLS
+#LFLAGS           = $(GCLOPT)  	    # KEEP SYMBOLS (debug)
 
 EXEC             = HXCFEMNG.PRG
-
 
 .PHONY: all clean push-mina push-gbo-dsi push-gbo-pc
 
@@ -44,9 +43,7 @@ push-gbo-dsi: $(EXEC)
 push-gbo-pc: $(EXEC)
 	rsync --perms $< gbouthenot@gbo-pc.openvpn:/cygdrive/c/data/dropbox/emul/atari/hd/c/tmp/
 
-#$(EXEC):          libc/snprintf/snprintf.o instajump.o
-
-$(EXEC):        libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o fectrl.o gui_utils.o atari_st.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o msg_txt.o
+$(EXEC):        libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o  fectrl.o gui_utils.o atari_st.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o msg_txt.o
 	$(C)          $(LFLAGS)           $^ -o $@
 	cd loader   && make all
 
@@ -94,10 +91,3 @@ libc/snprintf/snprintf.o: libc/snprintf/snprintf.c libc/snprintf/snprintf.h
 
 libc/mStartupAsmC.o: libc/mStartupAsmC.s
 	$(VASMBIN)    $(VASMOPT)          $< -o $@
-
-quickersort.o: quickersort.s
-	$(VASMBIN)    $(VASMOPT)          $< -o $@
-
-gui_asm.o: gui_asm.s
-	$(VASMBIN)    $(VASMOPT)          $< -o $@
-

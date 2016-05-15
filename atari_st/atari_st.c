@@ -51,13 +51,18 @@
 #include "keymap.h"
 #include "hardware.h"
 
+#include "gui_utils.h"
+
+#include "atari_hw.h"
+
 # define _hz_200  ((unsigned long *) 0x4baL)
 
 static unsigned char floppydrive;
 static unsigned char datacache[512*9];
 static unsigned char valid_cache;
 unsigned char g_color;
-unsigned long g_hz200;
+volatile unsigned long g_hz200;
+unsigned char g_trackpos;
 
 volatile unsigned char g_joydata[3];
 
@@ -88,6 +93,8 @@ short  (**__funcs) (void);
 unsigned char keyup;
 
 unsigned long timercnt;
+
+WORD fdcDmaMode = 0;
 
 #ifndef BMAPTYPEDEF
 #define BMAPTYPEDEF
@@ -156,12 +163,35 @@ static unsigned short colortable[] = {
 	0x666, 0x000, 0x00f, 0x0f0  // b
 };
 
-void waitms(int ms)
+void su_get_hz200(void)
 {
+	g_hz200 = *_hz_200;
+	return;
 }
 
-void testblink()
+void waitms(unsigned long  ms)
 {
+	if(ms < 5)
+		ms = 5;
+
+	ms = ms / 5;
+
+	Supexec(su_get_hz200);
+	ms = g_hz200 + ms;
+	while(g_hz200 < ms)
+	{
+		Supexec(su_get_hz200);
+	}
+}
+
+void sleep(int secs)
+{
+	int i;
+
+	for(i=0;i<secs;i++)
+	{
+		waitms(1000);
+	}
 }
 
 void alloc_error()
@@ -173,6 +203,233 @@ void alloc_error()
 /********************************************************************************
 *                              FDC I/O
 *********************************************************************************/
+
+#ifdef __VBCC__
+void asm_nop(void) = "\tnop\n";
+#else
+#define asm_nop(void) __asm("nop");
+#endif
+
+#ifndef FDC_TOSAPI
+
+void su_fdcRegSet(WORD reg, WORD data)
+{
+	DMA->control = reg | fdcDmaMode;
+
+	asm_nop();
+	asm_nop();
+	DMA->data    = data;
+	asm_nop();
+	asm_nop();
+}
+void su_fdcSendCommandWait(WORD command)
+{
+	MFP *mfp = MFP_BASE;
+	su_fdcRegSet(0x80, command);
+
+	while (0x20 == (mfp->gpip & 0x20));       /* wait till the next interrupt */
+}
+
+WORD su_fdcRegGet(WORD reg)
+{
+	DMA->control = reg | fdcDmaMode;
+	asm_nop();
+	asm_nop();
+	return DMA->data;
+}
+
+void su_fdcWait(void)
+{
+	DMA->control = 0x80 | fdcDmaMode;
+
+	while (FDC_BUSY == (DMA->data & FDC_BUSY));
+}
+
+void su_fdcSelectDriveASide0()
+{
+	UBYTE data;
+#ifdef __VBCC__
+	__asm("\tmove.w sr,-(a7)\n");
+	__asm("\tor.w #$700,sr\n");
+#else
+	__asm("\tmove.w sr,-(a7)\n"
+		  "\tor.w #0x700,sr\n"
+		   :::"%sp"
+		 );
+#endif
+
+	PSG->regdata = 14;      /* select register 14 */
+	data = PSG->regdata;
+	data = data & 0xf8;     /* clear bits */
+	if (0 == floppydrive)
+	{
+		data = data | 5;        /* select drive A, side 0 */
+	} else {
+		data = data | 3;        /* select drive B, side 0 */
+	}
+
+	PSG->write = data;
+
+#ifdef __VBCC__
+	__asm("\tmove.w (a7)+,sr\n");
+#else
+	__asm("\tmove.w (a7)+,sr\n" ::: "%sp");
+#endif
+
+}
+
+void su_fdcLock(void)
+{
+/*
+Set floppy lock, so the system VBL won't interfere
+inhibit MFP interrupt
+set the bit 5 of fffa01 as input (0)
+enable changing of bit 5 of fffa01 (gpip) to poll the interrupt bit of the WDC
+see the steem source at
+https://github.com/btuduri/Steem-Engine/blob/629d8b98df7245c8645b0ad41f90ed395d427531/steem/code/iow.cpp
+*/
+
+#ifdef __VBCC__
+	__asm("\tst $43e.w\n");
+	__asm("\tbclr #7,$fffffa09.w\n");
+	__asm("\tbclr #5, $fffffa05.w\n");
+#else
+	__asm("\tst 0x43e.w\n");
+	__asm("\tbclr #7,0xfffffa09.w\n");
+	__asm("\tbclr #5, 0xfffffa05.w\n");
+#endif
+
+	su_fdcWait();
+}
+void su_fdcUnlock(void)
+{
+	su_fdcWait();
+
+#ifdef __VBCC__
+	__asm("\tsf $43e.w\n");
+#else
+	__asm("\tsf 0x43e.w\n");
+#endif
+}
+
+void su_headinit(void)
+{
+	su_fdcLock();
+	su_fdcSelectDriveASide0();
+	su_fdcRegSet(0x86, 255);        /* data : track number */
+	su_fdcSendCommandWait(0x13);    /* SEEK, no verify, 3ms */
+/*    su_fdcUnlock(); */
+/*    Crawcin(); */
+}
+
+void su_jumptotrack(void)
+{
+	su_fdcLock();
+	su_fdcRegSet(0x86, g_trackpos);          /* data : track number */
+	su_fdcSendCommandWait(0x13);    /* SEEK, no verify, 3ms */
+	su_fdcUnlock();
+}
+
+void su_fdcDmaAdrSet(unsigned char *adr)
+{
+	DMA->addr_low  = ((unsigned long) adr) & 0xff;
+	DMA->addr_med  = ((unsigned long) adr>>8) & 0xff;
+	DMA->addr_high = ((unsigned long) adr>>16) & 0xff;
+}
+void su_fdcDmaReadMode(void)
+{
+	DMA->control = 0x90;
+	DMA->control = 0x190;
+	DMA->control = 0x90;
+	fdcDmaMode = 0x0;
+}
+void su_fdcDmaWriteMode(void)
+{
+	DMA->control = 0x190;
+	DMA->control = 0x90;
+	DMA->control = 0x190;
+	fdcDmaMode = 0x100;
+}
+
+void read9sectors(unsigned char *adr)
+{
+	void * old_ssp;
+	WORD sectorNumber;
+
+	old_ssp = (void *) Super(0L);
+
+	su_fdcDmaReadMode();
+	su_fdcDmaAdrSet(adr);
+	su_fdcRegSet(0x90, 9);                   /* sector count : 9 sectors */
+
+	for (sectorNumber = 0; sectorNumber<=8; sectorNumber++)
+	{
+		su_fdcRegSet(0x84, sectorNumber);
+		su_fdcSendCommandWait(0x88);         /* READ SECTOR, no spinup */
+	}
+
+	Super(old_ssp);
+}
+
+void write1sector(WORD sectorNumber, unsigned char *adr)
+{
+	void *old_ssp;
+
+	old_ssp = (void *) Super(0L);
+
+	su_fdcDmaWriteMode();
+	su_fdcDmaAdrSet(adr);
+	su_fdcRegSet(0x90, 1);              /* sector count : 1 sector */
+
+	su_fdcRegSet(0x84, sectorNumber);
+	su_fdcSendCommandWait(0xa8);        /* WRITE SECTOR, no spinup */
+
+	Super(old_ssp);
+}
+
+unsigned char writesector(unsigned char sectornum,unsigned char * data)
+{
+	valid_cache=0;
+
+	write1sector(sectornum, data);
+
+	return 1;
+}
+
+unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned char invalidate_cache)
+{
+	if(!valid_cache || invalidate_cache)
+	{
+		read9sectors(datacache);
+		valid_cache=0xFF;
+	}
+
+	memcpy((void*)data,&datacache[sectornum*512],512);
+	return 1;
+
+}
+
+int jumptotrack(unsigned char t)
+{
+	g_trackpos = t;
+	Supexec((LONG *) su_jumptotrack);
+	return 1;
+};
+
+void init_fdc(unsigned char drive)
+{
+	valid_cache = 0;
+	floppydrive = drive;
+	Supexec((LONG *) su_headinit);
+}
+
+int test_drive(int drive)
+{
+	return 0;
+}
+
+#else
+
 int jumptotrack(unsigned char t)
 {
 	unsigned char data[512];
@@ -183,11 +440,6 @@ int jumptotrack(unsigned char t)
 };
 
 int test_drive(int drive)
-{
-	return 0;
-}
-
-int waitindex()
 {
 	return 0;
 }
@@ -246,14 +498,14 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 
 void init_fdc(unsigned char drive)
 {
-	unsigned short ret;
-
 	valid_cache = 0;
 	floppydrive = drive;
 	Floprate( floppydrive, 2);
 
-	ret = Floprd( &datacache, 0, floppydrive, 0, 255, 0, 1 );
+	Floprd( &datacache, 0, floppydrive, 0, 255, 0, 1 );
 }
+
+#endif
 
 /********************************************************************************
 *                          Joystick / Keyboard I/O
@@ -273,12 +525,6 @@ void su_toggleConterm()
 	}
 }
 
-void su_get_hz200(void) 
-{
-	g_hz200 = *_hz_200;
-	return 0;
-}
-
 unsigned char Joystick()
 {
 	unsigned char joystick;
@@ -286,10 +532,10 @@ unsigned char Joystick()
 	joystick = 0;
 	if( (g_joydata[2]&0x80) ) // Fire
 		joystick |= 0x10;
-		
+
 	if((g_joydata[2]&0x02) ) // Down
 		joystick |= 0x02;
-		
+
 	if( (g_joydata[2]&0x01) ) // Up
 		joystick |= 0x01;
 
@@ -298,13 +544,18 @@ unsigned char Joystick()
 
 	if( (g_joydata[2]&0x04) ) // Left
 		joystick |= 0x08;
-		
+
 	return joystick;
 }
 
 unsigned char Keyboard()
 {
-	return Cnecin()>>16;
+	if ( Cconis() < 0 )
+	{
+		return Cnecin()>>16;
+	}
+
+	return 0x80;
 }
 
 int kbhit()
@@ -354,7 +605,6 @@ unsigned char get_char()
 
 	return function_code;
 }
-
 
 unsigned char wait_function_key()
 {
@@ -429,11 +679,6 @@ unsigned char wait_function_key()
 *                              Display Output
 *********************************************************************************/
 
-void setvideomode(int mode)
-{
-
-}
-
 unsigned char set_color_scheme(unsigned char color)
 {
 	unsigned short * palette;
@@ -465,12 +710,11 @@ void joystick_reader(char *packet)
 	g_joydata[0] = *packet++; // 0xFF / 0xFE
 	g_joydata[1] = *packet++; // Joy 0 / Mouse
 	g_joydata[2] = *packet;   // Joy 1
-} 
- 
+}
+
 int install_joy_vector()
 {
 	_KBDVECS *table_addr;
-	int idx;
 
 	g_joydata[0] = 0;
 	g_joydata[1] = 0;
@@ -478,10 +722,10 @@ int install_joy_vector()
 
 	table_addr = Kbdvbase();
 
-	table_addr->joyvec = joystick_reader;
+	table_addr->joyvec = (void*)joystick_reader;
 
 	Ikbdws(1, "\024");
- 
+
 	return 0;
 }
 
@@ -519,7 +763,6 @@ int init_display()
 
 	set_color_scheme(0);
 
-	// Number of free line to display the file list.
 	disablemousepointer();
 
 	Supexec(su_toggleConterm);
@@ -613,7 +856,6 @@ void h_line(unsigned short y_pos,unsigned short val)
 			ptr_dst ++;
 		}
 	}
-
 }
 
 void invert_line(unsigned short x_pos,unsigned short y_pos)
@@ -671,23 +913,5 @@ void ithandler(void)
 	if( ( Keyboard() & 0x80 )  && !Joystick())
 	{
 		keyup  = 2;
-	}
-}
-
-void init_timer()
-{
-}
-
-void sleep(int secs)
-{
-	unsigned long sec;
-
-	sec = secs;
-
-	Supexec(su_get_hz200);
-	sec = g_hz200 + sec * 200;
-	while(g_hz200 < sec)
-	{
-		Supexec(su_get_hz200);
 	}
 }
