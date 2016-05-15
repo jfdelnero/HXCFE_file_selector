@@ -1011,7 +1011,7 @@ int ui_command_menu(ui_context * uicontext)
 				uicontext->colormode++;
 				set_color_scheme(uicontext->colormode);
 				cfgfile_header[256+128] = uicontext->colormode;
-				sleep(1);
+				waitms(100);
 				return 0;
 			break;
 			case 7:
@@ -1412,7 +1412,7 @@ void ui_mainfileselector(ui_context * uicontext)
 					uicontext->colormode++;
 					set_color_scheme(uicontext->colormode);
 					cfgfile_header[256+128]=uicontext->colormode;
-					sleep(1);
+					waitms(100);
 					break;
 
 				case FCT_TOP:
@@ -1472,8 +1472,6 @@ int main(int argc, char* argv[])
 	strcpy( uicontext->currentPath, "/" );
 
 	strcpy(FIRMWAREVERSION,"-------");
-
-	init_timer();
 
 	init_display();
 	
