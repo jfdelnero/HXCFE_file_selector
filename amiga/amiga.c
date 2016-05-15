@@ -1215,7 +1215,8 @@ int init_display()
 	// Number of free line to display the file list.
 
 	disablemousepointer();
-	
+	init_timer();
+
 	return 0;
 }
 
