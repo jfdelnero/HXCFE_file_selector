@@ -639,7 +639,7 @@ void show_all_slots(ui_context * uicontext,int drive)
 			{
 				memcpy(tmp_str,&drive_slots_ptr[slotnumber].DirEnt.longName,17+8);
 			}
-			 
+
 			if( slotnumber > 99 )
 				xoffset = 0;
 			else
@@ -683,7 +683,16 @@ int getext(char * path,char * exttodest)
 		exttodest[1] = path[i+1];
 		exttodest[2] = path[i+2];
 		exttodest[3] = 0;
+
+		// Remove trailing space
+		i = 2;
+		while(i>=0 && exttodest[i]==' ')
+		{
+			exttodest[i] = 0;
+			i--;
+		}
 	}
+
 
 	return 0;
 }
@@ -708,7 +717,7 @@ void print_help()
 
 	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS, (char*)help_scr3_msg);
 
-	while(wait_function_key()!=FCT_SELECT_FILE_DRIVEA);	
+	while(wait_function_key()!=FCT_SELECT_FILE_DRIVEA);
 }
 
 void restorestr(ui_context * uicontext)
@@ -1474,7 +1483,7 @@ int main(int argc, char* argv[])
 	strcpy(FIRMWAREVERSION,"-------");
 
 	init_display();
-	
+
 	init_display_buffer();
 
 	#ifdef DBGMODE
