@@ -43,7 +43,7 @@ push-gbo-dsi: $(EXEC)
 push-gbo-pc: $(EXEC)
 	rsync --perms $< gbouthenot@gbo-pc.openvpn:/cygdrive/c/data/dropbox/emul/atari/hd/c/tmp/
 
-$(EXEC):        libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o  fectrl.o gui_utils.o atari_st.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o msg_txt.o
+$(EXEC):        libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o  fectrl.o gui_utils.o atari_st.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o msg_txt.o
 	$(C)          $(LFLAGS)           $^ -o $@
 	cd loader   && make all
 
@@ -57,9 +57,6 @@ fectrl.o: ../fectrl.c
 	$(C)          $(CFLAGS)        -c $< -o $@
 
 msg_txt.o: ../msg_txt.c
-	$(C)          $(CFLAGS)        -c $< -o $@
-	
-crc.o: ../crc.c
 	$(C)          $(CFLAGS)        -c $< -o $@
 
 fat_misc.o: ../fat32/fat_misc.c

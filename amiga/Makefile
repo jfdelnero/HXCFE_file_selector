@@ -31,7 +31,7 @@ msg_txt.o: ../msg_txt.c
 amiga.o: amiga.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-crc.o: ../crc.c
+crc.o: crc.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 fat_access.o: ../fat32/fat_access.c
