@@ -41,6 +41,7 @@
 
 
 #include <stdio.h>
+#include <malloc.h>
 #include <string.h>
 
 #include "conf.h"
@@ -1132,6 +1133,8 @@ int init_display()
 {
 	unsigned short loop,yr;
 
+	SCREEN_XRESOL = 640;
+
 	memset(&view,0,sizeof(struct View));
 	memset(&viewPort,0,sizeof(struct ViewPort));
 	memset(&rasInfo,0,sizeof(struct RasInfo));
@@ -1201,7 +1204,6 @@ int init_display()
 	SetAPen( &my_rast_port,   1 );
 	screen_buffer = my_bit_map.Planes[ 0 ];
 
-	SCREEN_XRESOL = 640;
 	yr= get_vid_mode();
 	if(yr>290)
 	{
