@@ -56,9 +56,9 @@ static unsigned char cfgfile_header[512];
 
 static unsigned char sdfecfg_file[512];
 
-static disk_in_drive disks_slot_a[MAX_NUMBER_OF_SLOT];
-static disk_in_drive disks_slot_b[MAX_NUMBER_OF_SLOT];
-static DirectoryEntry DirectoryEntry_tab[40];
+static disk_in_drive_v2 disks_slots[MAX_NUMBER_OF_SLOT];
+
+static disk_in_drive_v2_long DirectoryEntry_tab[40];
 
 static struct fs_dir_list_status file_list_status;
 static struct fs_dir_list_status file_list_status_tab[512];
@@ -339,9 +339,12 @@ int media_write(unsigned long sector, unsigned char *buffer)
 char read_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 {
 	char ret;
-	unsigned char number_of_slot;
-	unsigned short i;
+	unsigned short number_of_slots;
+	unsigned short i,d,slot_offset;
+	short sector_offset,last_sector_offset;
 	int file_cfg_size;
+	unsigned char temp_sector[512];
+	disk_in_drive * disk;
 	cfgfile * cfgfile_ptr;
 	FL_FILE *file;
 
@@ -349,8 +352,7 @@ char read_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 		hxc_print(LEFT_ALIGNED,0,0,"-- read_cfg_file E --");
 	#endif
 
-	memset((void*)&disks_slot_a,0,sizeof(disk_in_drive)*MAX_NUMBER_OF_SLOT);
-	memset((void*)&disks_slot_b,0,sizeof(disk_in_drive)*MAX_NUMBER_OF_SLOT);
+	memset((void*)&disks_slots,0,sizeof(disks_slots));
 
 	ret=0;
 	file = fl_fopen("/HXCSDFE.CFG", "r");
@@ -358,40 +360,121 @@ char read_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 	{
 		fl_fseek( file, 0, SEEK_END );
 		file_cfg_size = fl_ftell( file );
-		uicontext->config_file_number_max_of_slot = ( ( file_cfg_size - 0x400 ) / (64 * 2) ) - 1;
 		fl_fseek( file, 0, SEEK_SET );
-		if( uicontext->config_file_number_max_of_slot > MAX_NUMBER_OF_SLOT )
-			uicontext->config_file_number_max_of_slot = MAX_NUMBER_OF_SLOT;
 
 		cfgfile_ptr=(cfgfile * )cfgfile_header;
 
 		fl_fread(cfgfile_header, 1, 512 , file);
-		number_of_slot = cfgfile_ptr->number_of_slot;
 
-		if( number_of_slot > MAX_NUMBER_OF_SLOT )
-			number_of_slot = MAX_NUMBER_OF_SLOT - 1;
-
-		if( number_of_slot > uicontext->config_file_number_max_of_slot )
-			number_of_slot = uicontext->config_file_number_max_of_slot - 1;
-
-		fl_fseek(file , 1024 , SEEK_SET);
-
-		fl_fread(sdfecfg_file, 1, 512 , file);
-		i=1;
-		do
+		if( !strncmp(cfgfile_ptr->signature,"HXCFECFGV",9) )
 		{
-			if(!(i&3))
+			switch(cfgfile_ptr->signature[9])
 			{
-				fl_fread(sdfecfg_file, 1, 512 , file);
+				case '1':
+					uicontext->cfg_file_format_version = 1;
+					uicontext->number_of_drive = 2;
+					uicontext->config_file_number_max_of_slot = ( ( file_cfg_size - 0x400 ) / (64 * 2) ) - 1;
+					if( uicontext->config_file_number_max_of_slot > ( MAX_NUMBER_OF_SLOT / 2 ) )
+						uicontext->config_file_number_max_of_slot = ( MAX_NUMBER_OF_SLOT / 2 );
+
+					number_of_slots = cfgfile_ptr->number_of_slot;
+					if( number_of_slots > ( MAX_NUMBER_OF_SLOT / 2 ) )
+						number_of_slots = ( MAX_NUMBER_OF_SLOT / 2 ) - 1;
+
+					if( number_of_slots > uicontext->config_file_number_max_of_slot )
+						number_of_slots = uicontext->config_file_number_max_of_slot - 1;
+
+					fl_fseek(file , 1024 , SEEK_SET);
+
+					memset(uicontext->slot_map,0,512);
+					fl_fread(sdfecfg_file, 1, 512 , file);
+					i=1;
+					while(i<number_of_slots)
+					{
+						if(!(i&3))
+						{
+							fl_fread(sdfecfg_file, 1, 512 , file);
+						}
+
+						disk = (disk_in_drive *)&sdfecfg_file[(i&3)*128];
+						disks_slots[i*2].attributes       = disk->DirEnt.attributes;
+						disks_slots[i*2].firstCluster     = disk->DirEnt.firstCluster;
+						disks_slots[i*2].size             = disk->DirEnt.size;
+						memcpy(&disks_slots[i*2].name,      disk->DirEnt.longName,17);
+						disks_slots[i*2].name[17]         = 0;
+						memcpy(&disks_slots[i*2].type,&disk->DirEnt.name[8],3);
+
+						disk = (disk_in_drive *)&sdfecfg_file[((i&3)*128)+64];
+						disks_slots[(i*2)+1].attributes   = disk->DirEnt.attributes;
+						disks_slots[(i*2)+1].firstCluster = disk->DirEnt.firstCluster;
+						disks_slots[(i*2)+1].size         = disk->DirEnt.size;
+						memcpy(&disks_slots[(i*2)+1].name,  disk->DirEnt.longName,17);
+						disks_slots[(i*2)+1].name[17]     = 0;
+						memcpy(&disks_slots[(i*2)+1].type,&disk->DirEnt.name[8],3);
+
+						uicontext->slot_map[i>>3] |= (0x80 >> (i&7));
+						i++;
+					};
+				break;
+
+				case '2':
+					// V2 CFG file.
+					uicontext->cfg_file_format_version = 2;
+
+					uicontext->number_of_drive = cfgfile_ptr->number_of_drive_per_slot;
+					uicontext->config_file_number_max_of_slot = cfgfile_ptr->max_slot_number;
+					if( uicontext->config_file_number_max_of_slot > MAX_NUMBER_OF_SLOT )
+						uicontext->config_file_number_max_of_slot = MAX_NUMBER_OF_SLOT;
+
+					number_of_slots = cfgfile_ptr->max_slot_number;
+					fl_fseek(file , 512 * cfgfile_ptr->slots_map_position , SEEK_SET);
+					fl_fread(uicontext->slot_map, 1, 512 , file);
+
+					last_sector_offset = -1;
+					i = 0;
+					do
+					{
+						if( uicontext->slot_map[i>>3] & (0x80 >> (i&7)) )
+						{
+							sector_offset = ( ( i * 64 * uicontext->number_of_drive ) / 512 );
+							if(last_sector_offset != sector_offset )
+							{
+								if( sector_offset - last_sector_offset != 1 )
+								{
+									fl_fseek(file , 512 * (sector_offset + cfgfile_ptr->slots_position ), SEEK_SET);
+								}
+								fl_fread(temp_sector, 1, 512 , file);
+								last_sector_offset = sector_offset;
+							}
+
+							d = 0;
+							while( d < uicontext->number_of_drive )
+							{
+								slot_offset = ( ( i * 64 * uicontext->number_of_drive ) + ( 64 * d ) ) % 512;
+
+								memcpy( &disks_slots[ (i*uicontext->number_of_drive) + d ],
+										&temp_sector[slot_offset],
+										sizeof(disk_in_drive_v2));
+
+								d++;
+							}
+						}
+						i++;
+					}while(i<number_of_slots);
+
+				break;
+
+				default:
+					ret=3;
+				break;
 			}
 
-			memcpy(&disks_slot_a[i],&sdfecfg_file[(i&3)*128],sizeof(disk_in_drive));
-			memcpy(&disks_slot_b[i],&sdfecfg_file[((i&3)*128)+64],sizeof(disk_in_drive));
-
-			i++;
-		}while(i<number_of_slot);
-
-		fl_fclose(file);
+			fl_fclose(file);
+		}
+		else
+		{
+			ret=2;
+		}
 	}
 	else
 	{
@@ -413,10 +496,11 @@ char read_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 {
 	unsigned char number_of_slot,slot_index;
-	unsigned char i,sect_nb,ret;
+	unsigned char i,j,sect_nb,ret;
 	cfgfile * cfgfile_ptr;
 	unsigned short  floppyselectorindex;
 	FL_FILE *file;
+	disk_in_drive * disk;
 
 	#ifdef DBGMODE
 		hxc_print(LEFT_ALIGNED,0,0,"-- save_cfg_file E --");
@@ -426,68 +510,128 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 	file = fl_fopen("/HXCSDFE.CFG", "r");
 	if (file)
 	{
-		number_of_slot=1;
-		slot_index=1;
-		i=1;
-
-		floppyselectorindex=128;                      // Fisrt slot offset
-		memset( sdfecfg_file,0,512);                  // Clear the sector
-		sect_nb=2;                                    // Slots Sector offset
-
-		do
+		switch(uicontext->cfg_file_format_version)
 		{
-			if( disks_slot_a[i].DirEnt.size )            // Valid slot found
-			{
-				// Copy it to the actual file sector
-				memcpy(&sdfecfg_file[floppyselectorindex],&disks_slot_a[i],sizeof(disk_in_drive));
-				memcpy(&sdfecfg_file[floppyselectorindex+64],&disks_slot_b[i],sizeof(disk_in_drive));
+			case 1:
 
-				//Next slot...
-				number_of_slot++;
-				floppyselectorindex=(floppyselectorindex+128)&0x1FF;
+				number_of_slot=1;
+				slot_index=1;
+				i=1;
 
-				if(!(number_of_slot&0x3))                // Need to change to the next sector
+				floppyselectorindex=128;                      // Fisrt slot offset
+				memset( sdfecfg_file,0,512);                  // Clear the sector
+				sect_nb=2;                                    // Slots Sector offset
+
+				do
 				{
-					// Save the sector
+					if( uicontext->slot_map[i>>3] & (0x80 >> (i&7)) )            // Valid slot found
+					{
+						// Drive A
+						disk = (disk_in_drive *)&sdfecfg_file[floppyselectorindex];
+						memset(disk,0,sizeof(disk_in_drive));
+						disk->DirEnt.attributes = disks_slots[i*2].attributes;
+						disk->DirEnt.firstCluster = disks_slots[i*2].firstCluster;
+						disk->DirEnt.size = disks_slots[i*2].size;
+
+						memset(disk->DirEnt.longName,0,17);
+						j = 0;
+						while( j<16 && disks_slots[i*2].name[j] )
+						{
+							disk->DirEnt.longName[j] = disks_slots[i*2].name[j];
+							j++;
+						}
+
+						memset(disk->DirEnt.name,' ',12);
+						disk->DirEnt.name[11] = 0;
+						j = 0;
+						while( j<8 && disks_slots[i*2].name[j] && disks_slots[i*2].name[j]!='.')
+						{
+							disk->DirEnt.name[j] = disks_slots[i*2].name[j];
+							j++;
+						}
+
+						memcpy(&disk->DirEnt.name[8],&disks_slots[i*2].type,3);
+
+						// Drive B
+						disk = (disk_in_drive *)&sdfecfg_file[floppyselectorindex + 64];
+						memset(disk,0,sizeof(disk_in_drive));
+						disk->DirEnt.attributes = disks_slots[(i*2)+1].attributes;
+						disk->DirEnt.firstCluster = disks_slots[(i*2)+1].firstCluster;
+						disk->DirEnt.size = disks_slots[(i*2)+1].size;
+
+						memset(disk->DirEnt.longName,0,17);
+						j = 0;
+						while( j<16 && disks_slots[(i*2)+1].name[j] )
+						{
+							disk->DirEnt.longName[j] = disks_slots[(i*2)+1].name[j];
+							j++;
+						}
+
+						memset(disk->DirEnt.name,' ',12);
+						disk->DirEnt.name[11] = 0;
+						j = 0;
+						while( j<8 && disks_slots[(i*2)+1].name[j] && disks_slots[(i*2)+1].name[j]!='.')
+						{
+							disk->DirEnt.name[j] = disks_slots[(i*2)+1].name[j];
+							j++;
+						}
+
+						memcpy(&disk->DirEnt.name[8],&disks_slots[(i*2)+1].type,3);
+
+						//Next slot...
+						number_of_slot++;
+						floppyselectorindex=(floppyselectorindex+128)&0x1FF;
+
+						if(!(number_of_slot&0x3))                // Need to change to the next sector
+						{
+							// Save the sector
+							if (fl_fswrite((unsigned char*)sdfecfg_file, 1,sect_nb, file) != 1)
+							{
+								hxc_printf_box("ERROR: Write file failed!");
+								ret=1;
+							}
+							// Next sector
+							sect_nb++;
+							memset( sdfecfg_file,0,512);                  // Clear the next sector
+						}
+					}
+
+					i++;
+				}while(i<uicontext->config_file_number_max_of_slot);
+
+				if(number_of_slot&0x3)
+				{
 					if (fl_fswrite((unsigned char*)sdfecfg_file, 1,sect_nb, file) != 1)
 					{
 						hxc_printf_box("ERROR: Write file failed!");
 						ret=1;
 					}
-					// Next sector
-					sect_nb++;
-					memset( sdfecfg_file,0,512);                  // Clear the next sector
 				}
-			}
 
-			i++;
-		}while(i<uicontext->config_file_number_max_of_slot);
+				if(slot_index>=number_of_slot)
+				{
+					slot_index=number_of_slot-1;
+				}
 
-		if(number_of_slot&0x3)
-		{
-			if (fl_fswrite((unsigned char*)sdfecfg_file, 1,sect_nb, file) != 1)
-			{
-				hxc_printf_box("ERROR: Write file failed!");
-				ret=1;
-			}
-		}
+				fl_fseek(file , 0 , SEEK_SET);
 
-		if(slot_index>=number_of_slot)
-		{
-			slot_index=number_of_slot-1;
-		}
+				// Update the file header
+				cfgfile_ptr=(cfgfile * )cfgfile_header;
+				cfgfile_ptr->number_of_slot=number_of_slot;
+				cfgfile_ptr->slot_index=slot_index;
 
-		fl_fseek(file , 0 , SEEK_SET);
+				if (fl_fswrite((unsigned char*)cfgfile_header, 1,0, file) != 1)
+				{
+					hxc_printf_box("ERROR: Write file failed!");
+					ret=1;
+				}
 
-		// Update the file header
-		cfgfile_ptr=(cfgfile * )cfgfile_header;
-		cfgfile_ptr->number_of_slot=number_of_slot;
-		cfgfile_ptr->slot_index=slot_index;
 
-		if (fl_fswrite((unsigned char*)cfgfile_header, 1,0, file) != 1)
-		{
-			hxc_printf_box("ERROR: Write file failed!");
-			ret=1;
+			break;
+
+			case 2:
+
+			break;
 		}
 
 	}
@@ -533,7 +677,7 @@ void displayFolder(ui_context * uicontext)
 		hxc_printf(LEFT_ALIGNED,15*8,CURDIR_Y_POS,"...%s    ",&uicontext->currentPath[strlen(uicontext->currentPath)-32]);
 }
 
-void enter_sub_dir(ui_context * uicontext,disk_in_drive *disk_ptr)
+void enter_sub_dir(ui_context * uicontext,disk_in_drive_v2_long *disk_ptr)
 {
 	unsigned long first_cluster;
 	int currentPathLength;
@@ -542,28 +686,24 @@ void enter_sub_dir(ui_context * uicontext,disk_in_drive *disk_ptr)
 	int i;
 	int old_index;
 
-	old_index=strlen( uicontext->currentPath );
+	old_index = strlen( uicontext->currentPath );
 
-	if ( (disk_ptr->DirEnt.longName[0] == (unsigned char)'.') && (disk_ptr->DirEnt.longName[1] == (unsigned char)'.') )
+	if ( !strncmp(disk_ptr->name,"..", 2) )
 	{
 		currentPathLength = strlen( uicontext->currentPath ) - 1;
 		do
 		{
 			uicontext->currentPath[ currentPathLength ] = 0;
 			currentPathLength--;
-		}
-		while ( uicontext->currentPath[ currentPathLength ] != (unsigned char)'/' );
+		}while ( uicontext->currentPath[ currentPathLength ] != (unsigned char)'/' );
 	}
 	else
 	{
-		if((disk_ptr->DirEnt.longName[0] == (unsigned char)'.'))
-		{
-		}
-		else
+		if((disk_ptr->name[0] != (unsigned char)'.'))
 		{
 			for (i=0; i < 128; i++ )
 			{
-				c = disk_ptr->DirEnt.longName[i];
+				c = disk_ptr->name[i];
 				if ( ( c >= (32+0) ) && (c <= 127) )
 				{
 					folder[i] = c;
@@ -607,26 +747,13 @@ void enter_sub_dir(ui_context * uicontext,disk_in_drive *disk_ptr)
 void show_all_slots(ui_context * uicontext,int drive)
 {
 	char tmp_str[81];
-	disk_in_drive * drive_slots_ptr;
+	disk_in_drive_v2 * drive_slots_ptr;
 	unsigned short i,xoffset,slotnumber;
 
 	if( drive >= 2 )
 		return;
 
 	hxc_printf(CENTER_ALIGNED,0,FILELIST_Y_POS,"--- Drive %c slots selection ---",'A'+drive);
-
-	switch(drive)
-	{
-		case 0:
-			drive_slots_ptr = disks_slot_a;
-		break;
-		case 1:
-			drive_slots_ptr = disks_slot_b;
-		break;
-		default:
-			drive_slots_ptr = disks_slot_a;
-		break;
-	}
 
 	for ( i = 1; i < NUMBER_OF_FILE_ON_DISPLAY; i++ )
 	{
@@ -635,9 +762,10 @@ void show_all_slots(ui_context * uicontext,int drive)
 		if( slotnumber < uicontext->config_file_number_max_of_slot)
 		{
 			memset(tmp_str,0,sizeof(tmp_str));
-			if( drive_slots_ptr[slotnumber].DirEnt.size)
+			drive_slots_ptr = &disks_slots[(slotnumber*uicontext->number_of_drive)+drive];
+			if( drive_slots_ptr->size )
 			{
-				memcpy(tmp_str,&drive_slots_ptr[slotnumber].DirEnt.longName,17+8);
+				memcpy(tmp_str,&drive_slots_ptr->name,MAX_SHORT_NAME_LENGHT);
 			}
 
 			if( slotnumber > 99 )
@@ -682,7 +810,6 @@ int getext(char * path,char * exttodest)
 		exttodest[0] = path[i];
 		exttodest[1] = path[i+1];
 		exttodest[2] = path[i+2];
-		exttodest[3] = 0;
 
 		// Remove trailing space
 		i = 2;
@@ -1049,6 +1176,7 @@ int ui_command_menu(ui_context * uicontext)
 int ui_slots_menu(ui_context * uicontext)
 {
 	unsigned char key;
+	int slot;
 
 	////////////////////
 	// Slots list menu
@@ -1124,10 +1252,15 @@ int ui_slots_menu(ui_context * uicontext)
 			break;
 
 			case FCT_CLEARSLOT:
-				if(!uicontext->page_mode_index)
-					memset((void*)&disks_slot_a[uicontext->slotselectorpos + (uicontext->slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))],0,sizeof(disk_in_drive));
-				else
-					memset((void*)&disks_slot_b[uicontext->slotselectorpos + (uicontext->slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))],0,sizeof(disk_in_drive));
+				slot = (uicontext->slotselectorpos + (uicontext->slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1)));
+
+				memset((void*)&disks_slots[(slot*uicontext->number_of_drive) + uicontext->page_mode_index ],0,sizeof(disk_in_drive_v2));
+
+				if(!disks_slots[(slot*uicontext->number_of_drive)].type[0] &&
+				   !disks_slots[(slot*uicontext->number_of_drive)+1].type[0] )
+				{
+					uicontext->slot_map[slot>>3] &= ~(0x80 >> (slot&7));
+				}
 
 				clear_list(0);
 				show_all_slots(uicontext,uicontext->page_mode_index);
@@ -1173,12 +1306,16 @@ int ui_slots_menu(ui_context * uicontext)
 
 	clear_list(0);
 	restorestr(uicontext);
-	if( ( key != FCT_ESCAPE ) && ( uicontext->page_mode_index < 2 ) )
+	if( ( key != FCT_ESCAPE ) && ( uicontext->page_mode_index < uicontext->number_of_drive ) )
 	{
-		if(!uicontext->page_mode_index)
-			memcpy((void*)&disks_slot_a[uicontext->slotselectorpos + (uicontext->slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))],(void*)&DirectoryEntry_tab[uicontext->selectorpos],sizeof(disk_in_drive));
-		else
-			memcpy((void*)&disks_slot_b[uicontext->slotselectorpos + (uicontext->slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1))],(void*)&DirectoryEntry_tab[uicontext->selectorpos],sizeof(disk_in_drive));
+		slot = (uicontext->slotselectorpos + (uicontext->slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1)));
+
+		memcpy( (void*)&disks_slots[ (slot*uicontext->number_of_drive) + ( uicontext->page_mode_index ) ],
+				(void*)&DirectoryEntry_tab[ uicontext->selectorpos ],
+				sizeof(disk_in_drive_v2)
+				);
+
+		uicontext->slot_map[slot>>3] |= (0x80 >> (slot&7));
 	}
 	return 1;
 }
@@ -1191,7 +1328,7 @@ void ui_mainfileselector(ui_context * uicontext)
 	unsigned char entrytype;
 	unsigned char key,c;
 	unsigned char last_file;
-	disk_in_drive * disk_ptr;
+	disk_in_drive_v2_long * disk_ptr;
 
 	y_pos=FILELIST_Y_POS;
 
@@ -1203,7 +1340,7 @@ void ui_mainfileselector(ui_context * uicontext)
 		i=0;
 		do
 		{
-			memset(&DirectoryEntry_tab[i],0,sizeof(DirectoryEntry));
+			memset(&DirectoryEntry_tab[i],0,sizeof(disk_in_drive_v2_long));
 			i++;
 		}while((i<NUMBER_OF_FILE_ON_DISPLAY));
 
@@ -1247,20 +1384,18 @@ void ui_mainfileselector(ui_context * uicontext)
 					hxc_printf(LEFT_ALIGNED | DONTPARSE,0,y_pos," %c%s",entrytype,dir_entry.filename);
 
 					y_pos=y_pos+8;
-					dir_entry.filename[127]=0;
-					sprintf(DirectoryEntry_tab[i].longName,"%s",dir_entry.filename);
 
-					// Get the short name - with the file name extension !
-					DirectoryEntry_tab[i].name[8+3] = 0;
-					memset(DirectoryEntry_tab[i].name,' ',8+3);
-					getext(dir_entry.filename,&DirectoryEntry_tab[i].name[8]);
+					// Get the file name extension.
+					getext(dir_entry.filename,(unsigned char *)&DirectoryEntry_tab[i].type);
 
 					j = 0;
-					while(j<8 && dir_entry.filename[j] != 0 && dir_entry.filename[j] != '.')
+					while(j<MAX_LONG_NAME_LENGHT && dir_entry.filename[j])
 					{
 						DirectoryEntry_tab[i].name[j] = dir_entry.filename[j];
 						j++;
 					}
+
+					DirectoryEntry_tab[i].name[j] = 0x00;
 
 					DirectoryEntry_tab[i].firstCluster = ENDIAN_32BIT(dir_entry.cluster) ;
 					DirectoryEntry_tab[i].size =  ENDIAN_32BIT(dir_entry.size);
@@ -1349,9 +1484,9 @@ void ui_mainfileselector(ui_context * uicontext)
 
 				case FCT_SELECT_FILE_DRIVEA:
 				case FCT_SHOWSLOTS:
-					disk_ptr=(disk_in_drive * )&DirectoryEntry_tab[uicontext->selectorpos];
+					disk_ptr=(disk_in_drive_v2_long * )&DirectoryEntry_tab[uicontext->selectorpos];
 
-					if(disk_ptr->DirEnt.attributes&0x10)
+					if( disk_ptr->attributes & 0x10 )
 					{
 						enter_sub_dir(uicontext,disk_ptr);
 					}
@@ -1378,15 +1513,16 @@ void ui_mainfileselector(ui_context * uicontext)
 					break;
 
 				case FCT_SELECTSAVEREBOOT:
-					disk_ptr=(disk_in_drive * )&DirectoryEntry_tab[uicontext->selectorpos];
+					disk_ptr=(disk_in_drive_v2_long * )&DirectoryEntry_tab[uicontext->selectorpos];
 
-					if(disk_ptr->DirEnt.attributes&0x10)
+					if( disk_ptr->attributes & 0x10 )
 					{
 						enter_sub_dir(uicontext,disk_ptr);
 					}
 					else
 					{
-						memcpy((void*)&disks_slot_a[1],(void*)&DirectoryEntry_tab[uicontext->selectorpos],sizeof(disk_in_drive));
+						memcpy((void*)&disks_slots[1*uicontext->number_of_drive],(void*)&DirectoryEntry_tab[uicontext->selectorpos],sizeof(disk_in_drive_v2));
+						uicontext->slot_map[1>>3] |= (0x80 >> (1&7));
 						ui_savereboot(uicontext);
 					}
 					break;

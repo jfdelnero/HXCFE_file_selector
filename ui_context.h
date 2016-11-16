@@ -9,11 +9,14 @@ typedef struct ui_context_
 	int page_mode_index;
 
 	unsigned short page_number;
-	char  selectorpos;
-	short slotselectorpos;
-	short slotselectorpage;
+	unsigned short selectorpos;
+	unsigned short slotselectorpos;
+	unsigned short slotselectorpage;
 
-	short read_entry;
+	unsigned short read_entry;
 	unsigned long config_file_number_max_of_slot;
+	unsigned long number_of_drive;
 	unsigned char filtermode;
+	int cfg_file_format_version;
+	unsigned char slot_map[512];
 }ui_context;
