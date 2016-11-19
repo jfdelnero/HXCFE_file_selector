@@ -19,4 +19,5 @@ typedef struct ui_context_
 	unsigned char filtermode;
 	int cfg_file_format_version;
 	unsigned char slot_map[512];
+	unsigned char change_map[512];
 }ui_context;

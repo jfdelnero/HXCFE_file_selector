@@ -386,6 +386,7 @@ char read_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 
 					fl_fseek(file , 1024 , SEEK_SET);
 
+					memset(uicontext->change_map,0,512);
 					memset(uicontext->slot_map,0,512);
 					fl_fread(sdfecfg_file, 1, 512 , file);
 					i=1;
@@ -413,6 +414,7 @@ char read_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 						memcpy(&disks_slots[(i*2)+1].type,&disk->DirEnt.name[8],3);
 
 						uicontext->slot_map[i>>3] |= (0x80 >> (i&7));
+						uicontext->change_map[i>>3] |= (0x80 >> (i&7));
 						i++;
 					};
 				break;
@@ -425,6 +427,8 @@ char read_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 					uicontext->config_file_number_max_of_slot = cfgfile_ptr->max_slot_number;
 					if( uicontext->config_file_number_max_of_slot > MAX_NUMBER_OF_SLOT )
 						uicontext->config_file_number_max_of_slot = MAX_NUMBER_OF_SLOT;
+
+					memset(uicontext->change_map,0,512);
 
 					number_of_slots = cfgfile_ptr->max_slot_number;
 					fl_fseek(file , 512 * cfgfile_ptr->slots_map_position , SEEK_SET);
@@ -498,9 +502,10 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 	unsigned char number_of_slot,slot_index;
 	unsigned char i,j,sect_nb,ret;
 	cfgfile * cfgfile_ptr;
-	unsigned short  floppyselectorindex;
+	unsigned long  floppyselectorindex;
 	FL_FILE *file;
 	disk_in_drive * disk;
+	disk_in_drive_v2 * disk_v2;
 
 	#ifdef DBGMODE
 		hxc_print(LEFT_ALIGNED,0,0,"-- save_cfg_file E --");
@@ -630,10 +635,57 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 			break;
 
 			case 2:
+				number_of_slot=1;
+				slot_index=1;
+				i=1;
+				do
+				{
+					if( (uicontext->change_map[i>>3] & (0x80 >> (i&7))) )   // Is the slot modified ?
+					{
+						// Yes, save the modified sector
+						floppyselectorindex=(64*uicontext->number_of_drive)*i;
 
+						fl_fseek(file , (512 * cfgfile_ptr->slots_position) + (floppyselectorindex/512), SEEK_SET);
+						if (fl_fswrite( ((unsigned char*)&disks_slots) + (floppyselectorindex & ~0x1FF) , 1, 1, file) != 1)
+						{
+							hxc_printf_box("ERROR: Write file failed!");
+							ret=1;
+						}
+
+						// And clear the modified flags for all slots into this sector.
+						j = 0;
+						do
+						{
+							uicontext->change_map[(i+j)>>3] &= ~(0x80 >> ((i+j)&7));
+							j++;
+						}while( ((64*uicontext->number_of_drive)*(i+j)) & 0x1FF );
+					}
+
+					i++;
+				}while( i < uicontext->config_file_number_max_of_slot );
+
+				// Update the map
+				fl_fseek(file , 512 * cfgfile_ptr->slots_map_position , SEEK_SET);
+				if (fl_fswrite((unsigned char*)uicontext->slot_map, 1, 1, file) != 1)
+				{
+					hxc_printf_box("ERROR: Write file failed!");
+					ret=1;
+				}
+
+				fl_fseek(file , 0 , SEEK_SET);
+
+				// Update the file header
+				cfgfile_ptr=(cfgfile * )cfgfile_header;
+				cfgfile_ptr->cur_slot_number = 1;
+				cfgfile_ptr->slot_index = 0;
+
+				if (fl_fswrite((unsigned char*)cfgfile_header, 1,0, file) != 1)
+				{
+					hxc_printf_box("ERROR: Write file failed!");
+					ret=1;
+				}
 			break;
 		}
-
 	}
 	else
 	{
@@ -1260,6 +1312,7 @@ int ui_slots_menu(ui_context * uicontext)
 				   !disks_slots[(slot*uicontext->number_of_drive)+1].type[0] )
 				{
 					uicontext->slot_map[slot>>3] &= ~(0x80 >> (slot&7));
+					uicontext->change_map[slot>>3] |= (0x80 >> (slot&7));
 				}
 
 				clear_list(0);
@@ -1316,6 +1369,7 @@ int ui_slots_menu(ui_context * uicontext)
 				);
 
 		uicontext->slot_map[slot>>3] |= (0x80 >> (slot&7));
+		uicontext->change_map[slot>>3] |= (0x80 >> (slot&7));
 	}
 	return 1;
 }
@@ -1523,6 +1577,7 @@ void ui_mainfileselector(ui_context * uicontext)
 					{
 						memcpy((void*)&disks_slots[1*uicontext->number_of_drive],(void*)&DirectoryEntry_tab[uicontext->selectorpos],sizeof(disk_in_drive_v2));
 						uicontext->slot_map[1>>3] |= (0x80 >> (1&7));
+						uicontext->change_map[1>>3] |= (0x80 >> (1&7));
 						ui_savereboot(uicontext);
 					}
 					break;
