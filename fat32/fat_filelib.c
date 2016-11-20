@@ -1071,12 +1071,12 @@ int fl_fswrite(unsigned char * buffer, int size,int start_sector, void *f)
 	cnt=size;
 	while (cnt)
 	{
-                if (!fatfs_write_sector(&_fs, file->startcluster, sector, buffer))
-                {   	// Read failed - out of range (probably)
-                   return -1;
-                }
+		if (!fatfs_write_sector(&_fs, file->startcluster, sector, buffer))
+		{	// Read failed - out of range (probably)
+			return -1;
+		}
 
-                buffer=buffer+512;
+		buffer=buffer+512;
 
 		// Move onto next sector and reset copy offset
 		sector++;
