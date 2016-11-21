@@ -1363,6 +1363,7 @@ void box(unsigned short x_p1,unsigned short y_p1,unsigned short x_p2,unsigned sh
 
 	x_size=((x_p2-x_p1)/16)*2;
 
+	ptroffset = 80 * y_p1;
 	for(j=0;j<(y_p2-y_p1);j++)
 	{
 		for(i=0;i<x_size;i++)
