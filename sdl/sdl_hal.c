@@ -245,17 +245,31 @@ void init_fdc(unsigned char drive)
 
 unsigned char Joystick()
 {
+	return 0x00;
 }
 
 
 unsigned char Keyboard()
 {
+	unsigned char key;
+	SDL_Event event;
+	SDL_KeyboardEvent *key_event;
+	
+	SDL_GetKeyState(NULL);
+	key = 0;
+	if(SDL_PollEvent(&event))
+	{
+		if( event.type == SDL_KEYDOWN)
+		{
+			key = 0x80;
+			key_event = &event.key;
+			printf("key: %.4x\n",key_event->keysym.scancode);
+			key |= key_event->keysym.scancode;
+		}
+	}
+	
+	return key;
 }
-
-int kbhit()
-{
-}
-
 
 void flush_char()
 {
@@ -394,6 +408,7 @@ int update_screen()
 	SDL_UpdateRect( screen, 0, 0, 0, 0 );
 
 }
+
 int init_display()
 {
 	unsigned short loop,yr;
@@ -554,7 +569,7 @@ void box(unsigned short x_p1,unsigned short y_p1,unsigned short x_p2,unsigned sh
 
 void invert_line(unsigned short x_pos,unsigned short y_pos)
 {
-	unsigned char i,j;
+	unsigned short i,j;
 	unsigned char *ptr_dst;
 	unsigned long ptroffset;
 
@@ -587,6 +602,7 @@ void restore_box()
 
 void reboot()
 {
+	exit(0);
 	for(;;);
 }
 
