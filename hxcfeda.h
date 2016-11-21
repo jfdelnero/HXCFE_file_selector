@@ -34,6 +34,13 @@ typedef struct direct_access_status_sector_
 	unsigned char read_cnt;
 	unsigned char write_cnt;
 	unsigned char last_cmd_status;
+	unsigned char write_locked;
+	unsigned char keys_status;
+	unsigned char sd_status;
+	unsigned char SD_WP;
+	unsigned char SD_CD;
+	unsigned char number_of_sector;
+	unsigned short current_index;
 }__attribute__((__packed__)) direct_access_status_sector ;
 
 
