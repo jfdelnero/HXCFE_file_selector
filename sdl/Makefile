@@ -1,7 +1,11 @@
 CC=gcc
 AS=as
-CFLAGS= -O0 -I . -I .. -I ../fat32 -g
-LDFLAGS=-s  -Wl,-Map,foo.map -lSDL
+
+#CFLAGS= -O0 -I . -I .. -I ../fat32 -g -DFATFS_IS_LITTLE_ENDIAN=1
+CFLAGS= -O3 -I . -I .. -I ../fat32 -DFATFS_IS_LITTLE_ENDIAN=1
+
+#LDFLAGS=  -Wl,-Map,foo.map -lSDL
+LDFLAGS= -s -Wl,-Map,foo.map -lSDL
 EXEC=HXCFEMNG
 
 all: $(EXEC)
