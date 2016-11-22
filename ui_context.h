@@ -9,7 +9,7 @@ typedef struct ui_context_
 	int page_mode_index;
 
 	unsigned short page_number;
-	unsigned short selectorpos;
+	short selectorpos;
 	unsigned short slotselectorpos;
 	unsigned short slotselectorpage;
 
