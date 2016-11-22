@@ -155,7 +155,7 @@ typedef  struct _bmaptype
 }bmaptype __attribute__ ((aligned (2)));
 
 #endif
-	
+
 void waitus(int centus)
 {
 	int cnt;
@@ -214,7 +214,7 @@ void alloc_error()
 }
 
 /********************************************************************************
-*                              FDC I/O     
+*                              FDC I/O
 *********************************************************************************/
 int jumptotrack(unsigned char t)
 {
@@ -905,7 +905,7 @@ void init_fdc(unsigned char drive)
 }
 
 /********************************************************************************
-*                          Joystick / Keyboard I/O     
+*                          Joystick / Keyboard I/O
 *********************************************************************************/
 
 unsigned char Joystick()
@@ -1081,7 +1081,7 @@ unsigned char wait_function_key()
 }
 
 /********************************************************************************
-*                              Display Output     
+*                              Display Output
 *********************************************************************************/
 
 void setvideomode(int mode)
@@ -1427,6 +1427,6 @@ void init_timer()
 	rbfint->is_Node.ln_Name = "HxCFESelectorTimerInt";
 	rbfint->is_Data = 0;//(APTR)rbfdata;
 	rbfint->is_Code = ithandler;
-	
+
 	AddIntServer(5,rbfint);
 }
