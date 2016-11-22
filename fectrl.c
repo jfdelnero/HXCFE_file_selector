@@ -27,7 +27,7 @@
 
 #include <stdio.h>
 #include <string.h>
-
+#include <stdint.h>
 #include "keysfunc_defs.h"
 
 #include "gui_utils.h"
@@ -50,7 +50,7 @@
 
 //#define DBGMODE 1
 
-static unsigned long last_setlbabase;
+static uint32_t last_setlbabase;
 static unsigned char sector[512];
 static unsigned char cfgfile_header[512];
 
@@ -66,11 +66,11 @@ static struct fat_dir_entry sfEntry;
 static struct fs_dir_ent dir_entry;
 extern struct fatfs _fs;
 
-extern unsigned short SCREEN_XRESOL;
-extern unsigned short SCREEN_YRESOL;
+extern uint16_t SCREEN_XRESOL;
+extern uint16_t SCREEN_YRESOL;
 extern unsigned char  NUMBER_OF_FILE_ON_DISPLAY;
 
-extern unsigned long timercnt;
+extern uint32_t timercnt;
 unsigned char bkstr[40][80+8];
 extern unsigned char keyup;
 
@@ -136,7 +136,7 @@ int setlbabase(unsigned long lba)
 {
 	int ret;
 	unsigned char cmd_cnt;
-	unsigned long lbatemp;
+	uint32_t lbatemp;
 
 	#ifdef DBGMODE
 		hxc_print(LEFT_ALIGNED,0,0,"-- setlbabase E --");
@@ -258,7 +258,7 @@ int media_init()
 	return 0;
 }
 
-int media_read(unsigned long sector, unsigned char *buffer)
+int media_read( unsigned long sector, unsigned char *buffer )
 {
 	int ret,retry;
 	direct_access_status_sector * dass;
@@ -304,7 +304,7 @@ int media_read(unsigned long sector, unsigned char *buffer)
 	return 1;
 }
 
-int media_write(unsigned long sector, unsigned char *buffer)
+int media_write( unsigned long sector, unsigned char *buffer )
 {
 	int ret,retry;
 	direct_access_status_sector * dass;
@@ -502,7 +502,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 	unsigned char number_of_slot,slot_index;
 	unsigned char i,j,sect_nb,ret;
 	cfgfile * cfgfile_ptr;
-	unsigned long  floppyselectorindex;
+	uint32_t  floppyselectorindex;
 	FL_FILE *file;
 	disk_in_drive * disk;
 	disk_in_drive_v2 * disk_v2;
@@ -730,7 +730,7 @@ void displayFolder(ui_context * uicontext)
 
 void enter_sub_dir(ui_context * uicontext,disk_in_drive_v2_long *disk_ptr)
 {
-	unsigned long first_cluster;
+	uint32_t first_cluster;
 	int currentPathLength;
 	unsigned char folder[128+1];
 	unsigned char c;
@@ -1662,7 +1662,7 @@ int main(int argc, char* argv[])
 {
 	unsigned short i;
 	unsigned char bootdev;
-	unsigned long cluster;
+	uint32_t cluster;
 	ui_context * uicontext;
 
 	uicontext = &g_ui_ctx;
