@@ -27,57 +27,58 @@
 
 typedef struct cfgfile_
 {
-    char signature[16];                    //"HXCFECFGV1.0" or "HXCFECFGV2.0"
-    unsigned char step_sound;              //0x00 -> off 0xFF->on
-    unsigned char ihm_sound;               //0x00 -> off 0xFF->on
-    unsigned char back_light_tmr;          //0x00 always off, 0xFF always on, other -> on x second
-    unsigned char standby_tmr;             //0xFF disable, other -> on x second
-    unsigned char disable_drive_select;
-    unsigned char buzzer_duty_cycle;
-    unsigned char number_of_slot;
-    unsigned char slot_index;
-    unsigned short update_cnt;
-    unsigned char load_last_floppy;
-    unsigned char buzzer_step_duration;
-    unsigned char lcd_scroll_speed;
-    unsigned char startup_mode;            // 0x01 -> In normal mode auto load STARTUPA.HFE at power up
+    int8_t   signature[16];                 //"HXCFECFGV1.0" or "HXCFECFGV2.0"    --- 0x00
+    uint8_t  step_sound;                    //0x00 -> off 0xFF->on                --- 0x10
+    uint8_t  ihm_sound;                     //0x00 -> off 0xFF->on
+    uint8_t  back_light_tmr;                //0x00 always off, 0xFF always on, other -> on x second
+    uint8_t  standby_tmr;                   //0xFF disable, other -> on x second
+    uint8_t  disable_drive_select;
+    uint8_t  buzzer_duty_cycle;
+    uint8_t  number_of_slot;
+    uint8_t  slot_index;
+    uint16_t update_cnt;
+    uint8_t  load_last_floppy;
+    uint8_t  buzzer_step_duration;
+    uint8_t  lcd_scroll_speed;
+    uint8_t  startup_mode;                 // 0x01 -> In normal mode auto load STARTUPA.HFE at power up
                                            // 0x02 -> In normal mode auto load STARTUPB.HFE at power up
                                            // 0x04 -> In slot mode use slot 0 at power up (ignore index)
                                            // 0x08 -> Pre increment index when inserting the sdcard (no button/lcd mode)
-    unsigned char enable_drive_b;
-    unsigned char index_mode;
+    uint8_t  enable_drive_b;
+    uint8_t  index_mode;
 
-    unsigned char cfg_from_cfg_drive0;
-    unsigned char interfacemode_drive0;
-    unsigned char pin02_cfg_drive0;
-    unsigned char pin34_cfg_drive0;
+    uint8_t  cfg_from_cfg_drive0;          // --- 0x20
+    uint8_t  interfacemode_drive0;
+    uint8_t  pin02_cfg_drive0;
+    uint8_t  pin34_cfg_drive0;
 
-    unsigned char cfg_from_cfg_drive1;
-    unsigned char interfacemode_drive1;
-    unsigned char pin02_cfg_drive1;
-    unsigned char pin34_cfg_drive1;
+    uint8_t  cfg_from_cfg_drive1;
+    uint8_t  interfacemode_drive1;
+    uint8_t  pin02_cfg_drive1;
+    uint8_t  pin34_cfg_drive1;
 
-    unsigned char drive_b_as_motor_on;
+    uint8_t  drive_b_as_motor_on;
 
-    unsigned char padding_1[7];
-    unsigned char padding_2[16];
+    uint8_t  padding_1[7];
+    uint8_t  padding_2[16];                // --- 0x30
 
-    // V2.X Extension
-    unsigned long slots_map_position;       // Slots map position into the file (sector number offset)
-    unsigned long max_slot_number;          // Note : Map size in sector : ( ( max_slot_number / 8 ) / 512 ) + 1
-    unsigned long slots_position;           // Slots position into the file (sector number)
-    unsigned long number_of_drive_per_slot; // 2 by default.
-    unsigned long cur_slot_number;          // Current position
+    // V2.X Extension --- 0x40
+    uint32_t slots_map_position;           // Slots map position into the file (sector number offset)
+    uint32_t max_slot_number;              // Note : Map size in sector : ( ( max_slot_number / 8 ) / 512 ) + 1
+    uint32_t slots_position;               // Slots position into the file (sector number)
+    uint32_t number_of_drive_per_slot;     // 2 by default.
+    uint32_t cur_slot_number;              // Current position --- 0x50
+    uint32_t ihm_mode;                     // user interface mode
 
 }__attribute__((__packed__)) cfgfile;
 
 
 struct ShortDirectoryEntry {
-    unsigned char name[12];
-    unsigned char attributes;
-    unsigned long firstCluster;
-    unsigned long size;
-    unsigned char longName[17];	// boolean
+    uint8_t  name[12];
+    uint8_t  attributes;
+    uint32_t firstCluster;
+    uint32_t size;
+    uint8_t  longName[17];	// boolean
 }__attribute__((__packed__));
 
 extern struct DirectoryEntry directoryEntry;
@@ -85,32 +86,32 @@ extern struct DirectoryEntry directoryEntry;
 
 typedef struct disk_in_drive_
 {
-	struct ShortDirectoryEntry DirEnt;
-	unsigned char numberoftrack;
-	unsigned char numberofside;
-	unsigned short rpm;
-	unsigned short bitrate;
-	unsigned short tracklistoffset;
+    struct   ShortDirectoryEntry DirEnt;
+    uint8_t  numberoftrack;
+    uint8_t  numberofside;
+    uint16_t rpm;
+    uint16_t bitrate;
+    uint16_t tracklistoffset;
 }__attribute__((__packed__)) disk_in_drive;
 
 #define MAX_SHORT_NAME_LENGHT ( 64 - ( 3 + 1 + 4 + 4 ) )
 
 typedef struct disk_in_drive_v2_
 { 
-	unsigned char type[3];
-	unsigned char attributes;
-	unsigned long firstCluster;
-	unsigned long size;
-	unsigned char name[MAX_SHORT_NAME_LENGHT];
+    uint8_t  type[3];
+    uint8_t  attributes;
+    uint32_t firstCluster;
+    uint32_t size;
+    uint8_t  name[MAX_SHORT_NAME_LENGHT];
 }__attribute__((__packed__)) disk_in_drive_v2;
 
 #define MAX_LONG_NAME_LENGHT ( 256 - ( 3 + 1 + 4 + 4 ) )
 
 typedef struct disk_in_drive_v2_long_
 { 
-	unsigned char type[3];
-	unsigned char attributes;
-	unsigned long firstCluster;
-	unsigned long size;
-	unsigned char name[MAX_LONG_NAME_LENGHT]; //Max entry name : 256 - (4+4+1+3)
+    uint8_t  type[3];
+    uint8_t  attributes;
+    uint32_t firstCluster;
+    uint32_t size;
+    uint8_t  name[MAX_LONG_NAME_LENGHT]; //Max entry name : 256 - (4+4+1+3)
 }__attribute__((__packed__)) disk_in_drive_v2_long;
