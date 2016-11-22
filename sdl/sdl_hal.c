@@ -40,6 +40,8 @@
 #include "keys_defs.h"
 #include "keymap.h"
 
+#include "color_table.h"
+
 #include "../hxcfeda.h"
 
 
@@ -499,6 +501,47 @@ void initpal()
 
 unsigned char set_color_scheme(unsigned char color)
 {
+	int r,g,b,i;
+
+	for(i=0;i<256;i++)
+	{
+		colors[i].r = i;
+		colors[i].g = i;
+		colors[i].b = i;
+	}
+
+	for(i=0;i<4;i++)
+	{
+		r = (colortable[((color&0x1F)*4) + i] & 0xF00)>>8;
+		g = (colortable[((color&0x1F)*4) + i] & 0x0F0)>>4;
+		b = (colortable[((color&0x1F)*4) + i] & 0x00F)>>0;
+
+		switch(i)
+		{
+			case 0:
+				colors[0].r = r * 16;
+				colors[0].g = g * 16;
+				colors[0].b = b * 16;
+			break;
+			case 1:
+				colors[255].r = r * 16;
+				colors[255].g = g * 16;
+				colors[255].b = b * 16;
+			break;
+			case 2:
+				colors[2].r = r * 16;
+				colors[2].g = g * 16;
+				colors[2].b = b * 16;
+			break;
+			case 3:
+				colors[3].r = r * 16;
+				colors[3].g = g * 16;
+				colors[3].b = b * 16;
+			break;
+		}
+	}
+	SDL_SetColors(bBuffer, colors, 0, 256);
+
 	return color;
 }
 
