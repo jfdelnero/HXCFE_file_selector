@@ -31,6 +31,9 @@
 #include <malloc.h>
 #include <string.h>
 
+#include <stdint.h>
+#include <SDL/SDL.h>
+
 #include "conf.h"
 
 #include "keysfunc_defs.h"
@@ -39,9 +42,8 @@
 
 #include "../hxcfeda.h"
 
-#include <SDL/SDL.h>
 
-#define VIRT_VERSIONCODE "v3.0.8.5a"
+#define VIRT_VERSIONCODE "v3.X.X.Xa"
 
 #define DEPTH    2 /* 1 BitPlanes should be used, gives eight colours. */
 #define COLOURS  2 /* 2^1 = 2                                          */
@@ -60,20 +62,23 @@ SDL_Color   *colors;
 
 unsigned char * screen_buffer;
 unsigned char * screen_buffer_backup;
-unsigned short SCREEN_XRESOL;
-unsigned short SCREEN_YRESOL;
+uint16_t SCREEN_XRESOL;
+uint16_t SCREEN_YRESOL;
 
 
 static unsigned char validcache;
 
-unsigned short sector_pos[16];
+uint16_t sector_pos[16];
 
 unsigned char keyup;
 
-unsigned long timercnt;
+uint32_t timercnt;
 
 int track_number,number_of_sector;
-unsigned long virt_lba;
+uint32_t virt_lba;
+
+unsigned char * keys_stat;
+unsigned char last_key;
 
 #ifndef BMAPTYPEDEF
 #define BMAPTYPEDEF
@@ -252,24 +257,23 @@ unsigned char Joystick()
 
 unsigned char Keyboard()
 {
-	unsigned char key;
-	SDL_Event event;
-	SDL_KeyboardEvent *key_event;
-	
-	SDL_GetKeyState(NULL);
-	key = 0;
-	if(SDL_PollEvent(&event))
+	int i;
+
+	SDL_PumpEvents();
+
+	i =0;
+	while(keysmap[i].function_code)
 	{
-		if( event.type == SDL_KEYDOWN)
+		if(keys_stat[sdl_scancode[keysmap[i].keyboard_code]])
 		{
-			key = 0x80;
-			key_event = &event.key;
-			printf("key: %.4x\n",key_event->keysym.scancode);
-			key |= key_event->keysym.scancode;
+			last_key = keysmap[i].keyboard_code;
+			//printf("k:%x f:%x\n",keysmap[i].keyboard_code,keysmap[i].function_code);
+			return last_key;
 		}
+		i++;
 	}
-	
-	return key;
+
+	return last_key | 0x80;
 }
 
 void flush_char()
@@ -283,7 +287,10 @@ unsigned char get_char()
 	unsigned char function_code,key_code;
 
 	function_code=FCT_NO_FUNCTION;
-	while(!(Keyboard()&0x80));
+	while(!(Keyboard()&0x80))
+	{
+		waitms(1);
+	}
 
 	do
 	{
@@ -296,6 +303,7 @@ unsigned char get_char()
 				if(key&0x80)
 				{
 					c=1;
+					waitms(1);
 				}
 			}while(key&0x80);
 			waitms(55);
@@ -343,6 +351,7 @@ unsigned char wait_function_key()
 					c=1;
 
 					keyup = 2;
+					waitms(1);
 				}
 			}while(key&0x80 && !joy);
 
@@ -359,7 +368,10 @@ unsigned char wait_function_key()
 		{
 			if(joy&0x10)
 			{
-				while(Joystick()&0x10);
+				while(Joystick()&0x10)
+				{
+					waitms(1);
+				}
 
 				return FCT_SELECT_FILE_DRIVEA;
 			}
@@ -394,6 +406,22 @@ void setvideomode(int mode)
 {
 }
 
+uint32_t sdl_timer(Uint32 interval, void *param)
+{
+	update_screen();
+
+	return interval;
+}
+
+void init_timer()
+{
+	if(!SDL_AddTimer(30, sdl_timer, "a"))
+	{
+		SDL_Quit();
+		exit(-1);
+	}
+}
+
 int update_screen()
 {
 	unsigned char *buffer_dat;
@@ -423,9 +451,12 @@ int init_display()
 	screen_buffer = malloc(SCREEN_XRESOL*SCREEN_YRESOL);
 	screen_buffer_backup=(unsigned char*)malloc(8*1024*2);
 
-	SDL_Init( SDL_INIT_VIDEO );
+	SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER );
 
 	screen = SDL_SetVideoMode( SCREEN_XRESOL, SCREEN_YRESOL, 8, SDL_SWSURFACE);
+
+	last_key = 0x00;
+	keys_stat = SDL_GetKeyState(NULL);
 
 	bBuffer = SDL_CreateRGBSurface( SDL_HWSURFACE, screen->w,
 					screen->h,
@@ -453,6 +484,7 @@ int init_display()
 
 	update_screen();
 
+	init_timer();
 	return 0;
 }
 
@@ -479,22 +511,23 @@ void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, 
 	ptr_dst=(unsigned char*)membuffer;
 	ptr_src=(unsigned char*)&font->data[0];
 
-	ptr_dst=ptr_dst + ((y*SCREEN_XRESOL)+ x);
-	ptr_src=ptr_src + (((c>>4)*(8*8*2))+(c&0xF));
-	for(j=0;j<8;j++)
+	if( y < SCREEN_YRESOL && x < SCREEN_XRESOL)
 	{
-		for(i=0;i<8;i++)
+		ptr_dst=ptr_dst + ((y*SCREEN_XRESOL)+ x);
+		ptr_src=ptr_src + (((c>>4)*(8*8*2))+(c&0xF));
+		for(j=0;j<8;j++)
 		{
-			if(*ptr_src & (0x80>>i) )
-				ptr_dst[i]= 0xFF;
-			else
-				ptr_dst[i]= 0x00;
+			for(i=0;i<8;i++)
+			{
+				if(*ptr_src & (0x80>>i) )
+					ptr_dst[i]= 0xFF;
+				else
+					ptr_dst[i]= 0x00;
+			}
+			ptr_src=ptr_src+16;
+			ptr_dst=ptr_dst + SCREEN_XRESOL;
 		}
-		ptr_src=ptr_src+16;
-		ptr_dst=ptr_dst + SCREEN_XRESOL;
 	}
-
-	update_screen();
 
 }
 
@@ -507,23 +540,24 @@ void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short 
 	ptr_dst=(unsigned char*)membuffer;
 	ptr_src=(unsigned char*)&sprite->data[0];
 
-	k=0;
-	l=0;
-	base_offset=(( y * SCREEN_XRESOL)+ x);
-	for(j=0;j<(sprite->Ysize);j++)
+	if( y < SCREEN_YRESOL && x < SCREEN_XRESOL)
 	{
-		l = base_offset + (SCREEN_XRESOL * j);
-		k = (j * sprite->Xsize) / 8;
-		for(i=0;i<(sprite->Xsize);i++)
+		k=0;
+		l=0;
+		base_offset=(( y * SCREEN_XRESOL)+ x);
+		for(j=0;j<(sprite->Ysize);j++)
 		{
-			if(ptr_src[k + (i>>3)] & (0x80>>i) )
-				ptr_dst[l + i]= 0xFF;
-			else
-				ptr_dst[l + i]= 0x00;
+			l = base_offset + (SCREEN_XRESOL * j);
+			k = (j * sprite->Xsize) / 8;
+			for(i=0;i<(sprite->Xsize);i++)
+			{
+				if(ptr_src[k + (i>>3)] & (0x80>>i) )
+					ptr_dst[l + i]= 0xFF;
+				else
+					ptr_dst[l + i]= 0x00;
+			}
 		}
 	}
-
-	update_screen();
 }
 
 void h_line(unsigned short y_pos,unsigned short val)
@@ -539,9 +573,6 @@ void h_line(unsigned short y_pos,unsigned short val)
 		ptr_dst[ptroffset + (i*2)]=(val>>8)&0xFF;
 		ptr_dst[ptroffset + (i*2) + 1]=(val)&0xFF;
 	}
-
-	update_screen();
-
 }
 
 void box(unsigned short x_p1,unsigned short y_p1,unsigned short x_p2,unsigned short y_p2,unsigned short fillval,unsigned char fill)
@@ -564,8 +595,6 @@ void box(unsigned short x_p1,unsigned short y_p1,unsigned short x_p2,unsigned sh
 		ptroffset = SCREEN_XRESOL * (y_p1+j);
 	}
 
-	update_screen();
-
 }
 
 void invert_line(unsigned short x_pos,unsigned short y_pos)
@@ -574,19 +603,20 @@ void invert_line(unsigned short x_pos,unsigned short y_pos)
 	unsigned char *ptr_dst;
 	unsigned long ptroffset;
 
-	for(j=0;j<8;j++)
+	if( y_pos < SCREEN_YRESOL && x_pos < SCREEN_XRESOL)
 	{
-		ptr_dst=(unsigned char*)screen_buffer;
-		ptroffset=(SCREEN_XRESOL* (y_pos + j))+x_pos;
 
-		for(i=0;i<SCREEN_XRESOL;i++)
+		for(j=0;j<8;j++)
 		{
-			ptr_dst[ptroffset+i]=ptr_dst[ptroffset+i]^0xFF;
+			ptr_dst=(unsigned char*)screen_buffer;
+			ptroffset=(SCREEN_XRESOL* (y_pos + j))+x_pos;
+
+			for(i=0;i<SCREEN_XRESOL;i++)
+			{
+				ptr_dst[ptroffset+i]=ptr_dst[ptroffset+i]^0xFF;
+			}
 		}
 	}
-
-	update_screen();
-
 }
 
 void save_box()
@@ -597,12 +627,11 @@ void save_box()
 void restore_box()
 {
 //	memcpy(&screen_buffer[160*70],screen_buffer_backup, 8*1024);
-	update_screen();
-
 }
 
 void reboot()
 {
+	SDL_Quit();
 	exit(0);
 	for(;;);
 }
@@ -617,10 +646,6 @@ void ithandler(void)
 	}
 }
 
-void init_timer()
-{
-}
-
 char *strlwr(char *s)
 {
 	unsigned char *s1;
@@ -633,3 +658,4 @@ char *strlwr(char *s)
 	}
 	return s;
 }
+
