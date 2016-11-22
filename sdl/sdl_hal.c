@@ -100,6 +100,7 @@ void waitus(int centus)
 
 void waitms(int ms)
 {
+	SDL_Delay(ms);
 }
 
 void alloc_error()
