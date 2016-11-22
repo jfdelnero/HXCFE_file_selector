@@ -6,7 +6,7 @@
 //-------------------------------------------------------------
 
 // Is the system little endian (1) or big endian (0)
-#define FATFS_IS_LITTLE_ENDIAN				0
+//#define FATFS_IS_LITTLE_ENDIAN				0
 
 // Max filename Length
 #define FATFS_MAX_LONG_FILENAME				260
