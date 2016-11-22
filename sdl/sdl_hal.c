@@ -446,7 +446,7 @@ int init_display()
 	track_number = 0;
 
 	SCREEN_XRESOL = 640;
-	SCREEN_YRESOL = 240;
+	SCREEN_YRESOL = 256;
 
 	screen_buffer = malloc(SCREEN_XRESOL*SCREEN_YRESOL);
 	screen_buffer_backup=(unsigned char*)malloc(8*1024*2);
@@ -551,7 +551,7 @@ void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short 
 			k = (j * sprite->Xsize) / 8;
 			for(i=0;i<(sprite->Xsize);i++)
 			{
-				if(ptr_src[k + (i>>3)] & (0x80>>i) )
+				if(ptr_src[k + (i>>3)] & (0x80>>(i&7)) )
 					ptr_dst[l + i]= 0xFF;
 				else
 					ptr_dst[l + i]= 0x00;
