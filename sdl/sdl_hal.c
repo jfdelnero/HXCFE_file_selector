@@ -410,6 +410,19 @@ void setvideomode(int mode)
 
 uint32_t sdl_timer(Uint32 interval, void *param)
 {
+	SDL_Event evt;
+
+	if(SDL_PollEvent(&evt))
+	{
+		switch(evt.type)
+		{
+			case SDL_QUIT:
+				SDL_Quit();
+				exit(0);
+			break;
+		}
+	}
+
 	update_screen();
 
 	return interval;
