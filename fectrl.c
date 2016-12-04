@@ -49,8 +49,11 @@
 #include "ui_context.h"
 
 static uint32_t last_setlbabase;
+
+// Config file header sector
 static unsigned char cfgfile_header[512];
 
+// Slots buffer
 static disk_in_drive_v2 disks_slots[MAX_NUMBER_OF_SLOT];
 
 static disk_in_drive_v2_long DirectoryEntry_tab[40];
@@ -66,7 +69,6 @@ extern uint16_t SCREEN_YRESOL;
 extern unsigned char  NUMBER_OF_FILE_ON_DISPLAY;
 
 extern uint32_t timercnt;
-unsigned char bkstr[40][80+8];
 extern unsigned char keyup;
 
 volatile unsigned short io_floppy_timeout;
@@ -866,20 +868,6 @@ void print_help()
 	while(wait_function_key()!=FCT_SELECT_FILE_DRIVEA);
 }
 
-void restorestr(ui_context * uicontext)
-{
-	int i;
-
-	hxc_printf(CENTER_ALIGNED,0,FILELIST_Y_POS,bkstr[1]);
-
-	for(i=1;i<NUMBER_OF_FILE_ON_DISPLAY;i++)
-	{
-		hxc_print(LEFT_ALIGNED| DONTPARSE,0,FILELIST_Y_POS+(i*8),bkstr[i+1]);
-	}
-
-	invert_line(0,FILELIST_Y_POS+(uicontext->selectorpos*8));
-}
-
 void ui_savereboot(ui_context * uicontext)
 {
 	hxc_printf_box("Saving selection and restart...");
@@ -1146,7 +1134,6 @@ int ui_command_menu(ui_context * uicontext)
 		{
 			case 0:
 				clear_list(0);
-				restorestr(uicontext);
 				return 0;
 			break;
 
@@ -1187,7 +1174,6 @@ int ui_command_menu(ui_context * uicontext)
 	}
 
 	clear_list(0);
-	restorestr(uicontext);
 
 	return 1;
 }
@@ -1196,6 +1182,10 @@ int ui_slots_menu(ui_context * uicontext)
 {
 	unsigned char key;
 	int slot;
+
+	#ifdef DEBUG
+	dbg_printf("enter ui_slots_menu\n");
+	#endif
 
 	////////////////////
 	// Slots list menu
@@ -1321,14 +1311,20 @@ int ui_slots_menu(ui_context * uicontext)
 	if( key == FCT_SELECT_FILE_DRIVEA && !uicontext->slotselectorpos )
 	{
 		clear_list(0);
+
+		#ifdef DEBUG
+		dbg_printf("leave ui_slots_menu\n");
+		#endif
 		return 0;
 	}
 
-	clear_list(0);
-	restorestr(uicontext);
 	if( ( key != FCT_ESCAPE ) && ( uicontext->page_mode_index < uicontext->number_of_drive ) )
 	{
 		slot = (uicontext->slotselectorpos + (uicontext->slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1)));
+
+		#ifdef DEBUG
+		dbg_printf("set slot %d (page %d, pos %d)\n",slot,uicontext->slotselectorpage,uicontext->slotselectorpos);
+		#endif
 
 		memcpy( (void*)&disks_slots[ (slot*uicontext->number_of_drive) + ( uicontext->page_mode_index ) ],
 				(void*)&DirectoryEntry_tab[ uicontext->selectorpos ],
@@ -1338,6 +1334,12 @@ int ui_slots_menu(ui_context * uicontext)
 		uicontext->slot_map[slot>>3] |= (0x80 >> (slot&7));
 		uicontext->change_map[slot>>3] |= (0x80 >> (slot&7));
 	}
+
+	clear_list(0);
+
+	#ifdef DEBUG
+	dbg_printf("leave ui_slots_menu\n");
+	#endif
 	return 1;
 }
 
@@ -1358,6 +1360,10 @@ void ui_mainfileselector(ui_context * uicontext)
 	clear_list(0);
 	for(;;)
 	{
+		#ifdef DEBUG
+		dbg_printf("Page : %d Selector pos : %d\n",uicontext->page_number,uicontext->selectorpos);
+		#endif
+
 		i=0;
 		do
 		{
@@ -1365,12 +1371,10 @@ void ui_mainfileselector(ui_context * uicontext)
 			i++;
 		}while((i<NUMBER_OF_FILE_ON_DISPLAY));
 
-		memset(bkstr,0,sizeof(bkstr));
 		last_file=0x00;
 
 		y_pos = FILELIST_Y_POS;
-		snprintf(bkstr[y_pos/8],80,"--- SD/USB Media files ---");
-		hxc_printf(CENTER_ALIGNED,0,y_pos,bkstr[y_pos/8]);
+		hxc_printf(CENTER_ALIGNED,0,y_pos,"--- SD/USB Media files ---");
 		y_pos += 8;
 		i = 1;
 		do
@@ -1401,7 +1405,6 @@ void ui_mainfileselector(ui_context * uicontext)
 						DirectoryEntry_tab[i].attributes=0x00;
 					}
 
-					snprintf(bkstr[y_pos/8],80," %c%s",entrytype,dir_entry.filename);
 					hxc_printf(LEFT_ALIGNED | DONTPARSE,0,y_pos," %c%s",entrytype,dir_entry.filename);
 
 					y_pos=y_pos+8;
@@ -1420,6 +1423,11 @@ void ui_mainfileselector(ui_context * uicontext)
 
 					DirectoryEntry_tab[i].firstCluster = ENDIAN_32BIT(dir_entry.cluster) ;
 					DirectoryEntry_tab[i].size =  ENDIAN_32BIT(dir_entry.size);
+
+					#ifdef DEBUG
+					dbg_printf("Entry : %s Size:%d Cluster 0x%.8X\n",DirectoryEntry_tab[i].name,DirectoryEntry_tab[i].size,DirectoryEntry_tab[i].firstCluster);
+					#endif
+
 					i++;
 				}
 			}
@@ -1455,12 +1463,16 @@ void ui_mainfileselector(ui_context * uicontext)
 					uicontext->selectorpos--;
 					if(uicontext->selectorpos<0)
 					{
-						uicontext->selectorpos=NUMBER_OF_FILE_ON_DISPLAY-1;
+						uicontext->selectorpos = NUMBER_OF_FILE_ON_DISPLAY-1;
 						if(uicontext->page_number)
 							uicontext->page_number--;
 						clear_list(0);
 						uicontext->read_entry=1;
 						memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
+
+						#ifdef DEBUG
+						dbg_printf("Page change : %d\n",uicontext->page_number);
+						#endif
 					}
 					else
 					{
@@ -1482,6 +1494,10 @@ void ui_mainfileselector(ui_context * uicontext)
 						if(!last_file && uicontext->page_number < MAX_PAGES_PER_DIRECTORY)
 							uicontext->page_number++;
 						memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
+
+						#ifdef DEBUG
+						dbg_printf("Page change : %d\n",uicontext->page_number);
+						#endif
 					}
 					else
 					{
@@ -1492,14 +1508,17 @@ void ui_mainfileselector(ui_context * uicontext)
 					break;
 
 				case FCT_RIGHT_KEY: // Right
-					clear_list(0);
-					uicontext->read_entry=1;
-
 					if(!last_file && uicontext->page_number < MAX_PAGES_PER_DIRECTORY)
 						uicontext->page_number++;
 
 					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
 
+					clear_list(0);
+					uicontext->read_entry=1;
+
+					#ifdef DEBUG
+					dbg_printf("Page change : %d\n",uicontext->page_number);
+					#endif
 					break;
 
 				case FCT_LEFT_KEY:
@@ -1507,8 +1526,13 @@ void ui_mainfileselector(ui_context * uicontext)
 						uicontext->page_number--;
 
 					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
+
 					clear_list(0);
 					uicontext->read_entry=1;
+
+					#ifdef DEBUG
+					dbg_printf("Page change : %d\n",uicontext->page_number);
+					#endif
 					break;
 
 				case FCT_SELECT_FILE_DRIVEA:
@@ -1538,6 +1562,8 @@ void ui_mainfileselector(ui_context * uicontext)
 							}
 						}while(!ret && uicontext->page_mode_index != 3 );
 
+						memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
+						uicontext->read_entry = 1;
 					}
 					break;
 
