@@ -37,10 +37,10 @@
 #include <clib/exec_protos.h>
 #include <clib/dos_protos.h>
 
-
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include "conf.h"
 
@@ -67,6 +67,7 @@
 #define GREEN 0x0f0
 #define BLUE  0x00f
 
+
 volatile unsigned short io_floppy_timeout;
 
 unsigned char * screen_buffer;
@@ -81,12 +82,16 @@ static unsigned char * mfmtobinLUT_H;
 
 #define MFMTOBIN(W) ( mfmtobinLUT_H[W>>8] | mfmtobinLUT_L[W&0xFF] )
 
-static unsigned short * track_buffer;
+#define RD_TRACK_BUFFER_SIZE 10*1024
+#define WR_TRACK_BUFFER_SIZE 600
+
+static unsigned short * track_buffer_rd;
 static unsigned short * track_buffer_wr;
 
 static unsigned char validcache;
 
-unsigned short sector_pos[16];
+#define MAX_CACHE_SECTOR 16
+unsigned short sector_pos[MAX_CACHE_SECTOR];
 
 unsigned char keyup;
 
@@ -144,13 +149,53 @@ struct TagItem vcTags[] =
 
 typedef  struct _bmaptype
 {
-   int type;
-   int Xsize;
-   int Ysize;
-   int size;
-   int csize;
-   unsigned char * data;
+	int type;
+	int Xsize;
+	int Ysize;
+	int size;
+	int csize;
+	unsigned char * data;
 }bmaptype __attribute__ ((aligned (2)));
+
+#endif
+
+#ifdef DEBUG
+
+void push_serial_char(unsigned char byte)
+{
+	WRITEREG_W(0xDFF032,0x1E);              //SERPER - 115200 baud/s
+
+	while(!(READREG_W(0xDFF018) & 0x2000)); //SERDATR
+
+	WRITEREG_W(0xDFF030,byte | 0x100);      //SERDAT
+}
+
+void dbg_printf(char * chaine, ...)
+{
+	unsigned char txt_buffer[1024];
+	int i;
+
+	va_list marker;
+	va_start( marker, chaine );
+
+	vsnprintf(txt_buffer,sizeof(txt_buffer),chaine,marker);
+
+	i = 0;
+	while(txt_buffer[i])
+	{
+		if(txt_buffer[i] == '\n')
+		{
+			push_serial_char('\r');
+			push_serial_char('\n');
+		}
+		else
+			push_serial_char(txt_buffer[i]);
+
+		i++;
+	}
+
+	va_end( marker );
+}
 
 #endif
 
@@ -208,7 +253,7 @@ void testblink()
 void alloc_error()
 {
 	hxc_printf_box(0,"ERROR: Memory Allocation Error -> No more free mem ?");
-	for(;;);
+	lockup();
 }
 
 /********************************************************************************
@@ -499,6 +544,11 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 	unsigned char sectorfound;
 	unsigned char c;
 	unsigned char CRC16_High,CRC16_Low,byte;
+	unsigned char sector_header[4];
+
+	#ifdef DEBUG
+	dbg_printf("writesector : %d\n",sectornum);
+	#endif
 
 	Forbid();
 
@@ -507,6 +557,7 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 	i=0;
 	validcache=0;
 
+	// Preparing the buffer...
 	CRC16_Init(&CRC16_High, &CRC16_Low);
 	for(j=0;j<3;j++)
 	{
@@ -530,7 +581,7 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 	byte = 0xFB;
 	BuildCylinder((unsigned char*)&track_buffer_wr[i++],1*2,&byte,1,lastbit,&lastbit);
 	BuildCylinder((unsigned char*)&track_buffer_wr[i],512*2,data,512,lastbit,&lastbit);
-	i=i+512;
+	i += 512;
 	BuildCylinder((unsigned char*)&track_buffer_wr[i++],1*2,&CRC16_High,1,lastbit,&lastbit);
 	BuildCylinder((unsigned char*)&track_buffer_wr[i++],1*2,&CRC16_Low,1,lastbit,&lastbit);
 	byte = 0x4E;
@@ -539,10 +590,17 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 		BuildCylinder((unsigned char*)&track_buffer_wr[i++],1*2,&byte,1,lastbit,&lastbit);
 	}
 
-	len=i;
+	len = i;
 
-	sectorfound=0;
-	retry=30;
+
+	// Looking for/waiting the sector to write...
+
+	sector_header[0]=0xFF;
+	sector_header[1]=0x00;
+	sector_header[2]=sectornum;
+
+	sectorfound = 0;
+	retry = 30;
 
 	if(sectornum)
 	{
@@ -556,18 +614,18 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 
 				retry--;
 
-				if(!readtrack(track_buffer,16,0))
+				if(!readtrack(track_buffer_rd,16,0))
 				{
 					Permit();
 					return 0;
 				}
 
-				while(track_buffer[i]==0x4489 && (i<16))
+				while(track_buffer_rd[i]==0x4489 && (i<16))
 				{
 					i++;
 				}
 
-				if(MFMTOBIN(track_buffer[i])==0xFE && (i<(16-3)))
+				if(MFMTOBIN(track_buffer_rd[i])==0xFE && (i<(16-3)))
 				{
 
 					CRC16_Init(&CRC16_High, &CRC16_Low);
@@ -577,28 +635,28 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 
 					for(j=0;j<(1+4+2);j++)
 					{
-						c = MFMTOBIN(track_buffer[i+j]);
+						c = MFMTOBIN(track_buffer_rd[i+j]);
 						CRC16_Update(&CRC16_High, &CRC16_Low,c);
 					}
 
 					if(!CRC16_High && !CRC16_Low)
 					{
 						i++;
-						if(MFMTOBIN(track_buffer[i])==0xFF) //track
+
+						j = 0;
+						while(j<3 && ( MFMTOBIN(track_buffer_rd[i]) == sector_header[j] ) ) // track,side,sector
 						{
+							j++;
 							i++;
-							if(MFMTOBIN(track_buffer[i])==0x00) //side
+						}
+
+						if(j == 3)
+						{
+							sectorfound=1;
+							if(!writetrack(track_buffer_wr,len,0))
 							{
-								i++;
-								if(MFMTOBIN(track_buffer[i])==sectornum) //sector
-								{
-									sectorfound=1;
-									if(!writetrack(track_buffer_wr,len,0))
-									{
-										Permit();
-										return 0;
-									}
-								}
+								Permit();
+								return 0;
 							}
 						}
 					}
@@ -641,14 +699,41 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 	unsigned char sectorfound,tc;
 	unsigned char c,retry,badcrc,retry2;
 	unsigned char CRC16_High,CRC16_Low;
+	unsigned char sector_header[8];
+	unsigned char sect_num;
 
-	Forbid();
-	retry2=2;
-	retry=5;
+	#ifdef DEBUG
+	dbg_printf("readsector : %d - %d\n",sectornum,invalidate_cache);
+	#endif
+
+	if(!(sectornum<MAX_CACHE_SECTOR))
+		return 0;
+
+	retry2 = 2;
+	retry = 5;
+
+	sector_header[0] = 0xFE; // IDAM
+	sector_header[1] = 0xFF; // Track
+	sector_header[2] = 0x00; // Side
+	sector_header[3] = sectornum; // Sector
+	sector_header[4] = 0x02;      // Size
+
+	CRC16_Init(&CRC16_High, &CRC16_Low);
+	for( j = 0; j < 3; j++ )
+	{
+		CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
+	}
+
+	for(j=0;j< 5;j++)
+	{
+		CRC16_Update(&CRC16_High, &CRC16_Low,sector_header[j]);
+	}
+
+	sector_header[5] = CRC16_High;// CRC H
+	sector_header[6] = CRC16_Low; // CRC L
 
 	do
 	{
-
 		do
 		{
 			sectorfound=0;
@@ -656,28 +741,63 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 			badcrc=0;
 			if(!validcache || invalidate_cache)
 			{
-				if(!readtrack(track_buffer,10*1024,0))
+				Forbid();
+				if(!readtrack(track_buffer_rd,RD_TRACK_BUFFER_SIZE,0))
 				{
 					Permit();
 					return 0;
 				}
+				Permit();
 
 				i=1;
-				for(j=0;j<9;j++)
+				for(j=0;j<MAX_CACHE_SECTOR;j++)
 				{
 					sector_pos[j]=0xFFFF;
 				}
 
 				for(j=0;j<9;j++)
 				{
-					while(track_buffer[i]!=0x4489 && i) i=(i+1)&0x3FFF;
-					if(!i) j=9;
-					while(track_buffer[i]==0x4489 && i) i=(i+1)&0x3FFF;
-					if(!i) j=9;
-					if(MFMTOBIN(track_buffer[i])==0xFE)
+					while(i < RD_TRACK_BUFFER_SIZE && ( track_buffer_rd[i]!=0x4489 ))
+						i++;
+
+					if( i == RD_TRACK_BUFFER_SIZE )
+						break;
+
+					while(i < RD_TRACK_BUFFER_SIZE && (track_buffer_rd[i]==0x4489 ))
+						i++;
+
+					if( i == RD_TRACK_BUFFER_SIZE)
+						break;
+
+					if(MFMTOBIN(track_buffer_rd[i])==0xFE)
 					{
-						sector_pos[MFMTOBIN(track_buffer[i+3])&0xF]=i;
-						i=(i+512+2)&0x3FFF;
+						#ifdef DEBUG
+						dbg_printf("pre-cache sector : index mark at %d sector %d\n",i,MFMTOBIN(track_buffer_rd[i+3]));
+						#endif
+
+						sect_num = MFMTOBIN(track_buffer_rd[i+3]);
+						if( sect_num < MAX_CACHE_SECTOR )
+						{
+							if(sector_pos[sect_num] == 0xFFFF)
+							{
+								if( i < (RD_TRACK_BUFFER_SIZE - 1088))
+								{
+									sector_pos[sect_num] = i;
+									#ifdef DEBUG
+									dbg_printf("pre-cache sector : %d - %d\n",sect_num,i);
+									#endif
+								}
+
+							}
+							else
+							{
+								#ifdef DEBUG
+								dbg_printf("pre-cache sector : sector already found : %d sector %d\n",i,sector_pos[sect_num]);
+								#endif
+							}
+						}
+
+						i += ( 512 + 2 );
 					}
 					else
 					{
@@ -686,100 +806,76 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 				}
 			}
 
-			do
-			{
-				i=sector_pos[sectornum&0xF];
-				if(i<16*1024)
-				{
-					if(MFMTOBIN(track_buffer[i])==0xFE)
-					{
-						CRC16_Init(&CRC16_High, &CRC16_Low);
-						for(j=0;j<3;j++)CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
+			i = sector_pos[sectornum];
 
-						for(j=0;j<(1+4+2);j++)
+			#ifdef DEBUG
+			dbg_printf("sector %d offset %d\n",sectornum,i);
+			#endif
+
+			if( i < (RD_TRACK_BUFFER_SIZE - 1088))
+			{
+				// Check if we have a valid sector header
+				j = 0;
+				while(j<7 && ( MFMTOBIN(track_buffer_rd[i+j]) == sector_header[j] ) ) // track,side,sector
+				{
+					j++;
+				}
+
+				if(j == 7) // yes
+				{
+					#ifdef DEBUG
+					dbg_printf("Valid header found\n");
+					#endif
+
+					i += 35;
+
+					j = 0;
+					while(j<30 && ( MFMTOBIN(track_buffer_rd[i]) != 0xFB ) ) // Data mark
+					{
+						i++;
+						j++;
+					}
+
+					if(j != 30)
+					{
+						#ifdef DEBUG
+						dbg_printf("Data mark found (%d)\n",j);
+						#endif
+
+						// 0xA1 * 3
+						CRC16_Init(&CRC16_High, &CRC16_Low);
+						for(j=0;j<3;j++)
+							CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
+
+						// Data Mark
+						CRC16_Update(&CRC16_High,&CRC16_Low,MFMTOBIN(track_buffer_rd[i]));
+						i++;
+
+						// Data
+						for(j=0;j<512;j++)
 						{
-							c=MFMTOBIN(track_buffer[i+j]);
-							CRC16_Update(&CRC16_High, &CRC16_Low,c);
+							tc = MFMTOBIN(track_buffer_rd[i]);
+							i++;
+							data[j] = tc;
 						}
 
-						if(!CRC16_High && !CRC16_Low)
+						for(j=0;j<2;j++)
 						{
-							i++;
-							if(MFMTOBIN(track_buffer[i])==0xFF) //track
-							{
-								i++;
-								if(MFMTOBIN(track_buffer[i])==0x00) //side
-								{
-									i++;
-									if(MFMTOBIN(track_buffer[i])==sectornum) //sector
-									{
-										i=i+41;
+							c = MFMTOBIN(track_buffer_rd[i++]);
+							//CRC16_Update(&CRC16_High, &CRC16_Low,c);
+						}
 
-										CRC16_Init(&CRC16_High, &CRC16_Low);
-										for(j=0;j<3;j++)
-											CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
-
-										CRC16_Update(&CRC16_High,&CRC16_Low,MFMTOBIN(track_buffer[i]));
-										i++;
-
-										for(j=0;j<512;j++)
-										{
-
-											tc = MFMTOBIN(track_buffer[i]);
-
-											//CRC16_Update(&CRC16_High, &CRC16_Low,tc);
-											i++;
-											data[j]=tc;
-										}
-
-										for(j=0;j<2;j++)
-										{
-											c = MFMTOBIN(track_buffer[i++]);
-											//CRC16_Update(&CRC16_High, &CRC16_Low,c);
-										}
-
-										if(1)//!CRC16_High && !CRC16_Low)
-										{
-											sectorfound=1;
-										}
-										else
-										{
-											badcrc=1;
-										}
-
-									}
-									else
-									{
-										i=i+512+2;
-									}
-								}
-								else
-								{
-									i=i+512+2;
-								}
-							}
-							else
-							{
-								i=i+512+2;
-							}
+						if(1)//!CRC16_High && !CRC16_Low)
+						{
+							sectorfound=1;
 						}
 						else
 						{
-							i++;
 							badcrc=1;
 						}
 					}
-					else
-					{
-						i++;
-					}
 				}
-				else
-				{
-					badcrc=1;
-				}
-
-			}while( !sectorfound && (i<(16*1024)) && !badcrc);
+			}
 
 			retry--;
 			if(!sectorfound && retry)
@@ -801,7 +897,6 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 			retry=5;
 		}
 
-
 	}while(!sectorfound && retry2);
 
 	if(!sectorfound)
@@ -809,7 +904,6 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 		validcache=0;
 	}
 
-	Permit();
 
 	return sectorfound;
 }
@@ -845,6 +939,10 @@ void init_fdc(unsigned char drive)
 {
 	unsigned short i;
 
+	#ifdef DEBUG
+	dbg_printf("init_fdc\n");
+	#endif
+
 	if(drive==0)
 		CIABPRB_DSKSEL=CIABPRB_DSKSEL0;
 	else
@@ -869,20 +967,20 @@ void init_fdc(unsigned char drive)
 		alloc_error();
 	}
 
-	track_buffer=(unsigned short*)AllocMem(24*1024,MEMF_CHIP);
-	if(track_buffer)
+	track_buffer_rd = (unsigned short*)AllocMem( sizeof(unsigned short) * RD_TRACK_BUFFER_SIZE, MEMF_CHIP);
+	if(track_buffer_rd)
 	{
-		memset(track_buffer,0,24*1024);
+		memset(track_buffer_rd,0,sizeof(unsigned short) * RD_TRACK_BUFFER_SIZE);
 	}
 	else
 	{
 		alloc_error();
 	}
 
-	track_buffer_wr=(unsigned short*)AllocMem(2*1024,MEMF_CHIP);
+	track_buffer_wr=(unsigned short*)AllocMem( sizeof(unsigned short) * WR_TRACK_BUFFER_SIZE,MEMF_CHIP);
 	if(track_buffer_wr)
 	{
-		memset(track_buffer_wr,0,2*1024);
+		memset(track_buffer_wr,0, sizeof(unsigned short) * WR_TRACK_BUFFER_SIZE);
 	}
 	else
 	{
@@ -896,8 +994,9 @@ void init_fdc(unsigned char drive)
 
 	if(jumptotrack(255))
 	{
+		Permit();
 		hxc_printf_box(0,"ERROR: init_fdc -> failure while seeking the track 00!");
-		for(;;);
+		lockup();
 	}
 	Delay(12);
 	WRITEREG_W(INTREQ,0x0002);
@@ -1305,15 +1404,15 @@ void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, 
 	ptr_dst=(unsigned char*)membuffer;
 	ptr_src=(unsigned char*)&font->data[0];
 
-	x=x>>3;
+	x = x>>3;
 	//x=((x&(~0x1))<<1)+(x&1);//  0 1   2 3
-	ptr_dst=ptr_dst + ((y*80)+ x);
-	ptr_src=ptr_src + (((c>>4)*(8*8*2))+(c&0xF));
+	ptr_dst += ((y*80)+ x);
+	ptr_src += (((c>>4)*(8*8*2))+(c&0xF));
 	for(j=0;j<8;j++)
 	{
 		*ptr_dst=*ptr_src;
-		ptr_src=ptr_src+16;
-		ptr_dst=ptr_dst+80;
+		ptr_src += 16;
+		ptr_dst += 80;
 	}
 }
 
@@ -1328,13 +1427,13 @@ void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short 
 
 	k=0;
 	l=0;
-	base_offset=((y*80)+ ((x>>3)))/2;
+	base_offset = ((y*80)+ ((x>>3)))/2;
 	for(j=0;j<(sprite->Ysize);j++)
 	{
 		l=base_offset +(40*j);
 		for(i=0;i<(sprite->Xsize/16);i++)
 		{
-			ptr_dst[l]=ptr_src[k];
+			ptr_dst[l] = ptr_src[k];
 			l++;
 			k++;
 		}
@@ -1406,7 +1505,7 @@ void restore_box()
 void reboot()
 {
 	_reboot();
-	for(;;);
+	lockup();
 }
 
 void ithandler(void)
