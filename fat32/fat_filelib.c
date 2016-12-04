@@ -1063,7 +1063,7 @@ int fl_fswrite(unsigned char * buffer, int size,int start_sector, void *f)
 		return -1;
 
 	// Check if read starts past end of file
-	if (file->bytenum >= file->filelength)
+	if ( start_sector*512 >= file->filelength)
 		return -1;
 
 	// Calculate start sector

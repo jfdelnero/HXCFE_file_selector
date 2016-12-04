@@ -625,6 +625,10 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 						sect_nb = ENDIAN_32BIT(cfgfile_ptr->slots_position) + (floppyselectorindex >> 9);
 						if (fl_fswrite( ((unsigned char*)&disks_slots) + (floppyselectorindex & ~0x1FF) , 1, sect_nb, cfg_file_handle) != 1)
 						{
+							#ifdef DEBUG
+							dbg_printf("fl_fswrite error : slot sect %d !\n",sect_nb);
+							#endif
+
 							hxc_printf_box("ERROR: Write file failed!");
 							ret=1;
 						}
@@ -644,6 +648,10 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 				// Update the map
 				if (fl_fswrite((unsigned char*)&uicontext->slot_map, 1, ENDIAN_32BIT(cfgfile_ptr->slots_map_position), cfg_file_handle) != 1)
 				{
+					#ifdef DEBUG
+					dbg_printf("fl_fswrite error : map sect %d !\n",ENDIAN_32BIT(cfgfile_ptr->slots_map_position));
+					#endif
+
 					hxc_printf_box("ERROR: Write file failed!");
 					ret=1;
 				}
@@ -656,6 +664,10 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 
 				if (fl_fswrite((unsigned char*)cfgfile_header, 1,0, cfg_file_handle) != 1)
 				{
+					#ifdef DEBUG
+					dbg_printf("fl_fswrite error : header %d !\n",0);
+					#endif
+
 					hxc_printf_box("ERROR: Write file failed!");
 					ret=1;
 				}
