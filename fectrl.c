@@ -76,6 +76,9 @@ FL_FILE * cfg_file_handle;
 
 void lockup()
 {
+	#ifdef DEBUG
+	dbg_printf("lockup : Sofware halted...\n");
+	#endif
 	for(;;);
 }
 
@@ -130,7 +133,7 @@ int test_floppy_if()
 		if(!readsector(0,sector,1))
 		{
 			hxc_printf_box("read sector %d error !",last_setlbabase);
-			for(;;);
+			lockup();
 		}
 
 		#ifdef DEBUG
@@ -140,7 +143,7 @@ int test_floppy_if()
 		if(last_setlbabase!=L_INDIAN(dass->lba_base))
 		{
 			hxc_printf_box("LBA Change Test Failed ! Write Issue ?");
-			for(;;);
+			lockup();
 		}
 
 		last_setlbabase--;
@@ -448,7 +451,7 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 	if(ret)
 	{
 		hxc_printf_box("ERROR: Access HXCSDFE.CFG file failed! [%d]",ret);
-		for(;;);
+		lockup();
 	}
 
 	#ifdef DEBUG
@@ -1679,7 +1682,7 @@ int main(int argc, char* argv[])
 		if (fl_attach_media(media_read, media_write) != FAT_INIT_OK)
 		{
 			hxc_printf_box("ERROR: Media attach failed !");
-			for(;;);
+			lockup();
 		}
 
 		#ifdef DEBUG
@@ -1714,6 +1717,6 @@ int main(int argc, char* argv[])
 
 		ui_mainfileselector(uicontext);
 	}
-	for(;;);
+	lockup();
 	return 0;
 }
