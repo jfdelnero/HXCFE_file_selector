@@ -216,7 +216,56 @@ void init_display_buffer()
 	NUMBER_OF_FILE_ON_DISPLAY = ( (SCREEN_YRESOL - (bitmap_hxc2001_smalllogo_bmp->Ysize + 1 ) ) - 10 ) / 8;
 }
 
+
 #ifdef DEBUG
+
+void print_hex_buffer(unsigned char * buffer, int size)
+{
+	int c,i;
+	int x,y;
+
+	c=0;
+
+	x=0;
+	y=0;
+	for(i=0;i<size;i++)
+	{
+		x=((c & 0xF)*24);
+		hxc_printf(LEFT_ALIGNED,x,y,"%.2X ", buffer[i]);
+		c++;
+		if(!(c&0xF))
+		{
+			y=y+9;
+		}
+	}
+
+	c=0;
+
+	x=0;
+	y=0;
+
+	for(i=0;i<size;i++)
+	{
+		x=((c & 0xF)*8)+384+8;
+		if(
+			(buffer[i]>='a' && buffer[i]<='z') ||
+			(buffer[i]>='A' && buffer[i]<='Z') ||
+			(buffer[i]>='0' && buffer[i]<='9')
+			)
+		{
+			hxc_printf(LEFT_ALIGNED,x,y,"%c", buffer[i]);
+		}
+		else
+		{
+			hxc_print(LEFT_ALIGNED,x,y,".");
+		}
+		c++;
+		if(!(c&0xF))
+		{
+			y=y+9;
+		}
+	}
+}
 
 int dbg_printf(char * chaine, ...)
 {
