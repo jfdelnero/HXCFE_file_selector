@@ -16,6 +16,8 @@ typedef struct ui_context_
 	unsigned short read_entry;
 	unsigned long config_file_number_max_of_slot;
 	unsigned long number_of_drive;
+	unsigned long slots_position;
+	unsigned long number_of_slots;
 	unsigned char filtermode;
 	int cfg_file_format_version;
 	unsigned char slot_map[512];

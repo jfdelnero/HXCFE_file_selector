@@ -25,8 +25,6 @@
 //
 */
 
-//#define DBGMODE 1
-
 #include <intuition/intuitionbase.h>
 
 #include <graphics/gfxbase.h>
@@ -223,14 +221,16 @@ int jumptotrack(unsigned char t)
 	Forbid();
 	WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ));
 
-#ifdef DBGMODE
-	hxc_printf(0,0,0,"-- jumptotrack %d --",t);
-#endif
+	#ifdef DEBUG
+	dbg_printf("jumptotrack : %d\n",t);
+	#endif
+
 	waitms(100);
 
-#ifdef DBGMODE
-	hxc_printf(0,0,0,"-- jumptotrack %d - seek track 0... --",t);
-#endif
+	#ifdef DEBUG
+	dbg_printf("jumptotrack %d - seek track 0...\n",t);
+	#endif
+
 	k = 0;
 	while((READREG_B(CIAAPRA) & CIAAPRA_DSKTRACK0) && k<1024)
 	{
@@ -244,9 +244,9 @@ int jumptotrack(unsigned char t)
 
 	if(k < 1024)
 	{
-	#ifdef DBGMODE
-		hxc_printf(0,0,0,"-- jumptotrack %d - track 0 found --",t);
-	#endif
+		#ifdef DEBUG
+		dbg_printf("jumptotrack %d - track 0 found\n",t);
+		#endif
 
 		for(j=0;j<t;j++)
 		{
@@ -257,17 +257,18 @@ int jumptotrack(unsigned char t)
 		}
 
 		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ) );
-	#ifdef DBGMODE
-		hxc_printf(0,0,0,"-- jumptotrack %d - jump done    --",t);
-	#endif
+
+		#ifdef DEBUG
+		dbg_printf("jumptotrack %d - jump done\n",t);
+		#endif
 
 		Permit();
 
 		return 0;
 	}
 
-	#ifdef DBGMODE
-		hxc_printf(0,0,0,"-- jumptotrack %d - track 0 not found!! --",t);
+	#ifdef DEBUG
+	dbg_printf("jumptotrack %d - track 0 not found!!\n",t);
 	#endif
 
 	Permit();

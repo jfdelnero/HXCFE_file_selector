@@ -25,8 +25,6 @@
 //
 */
 
-//#define DBGMODE 1
-
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
