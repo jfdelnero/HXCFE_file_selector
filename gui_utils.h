@@ -20,3 +20,5 @@ void box(unsigned short x_p1,unsigned short y_p1,unsigned short x_p2,unsigned sh
 void init_display_buffer();
 
 unsigned char set_color_scheme(unsigned char color);
+
+int dbg_printf(char * chaine, ...);

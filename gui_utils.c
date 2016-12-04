@@ -88,7 +88,7 @@ int hxc_print(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char 
 		linefeed = 0;
 	else
 		linefeed = 1;
-	
+
 	switch(mode & 0xF)
 	{
 		case LEFT_ALIGNED: // Left aligned
@@ -198,7 +198,7 @@ void init_display_buffer()
 
 	// HxC2001 logo
 	display_sprite(screen_buffer, bitmap_hxc2001_smalllogo_bmp,
-	                                    (SCREEN_XRESOL-bitmap_hxc2001_smalllogo_bmp->Xsize), 
+	                                    (SCREEN_XRESOL-bitmap_hxc2001_smalllogo_bmp->Xsize),
 	                                    (SCREEN_YRESOL-bitmap_hxc2001_smalllogo_bmp->Ysize));
 
 	// Horizontal separator lines
@@ -212,8 +212,19 @@ void init_display_buffer()
 	hxc_print(LEFT_ALIGNED,0,CURDIR_Y_POS, (char*)cur_folder_msg);
 
 	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+8, (char*)startup_msg);
-	
+
 	NUMBER_OF_FILE_ON_DISPLAY = ( (SCREEN_YRESOL - (bitmap_hxc2001_smalllogo_bmp->Ysize + 1 ) ) - 10 ) / 8;
 }
 
+int dbg_printf(char * chaine, ...)
+{
+	#ifdef DEBUG
+	va_list marker;
+	va_start( marker, chaine );
+
+	vprintf(chaine,marker);
+
+	va_end( marker );
+	#endif
+}
 
