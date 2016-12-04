@@ -230,10 +230,10 @@ int dbg_printf(char * chaine, ...)
 
 void print_hex_array(unsigned char * buffer,int size)
 {
-	int i;
+	int i,j;
 	int offset;
 
-	for( i = 0; i < ((16*3)+6 ) ; i++ )
+	for( i = 0; i < (6+(16*3)+1+16) ; i++ )
 	{
 		dbg_printf("-",i);
 	}
@@ -248,19 +248,57 @@ void print_hex_array(unsigned char * buffer,int size)
 	}
 
 	offset = 0;
-	while ( offset < size)
+	while ( offset < size )
 	{
 		if( !(offset&0xF) )
 		{
+			if(offset)
+			{
+				dbg_printf(" ");
+				for(i=0;i<16;i++)
+				{
+					if( ( buffer[ offset - 16 + i ] >=' ' && buffer[ offset - 16 + i ] <= 126 ) )
+					{
+						dbg_printf("%c",buffer[ offset - 16 + i ]);
+					}
+					else
+					{
+						dbg_printf("%c",'.');
+					}
+				}
+			}
+
 			dbg_printf("\n%.4X :",offset);
 		}
 
 		dbg_printf(" %.2X",buffer[offset]);
 		offset++;
 	}
+
+	if( offset & 0xF )
+		j = offset & 0xF;
+	else
+		j = 16;
+
+	for( i = j ;i<16 ;i++)
+		dbg_printf(" --");
+
+	dbg_printf(" ");
+	for( i = 0; i < j; i++ )
+	{
+		if( ( buffer[ offset - j + i ] >=' ' && buffer[ offset - j + i ] <= 126 ) )
+		{
+			dbg_printf("%c",buffer[ offset - j + i ]);
+		}
+		else
+		{
+			dbg_printf("%c",'.');
+		}
+	}
+
 	dbg_printf("\n");
 
-	for( i = 0; i < ( (16*3) + 6 ) ; i++ )
+	for( i = 0; i < (6+(16*3)+1+16) ; i++ )
 	{
 		dbg_printf("-",i);
 	}
