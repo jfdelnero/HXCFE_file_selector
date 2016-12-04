@@ -216,15 +216,56 @@ void init_display_buffer()
 	NUMBER_OF_FILE_ON_DISPLAY = ( (SCREEN_YRESOL - (bitmap_hxc2001_smalllogo_bmp->Ysize + 1 ) ) - 10 ) / 8;
 }
 
+#ifdef DEBUG
+
 int dbg_printf(char * chaine, ...)
 {
-	#ifdef DEBUG
 	va_list marker;
 	va_start( marker, chaine );
 
 	vprintf(chaine,marker);
 
 	va_end( marker );
-	#endif
 }
 
+void print_hex_array(unsigned char * buffer,int size)
+{
+	int i;
+	int offset;
+
+	for( i = 0; i < ((16*3)+6 ) ; i++ )
+	{
+		dbg_printf("-",i);
+	}
+	dbg_printf("\n");
+
+	dbg_printf("       ");
+	for( i = 0; i < 16 ; i++ )
+	{
+		dbg_printf(" %X",i);
+		if(i!=15)
+			dbg_printf(" ");
+	}
+
+	offset = 0;
+	while ( offset < size)
+	{
+		if( !(offset&0xF) )
+		{
+			dbg_printf("\n%.4X :",offset);
+		}
+
+		dbg_printf(" %.2X",buffer[offset]);
+		offset++;
+	}
+	dbg_printf("\n");
+
+	for( i = 0; i < ( (16*3) + 6 ) ; i++ )
+	{
+		dbg_printf("-",i);
+	}
+	dbg_printf("\n");
+
+}
+
+#endif

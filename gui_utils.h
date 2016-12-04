@@ -21,4 +21,7 @@ void init_display_buffer();
 
 unsigned char set_color_scheme(unsigned char color);
 
+#ifdef DEBUG
 int dbg_printf(char * chaine, ...);
+void print_hex_array(unsigned char * buffer,int size);
+#endif
