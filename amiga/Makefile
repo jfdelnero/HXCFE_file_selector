@@ -1,7 +1,7 @@
 #CC=i386-pc-linux-gcc
 CC=m68k-amigaos-gcc.exe
 AS=m68k-amigaos-as.exe
-CFLAGS= -O3 -I . -I .. -noixemul -I ../fat32 -m68000
+CFLAGS= -Os -I . -I .. -noixemul -I ../fat32 -m68000
 LDFLAGS=-s  -Wl,-Map,foo.map   -noixemul  -amiga-debug-hunk -m68000
 EXEC=HXCFEMNG
 
