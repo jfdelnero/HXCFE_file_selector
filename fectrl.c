@@ -55,8 +55,10 @@ static disk_in_drive_v2 disks_slots[MAX_NUMBER_OF_SLOT];
 
 static disk_in_drive_v2_long DirectoryEntry_tab[40];
 
+// File listing pages directory offset buffer
 static struct fs_dir_list_status file_list_status;
-static struct fs_dir_list_status file_list_status_tab[512];
+static struct fs_dir_list_status file_list_status_tab[MAX_PAGES_PER_DIRECTORY];
+
 static struct fs_dir_ent dir_entry;
 
 extern uint16_t SCREEN_XRESOL;
@@ -1060,7 +1062,7 @@ void ui_config_menu(ui_context * uicontext)
 		}
 	}while( (c!=FCT_SELECT_FILE_DRIVEA) || i!=9 );
 
-	memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number&0x1FF],sizeof(struct fs_dir_list_status));
+	memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
 	clear_list(0);
 	uicontext->read_entry=1;
 }
@@ -1431,7 +1433,8 @@ void ui_mainfileselector(ui_context * uicontext)
 
 		uicontext->filtermode=0;
 
-		memcpy(&file_list_status_tab[(uicontext->page_number+1)&0x1FF],&file_list_status ,sizeof(struct fs_dir_list_status));
+		if(uicontext->page_number < MAX_PAGES_PER_DIRECTORY - 1 )
+			memcpy(&file_list_status_tab[uicontext->page_number+1],&file_list_status ,sizeof(struct fs_dir_list_status));
 
 		hxc_print(LEFT_ALIGNED,0,FILELIST_Y_POS+(uicontext->selectorpos*8),">");
 		invert_line(0,FILELIST_Y_POS+(uicontext->selectorpos*8));
@@ -1453,10 +1456,11 @@ void ui_mainfileselector(ui_context * uicontext)
 					if(uicontext->selectorpos<0)
 					{
 						uicontext->selectorpos=NUMBER_OF_FILE_ON_DISPLAY-1;
-						if(uicontext->page_number) uicontext->page_number--;
+						if(uicontext->page_number)
+							uicontext->page_number--;
 						clear_list(0);
 						uicontext->read_entry=1;
-						memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number&0x1FF],sizeof(struct fs_dir_list_status));
+						memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
 					}
 					else
 					{
@@ -1475,8 +1479,9 @@ void ui_mainfileselector(ui_context * uicontext)
 						uicontext->selectorpos = 1;
 						clear_list(0);
 						uicontext->read_entry=1;
-						if(!last_file)uicontext->page_number++;
-						memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number&0x1FF],sizeof(struct fs_dir_list_status));
+						if(!last_file && uicontext->page_number < MAX_PAGES_PER_DIRECTORY)
+							uicontext->page_number++;
+						memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
 					}
 					else
 					{
@@ -1489,14 +1494,19 @@ void ui_mainfileselector(ui_context * uicontext)
 				case FCT_RIGHT_KEY: // Right
 					clear_list(0);
 					uicontext->read_entry=1;
-					if(!last_file)uicontext->page_number++;
-					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number&0x1FF],sizeof(struct fs_dir_list_status));
+
+					if(!last_file && uicontext->page_number < MAX_PAGES_PER_DIRECTORY)
+						uicontext->page_number++;
+
+					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
 
 					break;
 
 				case FCT_LEFT_KEY:
-					if(uicontext->page_number) uicontext->page_number--;
-					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number&0x1FF],sizeof(struct fs_dir_list_status));
+					if(uicontext->page_number)
+						uicontext->page_number--;
+
+					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
 					clear_list(0);
 					uicontext->read_entry=1;
 					break;
@@ -1553,7 +1563,7 @@ void ui_mainfileselector(ui_context * uicontext)
 
 				case FCT_SAVE:
 					ui_save(uicontext);
-					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number&0x1FF],sizeof(struct fs_dir_list_status));
+					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
 					clear_list(0);
 					uicontext->read_entry=1;
 					break;
@@ -1564,7 +1574,7 @@ void ui_mainfileselector(ui_context * uicontext)
 
 				case FCT_HELP:
 					print_help();
-					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number&0x1FF],sizeof(struct fs_dir_list_status));
+					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
 					clear_list(0);
 					uicontext->read_entry=1;
 					break;
@@ -1582,7 +1592,7 @@ void ui_mainfileselector(ui_context * uicontext)
 
 				case FCT_TOP:
 					uicontext->page_number=0;
-					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number&0x1FF],sizeof(struct fs_dir_list_status));
+					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
 					clear_list(0);
 					uicontext->read_entry=1;
 					break;

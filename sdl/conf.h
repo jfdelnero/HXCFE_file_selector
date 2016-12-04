@@ -4,3 +4,5 @@
 #define HELP_Y_POS 12
 
 #define CURDIR_Y_POS 1
+
+#define MAX_PAGES_PER_DIRECTORY 256
