@@ -390,8 +390,8 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 					uicontext->slots_position = ENDIAN_32BIT( cfgfile_ptr->slots_position );
 					uicontext->config_file_number_max_of_slot = ENDIAN_32BIT( cfgfile_ptr->max_slot_number );
 
-					if( uicontext->config_file_number_max_of_slot > MAX_NUMBER_OF_SLOT )
-						uicontext->config_file_number_max_of_slot = MAX_NUMBER_OF_SLOT;
+					if( uicontext->config_file_number_max_of_slot > (MAX_NUMBER_OF_SLOT / uicontext->number_of_drive) )
+						uicontext->config_file_number_max_of_slot = (MAX_NUMBER_OF_SLOT / uicontext->number_of_drive);
 
 					memset(uicontext->change_map,0,512);
 
@@ -420,10 +420,12 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 							while( d < uicontext->number_of_drive )
 							{
 								slot_offset = ( ( i * 64 * uicontext->number_of_drive ) + ( 64 * d ) ) % 512;
-
-								memcpy( &disks_slots[ (i*uicontext->number_of_drive) + d ],
-										&temp_sector[slot_offset],
-										sizeof(disk_in_drive_v2));
+								if( ( (i*uicontext->number_of_drive) + d ) < MAX_NUMBER_OF_SLOT )
+								{
+									memcpy( &disks_slots[ (i*uicontext->number_of_drive) + d ],
+											&temp_sector[slot_offset],
+											sizeof(disk_in_drive_v2));
+								}
 
 								d++;
 							}
@@ -468,7 +470,8 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 {
 	unsigned char number_of_slot,slot_index;
-	unsigned char i,j,sect_nb,ret;
+	unsigned char ret;
+	unsigned short i,j,sect_nb;
 	cfgfile * cfgfile_ptr;
 	uint32_t  floppyselectorindex;
 	disk_in_drive * disk;
@@ -614,7 +617,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 				cfgfile_ptr=(cfgfile * )cfgfile_header;
 				do
 				{
-					if( (uicontext->change_map[i>>3] & (0x80 >> (i&7))) )   // Is the slot modified ?
+					if( (uicontext->change_map[i>>3] & (0x80 >> (i&7))) && ( (i*uicontext->number_of_drive) < MAX_NUMBER_OF_SLOT ) )   // Is the slot modified ?
 					{
 						// Yes, save the modified sector
 						floppyselectorindex=(64*uicontext->number_of_drive)*i;
@@ -771,7 +774,13 @@ void show_all_slots(ui_context * uicontext,int drive)
 	disk_in_drive_v2 * drive_slots_ptr;
 	unsigned short i,xoffset,slotnumber;
 
-	if( drive >= 2 )
+	#ifdef DEBUG
+	dbg_printf("show_all_slots : %d (nb of drive : %d)\n",drive,uicontext->number_of_drive);
+	#endif
+
+	clear_list(0);
+
+	if( drive >= uicontext->number_of_drive )
 		return;
 
 	hxc_printf(CENTER_ALIGNED,0,FILELIST_Y_POS,"--- Drive %c slots selection ---",'A'+drive);
@@ -783,7 +792,7 @@ void show_all_slots(ui_context * uicontext,int drive)
 		if( slotnumber < uicontext->config_file_number_max_of_slot)
 		{
 			memset(tmp_str,0,sizeof(tmp_str));
-			drive_slots_ptr = &disks_slots[(slotnumber*uicontext->number_of_drive)+drive];
+			drive_slots_ptr = &disks_slots[ (slotnumber*uicontext->number_of_drive) + drive];
 			if( drive_slots_ptr->size )
 			{
 				memcpy(tmp_str,&drive_slots_ptr->name,MAX_SHORT_NAME_LENGHT);
@@ -1102,7 +1111,7 @@ int ui_command_menu(ui_context * uicontext)
 				{
 					uicontext->page_mode_index++;
 
-					if(uicontext->page_mode_index>3)
+					if(uicontext->page_mode_index >= 2 + uicontext->number_of_drive)
 						uicontext->page_mode_index = 0;
 				}
 
@@ -1189,7 +1198,7 @@ int ui_slots_menu(ui_context * uicontext)
 
 	////////////////////
 	// Slots list menu
-	clear_list(0);
+
 	show_all_slots(uicontext,uicontext->page_mode_index);
 
 	invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
@@ -1215,7 +1224,6 @@ int ui_slots_menu(ui_context * uicontext)
 						uicontext->slotselectorpage--;
 					}
 
-					clear_list(0);
 					show_all_slots(uicontext,uicontext->page_mode_index);
 					invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
 				}
@@ -1230,7 +1238,6 @@ int ui_slots_menu(ui_context * uicontext)
 						uicontext->slotselectorpos = 1;
 						uicontext->slotselectorpage++;
 
-						clear_list(0);
 						show_all_slots(uicontext,uicontext->page_mode_index);
 						invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
 					}
@@ -1247,7 +1254,7 @@ int ui_slots_menu(ui_context * uicontext)
 				{
 					uicontext->slotselectorpage++;
 				}
-				clear_list(0);
+
 				show_all_slots(uicontext,uicontext->page_mode_index);
 				invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
 			break;
@@ -1255,7 +1262,7 @@ int ui_slots_menu(ui_context * uicontext)
 			case FCT_LEFT_KEY:
 				if(uicontext->slotselectorpage)
 					uicontext->slotselectorpage--;
-				clear_list(0);
+
 				show_all_slots(uicontext,uicontext->page_mode_index);
 				invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
 			break;
@@ -1272,7 +1279,6 @@ int ui_slots_menu(ui_context * uicontext)
 					uicontext->change_map[slot>>3] |= (0x80 >> (slot&7));
 				}
 
-				clear_list(0);
 				show_all_slots(uicontext,uicontext->page_mode_index);
 				invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
 			break;
@@ -1282,14 +1288,14 @@ int ui_slots_menu(ui_context * uicontext)
 				{
 					uicontext->page_mode_index++;
 
-					if(uicontext->page_mode_index>3)
+					if(uicontext->page_mode_index >= 2 + uicontext->number_of_drive)
 						uicontext->page_mode_index = 0;
 				}
 			break;
 
 			case FCT_HELP:
 				print_help();
-				clear_list(0);
+
 				show_all_slots(uicontext,uicontext->page_mode_index);
 				invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
 			break;
@@ -1355,7 +1361,15 @@ void ui_mainfileselector(ui_context * uicontext)
 
 	y_pos=FILELIST_Y_POS;
 
-	uicontext->page_mode_index = 3;
+	#ifdef DEBUG
+	dbg_printf("enter ui_mainfileselector\n");
+	#endif
+
+	uicontext->page_mode_index = ( 2 + uicontext->number_of_drive ) - 1;
+
+	#ifdef DEBUG
+	dbg_printf("page_mode_index : %d\n",uicontext->page_mode_index);
+	#endif
 
 	clear_list(0);
 	for(;;)
@@ -1545,14 +1559,14 @@ void ui_mainfileselector(ui_context * uicontext)
 					}
 					else
 					{
-						if(!uicontext->selectorpos || uicontext->page_mode_index>=2)
+						if(!uicontext->selectorpos || uicontext->page_mode_index>= 1 + uicontext->number_of_drive)
 							uicontext->page_mode_index = 0;
 
 						if(!uicontext->selectorpos)
 							uicontext->slotselectorpos = 0;
 						do
 						{
-							if(uicontext->page_mode_index<2)
+							if(uicontext->page_mode_index < uicontext->number_of_drive )
 							{
 								ret = ui_slots_menu(uicontext);
 							}
@@ -1560,7 +1574,7 @@ void ui_mainfileselector(ui_context * uicontext)
 							{
 								ret = ui_command_menu(uicontext);
 							}
-						}while(!ret && uicontext->page_mode_index != 3 );
+						}while(!ret && uicontext->page_mode_index <  uicontext->number_of_drive + 1 );
 
 						memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
 						uicontext->read_entry = 1;
