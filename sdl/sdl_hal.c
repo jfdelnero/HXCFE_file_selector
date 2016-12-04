@@ -713,3 +713,16 @@ char *strlwr(char *s)
 	return s;
 }
 
+#ifdef DEBUG
+
+void dbg_printf(char * chaine, ...)
+{
+	va_list marker;
+	va_start( marker, chaine );
+
+	vprintf(chaine,marker);
+
+	va_end( marker );
+}
+
+#endif

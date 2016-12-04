@@ -267,16 +267,6 @@ void print_hex_buffer(unsigned char * buffer, int size)
 	}
 }
 
-int dbg_printf(char * chaine, ...)
-{
-	va_list marker;
-	va_start( marker, chaine );
-
-	vprintf(chaine,marker);
-
-	va_end( marker );
-}
-
 void print_hex_array(unsigned char * buffer,int size)
 {
 	int i,j;
