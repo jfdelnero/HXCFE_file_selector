@@ -19,7 +19,7 @@ VASMOPT          = -Faout -showopt -m68000 -spaces -quiet
 
 # GCC : PRG size about 44054 bytes
 C                = $(GCCBIN)
-CFLAGS           = $(GCCOPT) -mshort
+CFLAGS           = $(GCCOPT)
 
 LFLAGS           = $(GCLOPT) -s    # STRIP SYMBOLS
 #LFLAGS           = $(GCLOPT)  	    # KEEP SYMBOLS (debug)
