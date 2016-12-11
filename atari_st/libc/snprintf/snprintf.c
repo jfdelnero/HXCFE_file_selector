@@ -88,6 +88,7 @@ static void dopr( buffer, format, args )
                        case 0:
                                dostr( "**end of format**" );
                                return;
+                       case '.': goto nextch;
                        case '-': ljust = 1; goto nextch;
                        case '0': /* set zero padding if len not set */
                                if(len==0) zpad = '0';
@@ -228,7 +229,7 @@ fmtnum(  value, base, dosign, ljust, len, zpad )
                }
        }
        while( padlen > 0 ) {
-               dopr_outch( ' ' );
+               dopr_outch( '0' );
                --padlen;
        }
        if( signvalue ) dopr_outch( signvalue );
