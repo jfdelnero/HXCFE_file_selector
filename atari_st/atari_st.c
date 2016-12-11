@@ -108,6 +108,44 @@ typedef  struct _bmaptype
 
 #endif
 
+#ifdef DEBUG
+
+void push_serial_char(unsigned char byte)
+{
+	while(!Bcostat(1));
+	
+	Bconout(1,byte);
+}
+
+void dbg_printf(char * chaine, ...)
+{
+	unsigned char txt_buffer[1024];
+	int i;
+
+	va_list marker;
+	va_start( marker, chaine );
+
+	vsnprintf(txt_buffer,sizeof(txt_buffer),chaine,marker);
+
+	i = 0;
+	while(txt_buffer[i])
+	{
+		if(txt_buffer[i] == '\n')
+		{
+			push_serial_char('\r');
+			push_serial_char('\n');
+		}
+		else
+			push_serial_char(txt_buffer[i]);
+
+		i++;
+	}
+
+	va_end( marker );
+}
+
+#endif
+
 void waitus(int centus)
 {
 }
@@ -415,6 +453,10 @@ int jumptotrack(unsigned char t)
 
 void init_fdc(unsigned char drive)
 {
+	#ifdef DEBUG
+	dbg_printf("init_fdc\n");
+	#endif
+
 	valid_cache = 0;
 	floppydrive = drive;
 	Supexec((LONG *) su_headinit);
@@ -431,6 +473,10 @@ int jumptotrack(unsigned char t)
 {
 	unsigned char data[512];
 
+	#ifdef DEBUG
+	dbg_printf("jumptotrack : %d\n",t);
+	#endif
+
 	Floprd( &data, 0, floppydrive, 1, t, 0, 1 );
 
 	return 1;
@@ -444,6 +490,10 @@ int test_drive(int drive)
 unsigned char writesector(unsigned char sectornum,unsigned char * data)
 {
 	int ret,retry;
+
+	#ifdef DEBUG
+	dbg_printf("writesector : %d\n",sectornum);
+	#endif
 
 	valid_cache =0;
 	retry=3;
@@ -464,6 +514,10 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned char invalidate_cache)
 {
 	int ret,retry;
+
+	#ifdef DEBUG
+	dbg_printf("readsector : %d - %d\n",sectornum,invalidate_cache);
+	#endif
 
 	retry=3;
 	ret=0;
