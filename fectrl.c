@@ -1202,7 +1202,7 @@ int ui_command_menu(ui_context * uicontext)
 int ui_slots_menu(ui_context * uicontext)
 {
 	unsigned char key;
-	int slot;
+	int slot,i;
 
 	#ifdef DEBUG
 	dbg_printf("enter ui_slots_menu\n");
@@ -1284,11 +1284,18 @@ int ui_slots_menu(ui_context * uicontext)
 
 				memset((void*)&disks_slots[(slot*uicontext->number_of_drive) + uicontext->page_mode_index ],0,sizeof(disk_in_drive_v2));
 
-				if(!disks_slots[(slot*uicontext->number_of_drive)].type[0] &&
-				   !disks_slots[(slot*uicontext->number_of_drive)+1].type[0] )
+				i = 0;
+				while( i < uicontext->number_of_drive && !disks_slots[(slot*uicontext->number_of_drive)+i].type[0] )
+				{
+					i++;
+				}
+
+				uicontext->change_map[slot>>3] |= (0x80 >> (slot&7));
+
+				// All drive empty - clear the slot
+				if( i == uicontext->number_of_drive)
 				{
 					uicontext->slot_map[slot>>3] &= ~(0x80 >> (slot&7));
-					uicontext->change_map[slot>>3] |= (0x80 >> (slot&7));
 				}
 
 				show_all_slots(uicontext,uicontext->page_mode_index);
