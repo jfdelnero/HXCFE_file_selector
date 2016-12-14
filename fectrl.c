@@ -951,6 +951,10 @@ void ui_config_menu(ui_context * uicontext)
 	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS+(i*8), "Load AUTOBOOT.HFE at power up :");
 	hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->startup_mode&0x04?"on":"off");
 
+	i++;
+	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS+(i*8), "Eject disk at power up :");
+	hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->load_last_floppy?"on":"off");
+
 	i=i+2;
 	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "--- Exit ---");
 
@@ -968,10 +972,12 @@ void ui_config_menu(ui_context * uicontext)
 			break;
 			case FCT_DOWN_KEY:
 				invert_line(0,HELP_Y_POS+(i*8));
-				if(i<9) i++;
+				if(i<10) i++;
 				invert_line(0,HELP_Y_POS+(i*8));
 			break;
+
 			case FCT_LEFT_KEY:
+			case FCT_RIGHT_KEY:
 				invert_line(0,HELP_Y_POS+(i*8));
 				switch(i)
 				{
@@ -980,20 +986,47 @@ void ui_config_menu(ui_context * uicontext)
 						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->step_sound?"on":"off");
 					break;
 					case 3:
-						if(cfgfile_ptr->buzzer_duty_cycle)
-							cfgfile_ptr->buzzer_duty_cycle--;
+						if(	c == FCT_LEFT_KEY )
+						{
+							if(cfgfile_ptr->buzzer_duty_cycle)
+								cfgfile_ptr->buzzer_duty_cycle--;
+						}
+						else
+						{
+							if(cfgfile_ptr->buzzer_duty_cycle<0x80)
+								cfgfile_ptr->buzzer_duty_cycle++;
+							cfgfile_ptr->ihm_sound = 0xFF;
+						}
 						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d  ",cfgfile_ptr->buzzer_duty_cycle);
 						if(!cfgfile_ptr->buzzer_duty_cycle) cfgfile_ptr->ihm_sound=0x00;
 					break;
 					case 4:
-						if(cfgfile_ptr->back_light_tmr)
-							cfgfile_ptr->back_light_tmr--;
+						if(	c == FCT_LEFT_KEY )
+						{
+							if(cfgfile_ptr->back_light_tmr)
+								cfgfile_ptr->back_light_tmr--;
+						}
+						else
+						{
+							if(cfgfile_ptr->back_light_tmr<0xFF)
+								cfgfile_ptr->back_light_tmr++;
+						}
+
 						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->back_light_tmr);
 					break;
 
 					case 5:
-						if(cfgfile_ptr->standby_tmr)
-							cfgfile_ptr->standby_tmr--;
+						if(	c == FCT_LEFT_KEY )
+						{
+							if(cfgfile_ptr->standby_tmr)
+								cfgfile_ptr->standby_tmr--;
+						}
+						else
+						{
+							if(cfgfile_ptr->standby_tmr<0xFF)
+								cfgfile_ptr->standby_tmr++;
+						}
+
 						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->standby_tmr);
 					break;
 
@@ -1006,45 +1039,12 @@ void ui_config_menu(ui_context * uicontext)
 						cfgfile_ptr->startup_mode = cfgfile_ptr->startup_mode  ^ 0x04;
 						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",(cfgfile_ptr->startup_mode&0x4)?"on":"off");
 					break;
-				}
-				invert_line(0,HELP_Y_POS+(i*8));
-			break;
-			case FCT_RIGHT_KEY:
-				invert_line(0,HELP_Y_POS+(i*8));
-				switch(i)
-				{
-					case 2:
-						cfgfile_ptr->step_sound=~cfgfile_ptr->step_sound;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->step_sound?"on":"off");
-					break;
-					case 3:
-						if(cfgfile_ptr->buzzer_duty_cycle<0x80)
-							cfgfile_ptr->buzzer_duty_cycle++;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d  ",cfgfile_ptr->buzzer_duty_cycle);
-						cfgfile_ptr->ihm_sound=0xFF;
-					break;
-					case 4:
-						if(cfgfile_ptr->back_light_tmr<0xFF)
-							cfgfile_ptr->back_light_tmr++;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->back_light_tmr);
-					break;
-					case 5:
-						if(cfgfile_ptr->standby_tmr<0xFF)
-							cfgfile_ptr->standby_tmr++;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->standby_tmr);
-					break;
 
-					case 6:
-						cfgfile_ptr->enable_drive_b=~cfgfile_ptr->enable_drive_b;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"off":"on");
-					break;
-
-					case 7:
-						cfgfile_ptr->startup_mode = cfgfile_ptr->startup_mode  ^ 0x04;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",(cfgfile_ptr->startup_mode&0x4)?"on":"off");
+					case 8:
+						cfgfile_ptr->load_last_floppy ^= 0xFF;
+						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->load_last_floppy?"on":"off");
 					break;
 				}
-
 				invert_line(0,HELP_Y_POS+(i*8));
 			break;
 
@@ -1064,12 +1064,16 @@ void ui_config_menu(ui_context * uicontext)
 						cfgfile_ptr->startup_mode = cfgfile_ptr->startup_mode  ^ 0x04;
 						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",(cfgfile_ptr->startup_mode&0x4)?"on":"off");
 					break;
+					case 8:
+						cfgfile_ptr->load_last_floppy ^= 0xFF;
+						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->load_last_floppy?"on":"off");
+					break;
 				}
 
 				invert_line(0,HELP_Y_POS+(i*8));
 			break;
 		}
-	}while( (c!=FCT_SELECT_FILE_DRIVEA) || i!=9 );
+	}while( (c!=FCT_SELECT_FILE_DRIVEA) || i != 10 );
 
 	memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
 	clear_list(0);
