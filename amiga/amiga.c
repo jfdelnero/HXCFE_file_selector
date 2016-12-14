@@ -252,7 +252,7 @@ void testblink()
 
 void alloc_error()
 {
-	hxc_printf_box(0,"ERROR: Memory Allocation Error -> No more free mem ?");
+	hxc_printf_box("ERROR: Memory Allocation Error -> No more free mem ?");
 	lockup();
 }
 
@@ -439,7 +439,7 @@ int readtrack(unsigned short * track,unsigned short size,unsigned char waiti)
 	{
 		if(waitindex())
 		{
-			hxc_printf_box(0,"ERROR: READ - No Index Timeout ! (state %d)",(READREG_B(CIAB_ICR)&0x10)>>4);
+			hxc_printf_box("ERROR: READ - No Index Timeout ! (state %d)",(READREG_B(CIAB_ICR)&0x10)>>4);
 			lockup();
 		}
 	}
@@ -487,7 +487,7 @@ int writetrack(unsigned short * track,unsigned short size,unsigned char waiti)
 		while( !(READREG_B(CIAB_ICR)&0x10) && ( io_floppy_timeout < 0x200 ) );
 		if(!( io_floppy_timeout < 0x200 ))
 		{
-			hxc_printf_box(0,"ERROR: WRITE - No Index Timeout ! (state %d)",(READREG_B(CIAB_ICR)&0x10)>>4);
+			hxc_printf_box("ERROR: WRITE - No Index Timeout ! (state %d)",(READREG_B(CIAB_ICR)&0x10)>>4);
 			lockup();
 		}
 	}
@@ -667,7 +667,7 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 			{
 				if(jumptotrack(255))
 				{
-					hxc_printf_box(0,"ERROR: writesector -> failure while seeking the track 00!");
+					hxc_printf_box("ERROR: writesector -> failure while seeking the track 00!");
 				}
 				retry=30;
 			}
@@ -890,7 +890,7 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 		{
 			if(jumptotrack(255))
 			{
-				hxc_printf_box(0,"ERROR: readsector -> failure while seeking the track 00!");
+				hxc_printf_box("ERROR: readsector -> failure while seeking the track 00!");
 			}
 
 			retry2--;
@@ -995,7 +995,7 @@ void init_fdc(unsigned char drive)
 	if(jumptotrack(255))
 	{
 		Permit();
-		hxc_printf_box(0,"ERROR: init_fdc -> failure while seeking the track 00!");
+		hxc_printf_box("ERROR: init_fdc drive %d -> failure while seeking the track 00!",drive);
 		lockup();
 	}
 	Delay(12);

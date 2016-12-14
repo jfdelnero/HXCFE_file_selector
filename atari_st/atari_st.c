@@ -231,7 +231,7 @@ void sleep(int secs)
 
 void alloc_error()
 {
-	hxc_printf_box(0,"ERROR: Memory Allocation Error -> No more free mem ?");
+	hxc_printf_box("ERROR: Memory Allocation Error -> No more free mem ?");
 	for(;;);
 }
 
