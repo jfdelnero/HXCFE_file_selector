@@ -943,10 +943,7 @@ void init_fdc(unsigned char drive)
 	dbg_printf("init_fdc\n");
 	#endif
 
-	if(drive==0)
-		CIABPRB_DSKSEL=CIABPRB_DSKSEL0;
-	else
-		CIABPRB_DSKSEL=CIABPRB_DSKSEL1;
+	CIABPRB_DSKSEL = CIABPRB_DSKSEL0 << (drive&3);
 
 	//	for(i=0;i<3;i++) setnoclick(i, 1);
 
