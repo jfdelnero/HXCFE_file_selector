@@ -491,14 +491,21 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 				dbg_printf("V1 config file format\n");
 				#endif
 
-				number_of_slot=1;
-				slot_index=1;
-				i=1;
+				cfgfile_ptr = (cfgfile * )cfgfile_header;
+
+				number_of_slot = 1;
+
+				if(cfgfile_ptr->load_last_floppy)
+					slot_index = 0;
+				else
+					slot_index = 1;
+
 
 				floppyselectorindex=128;                      // Fisrt slot offset
 				memset( sdfecfg_file,0,512);                  // Clear the sector
 				sect_nb=2;                                    // Slots Sector offset
 
+				i = 1;
 				do
 				{
 					if( uicontext->slot_map[i>>3] & (0x80 >> (i&7)) )            // Valid slot found
@@ -585,17 +592,17 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 					}
 				}
 
-				if(slot_index>=number_of_slot)
+				if( slot_index >= number_of_slot )
 				{
-					slot_index=number_of_slot-1;
+					slot_index = number_of_slot - 1;
 				}
 
 				fl_fseek(cfg_file_handle , 0 , SEEK_SET);
 
 				// Update the file header
-				cfgfile_ptr=(cfgfile * )cfgfile_header;
+
 				cfgfile_ptr->number_of_slot=number_of_slot;
-				cfgfile_ptr->slot_index=slot_index;
+				cfgfile_ptr->slot_index = slot_index;
 
 				if (fl_fswrite((unsigned char*)cfgfile_header, 1,0, cfg_file_handle) != 1)
 				{
@@ -611,10 +618,16 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 				dbg_printf("V2 config file format\n");
 				#endif
 
-				number_of_slot=1;
-				slot_index=1;
-				i=1;
+				number_of_slot = 1;
+
 				cfgfile_ptr=(cfgfile * )cfgfile_header;
+
+				if(cfgfile_ptr->load_last_floppy)
+					slot_index = 0;
+				else
+					slot_index = 1;
+
+				i = 1;
 				do
 				{
 					if( (uicontext->change_map[i>>3] & (0x80 >> (i&7))) && ( (i*uicontext->number_of_drive) < MAX_NUMBER_OF_SLOT ) )   // Is the slot modified ?
@@ -659,7 +672,11 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 				fl_fseek(cfg_file_handle , 0 , SEEK_SET);
 
 				// Update the file header
-				cfgfile_ptr->cur_slot_number = ENDIAN_32BIT(1);
+				if(cfgfile_ptr->load_last_floppy)
+					cfgfile_ptr->cur_slot_number = ENDIAN_32BIT(0);
+				else
+					cfgfile_ptr->cur_slot_number = ENDIAN_32BIT(1);
+
 				cfgfile_ptr->slot_index = 0;
 
 				if (fl_fswrite((unsigned char*)cfgfile_header, 1,0, cfg_file_handle) != 1)
