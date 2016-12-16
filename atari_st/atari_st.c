@@ -113,7 +113,7 @@ typedef  struct _bmaptype
 void push_serial_char(unsigned char byte)
 {
 	while(!Bcostat(1));
-	
+
 	Bconout(1,byte);
 }
 
@@ -238,6 +238,11 @@ void alloc_error()
 /********************************************************************************
 *                              FDC I/O
 *********************************************************************************/
+
+int get_start_unit(char * path)
+{
+	return 0;
+}
 
 #ifdef __VBCC__
 void asm_nop(void) = "\tnop\n";
@@ -462,11 +467,6 @@ void init_fdc(unsigned char drive)
 	Supexec((LONG *) su_headinit);
 }
 
-int test_drive(int drive)
-{
-	return 0;
-}
-
 #else
 
 int jumptotrack(unsigned char t)
@@ -481,11 +481,6 @@ int jumptotrack(unsigned char t)
 
 	return 1;
 };
-
-int test_drive(int drive)
-{
-	return 0;
-}
 
 unsigned char writesector(unsigned char sectornum,unsigned char * data)
 {

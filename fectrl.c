@@ -1717,7 +1717,7 @@ void ui_mainfileselector(ui_context * uicontext)
 int main(int argc, char* argv[])
 {
 	unsigned short i;
-	unsigned char bootdev;
+	int bootdev;
 	ui_context * uicontext;
 
 	uicontext = &g_ui_ctx;
@@ -1738,15 +1738,12 @@ int main(int argc, char* argv[])
 
 	io_floppy_timeout = 0;
 
-	bootdev = 0;
-	while( bootdev<4 && !test_drive(bootdev) )
-	{
-		bootdev++;
-	}
+	bootdev = get_start_unit(argv[0]);
 
-	if(bootdev >= 4)
+	if( bootdev < 0 )
 	{
-		bootdev = 0;
+		hxc_printf_box("ERROR: HxC Drive not detected !");
+		lockup();
 	}
 
 	init_fdc(bootdev);

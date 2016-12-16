@@ -109,6 +109,7 @@ struct RasInfo rasInfo;
 struct BitMap my_bit_map;
 struct RastPort my_rast_port;
 struct Screen *screen;
+extern struct DosLibrary *DOSBase;
 UWORD  *pointer;
 struct ColorMap *cm=NULL;
 
@@ -259,6 +260,79 @@ void alloc_error()
 /********************************************************************************
 *                              FDC I/O
 *********************************************************************************/
+
+/*
+* Returns the unit number of the underlying device of a filesystem lock.
+* Returns -1 on failure.
+*/
+LONG GetUnitNumFromLock(BPTR lock) {
+	LONG unitNum = -1;
+	if(lock != 0) {
+		struct InfoData *infoData = AllocMem(sizeof(struct InfoData), MEMF_ANY);
+		if(NULL != infoData) {
+			if(Info(lock, infoData)) {
+				unitNum = infoData->id_UnitNumber;
+			}
+			FreeMem(infoData, sizeof(struct InfoData));
+		}
+	}
+	return unitNum;
+}
+
+/*
+* Returns the unit number of the underlying device of a filesystem path.
+* Returns -1 on failure.
+*/
+LONG GetUnitNumFromPath(char *path) {
+	LONG unitNum = -1;
+	BPTR lock = Lock(path, ACCESS_READ);
+	if(lock != 0) {
+		unitNum = GetUnitNumFromLock(lock);
+		UnLock(lock);
+	}
+	return unitNum;
+}
+
+UWORD GetLibraryVersion(struct Library *library) {
+	return library->lib_Version;
+}
+
+int get_start_unit(char * path)
+{
+	int i;
+	LONG startedFromUnitNum;
+
+	#ifdef DEBUG
+	dbg_printf("get_start_unit : %s\n",path);
+	#endif
+
+	if( GetLibraryVersion((struct Library *) DOSBase) >= 36 )
+	{
+		startedFromUnitNum = GetUnitNumFromLock( GetProgramDir() );
+	}
+	else
+	{
+		startedFromUnitNum = GetUnitNumFromPath( path );
+	}
+
+	for( i = 0; i < 4; i++ )
+	{
+		if(test_drive((startedFromUnitNum + i) & 0x3))
+		{
+			#ifdef DEBUG
+			dbg_printf("get_start_unit : drive %d\n",(startedFromUnitNum + i) & 0x3);
+			#endif
+			return (startedFromUnitNum + i) & 0x3;
+		}
+	}
+
+	#ifdef DEBUG
+	dbg_printf("get_start_unit : drive not found !\n");
+	#endif
+
+	return -1;
+}
+
 int jumptotrack(unsigned char t)
 {
 	unsigned short i,j,k;

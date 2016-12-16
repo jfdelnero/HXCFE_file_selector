@@ -119,12 +119,9 @@ int jumptotrack(unsigned char t)
 	track_number = t;
 }
 
-int test_drive(int drive)
+int get_start_unit(char * path)
 {
-	if(drive)
-		return 0;
-	else
-		return 1;
+	return 0;
 }
 
 int write_mass_storage(unsigned long lba, unsigned char * data)
