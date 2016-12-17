@@ -1,8 +1,8 @@
 # Generated automatically from Makefile.in by configure.
 #### Start of system configuration section. ####
 
-srcdir =	/cygdrive/g/cvs/projets/FloppyEmulator/Software/Floppy_Emulator_Control/Amiga/libnix/sources/stubs
-VPATH =		/cygdrive/g/cvs/projets/FloppyEmulator/Software/Floppy_Emulator_Control/Amiga/libnix/sources/stubs
+srcdir =	/cygdrive/f/github/HXCFE_file_selector/amiga/libnix/sources/stubs
+VPATH =		/cygdrive/f/github/HXCFE_file_selector/amiga/libnix/sources/stubs
 
 CC =		m68k-amigaos-gcc
 CPP =		m68k-amigaos-gcc -E

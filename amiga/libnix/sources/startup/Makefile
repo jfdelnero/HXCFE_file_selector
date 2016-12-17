@@ -5,8 +5,8 @@
 
 #### Start of system configuration section. ####
 
-srcdir =	/cygdrive/g/cvs/projets/FloppyEmulator/Software/Floppy_Emulator_Control/Amiga/libnix/sources/startup
-VPATH =		/cygdrive/g/cvs/projets/FloppyEmulator/Software/Floppy_Emulator_Control/Amiga/libnix/sources/startup
+srcdir =	/cygdrive/f/github/HXCFE_file_selector/amiga/libnix/sources/startup
+VPATH =		/cygdrive/f/github/HXCFE_file_selector/amiga/libnix/sources/startup
 
 CC =		m68k-amigaos-gcc
 CPP =		m68k-amigaos-gcc -E

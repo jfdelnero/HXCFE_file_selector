@@ -16,8 +16,8 @@
 
 #### Start of system configuration section. ####
 
-srcdir =	/cygdrive/g/cvs/projets/FloppyEmulator/Software/Floppy_Emulator_Control/Amiga/libnix/sources
-VPATH =		/cygdrive/g/cvs/projets/FloppyEmulator/Software/Floppy_Emulator_Control/Amiga/libnix/sources
+srcdir =	/cygdrive/f/github/HXCFE_file_selector/amiga/libnix/sources
+VPATH =		/cygdrive/f/github/HXCFE_file_selector/amiga/libnix/sources
 
 AWK =		gawk
 
