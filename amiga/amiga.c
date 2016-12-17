@@ -276,6 +276,10 @@ LONG GetUnitNumFromLock(BPTR lock) {
 			FreeMem(infoData, sizeof(struct InfoData));
 		}
 	}
+
+	#ifdef DEBUG
+	dbg_printf("GetUnitNumFromLock : %d\n", unitNum);
+	#endif
 	return unitNum;
 }
 
@@ -285,15 +289,31 @@ LONG GetUnitNumFromLock(BPTR lock) {
 */
 LONG GetUnitNumFromPath(char *path) {
 	LONG unitNum = -1;
+
+	#ifdef DEBUG
+	dbg_printf("GetUnitNumFromPath : %s\n",path);
+	#endif
+
 	BPTR lock = Lock(path, ACCESS_READ);
 	if(lock != 0) {
 		unitNum = GetUnitNumFromLock(lock);
 		UnLock(lock);
 	}
+	else
+	{
+		#ifdef DEBUG
+		dbg_printf("GetUnitNumFromPath : Lock failed !\n");
+		#endif
+	}
 	return unitNum;
 }
 
-UWORD GetLibraryVersion(struct Library *library) {
+UWORD GetLibraryVersion(struct Library *library)
+{
+	#ifdef DEBUG
+	dbg_printf("GetLibraryVersion : %d\n",library->lib_Version);
+	#endif
+
 	return library->lib_Version;
 }
 
