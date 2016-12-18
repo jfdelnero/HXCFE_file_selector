@@ -335,6 +335,9 @@ int get_start_unit(char * path)
 		startedFromUnitNum = GetUnitNumFromPath( path );
 	}
 
+	if( startedFromUnitNum < 0 )
+		startedFromUnitNum = 0;
+
 	for( i = 0; i < 4; i++ )
 	{
 		if(test_drive((startedFromUnitNum + i) & 0x3))
