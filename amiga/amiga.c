@@ -290,19 +290,28 @@ LONG GetUnitNumFromLock(BPTR lock) {
 LONG GetUnitNumFromPath(char *path) {
 	LONG unitNum = -1;
 
-	#ifdef DEBUG
-	dbg_printf("GetUnitNumFromPath : %s\n",path);
-	#endif
+	if(path)
+	{
+		#ifdef DEBUG
+		dbg_printf("GetUnitNumFromPath : %s\n",path);
+		#endif
 
-	BPTR lock = Lock(path, ACCESS_READ);
-	if(lock != 0) {
-		unitNum = GetUnitNumFromLock(lock);
-		UnLock(lock);
+		BPTR lock = Lock(path, ACCESS_READ);
+		if(lock != 0) {
+			unitNum = GetUnitNumFromLock(lock);
+			UnLock(lock);
+		}
+		else
+		{
+			#ifdef DEBUG
+			dbg_printf("GetUnitNumFromPath : Lock failed !\n");
+			#endif
+		}
 	}
 	else
 	{
 		#ifdef DEBUG
-		dbg_printf("GetUnitNumFromPath : Lock failed !\n");
+		dbg_printf("GetUnitNumFromPath : NULL path !\n");
 		#endif
 	}
 	return unitNum;
@@ -323,7 +332,7 @@ int get_start_unit(char * path)
 	LONG startedFromUnitNum;
 
 	#ifdef DEBUG
-	dbg_printf("get_start_unit : %s\n",path);
+	dbg_printf("get_start_unit\n");
 	#endif
 
 	if( GetLibraryVersion((struct Library *) DOSBase) >= 36 )

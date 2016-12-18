@@ -1728,7 +1728,10 @@ int main(int argc, char* argv[])
 
 	io_floppy_timeout = 0;
 
-	bootdev = get_start_unit(argv[0]);
+	if(argv)
+		bootdev = get_start_unit(argv[0]);
+	else
+		bootdev = get_start_unit(0);
 
 	if( bootdev < 0 )
 	{
