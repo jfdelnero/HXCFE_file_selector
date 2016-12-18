@@ -25,6 +25,12 @@
 //
 */
 
+#define START_MODE_LOAD_STARTUPA 0x01
+#define START_MODE_LOAD_STARTUPB 0x02
+#define START_MODE_SLOT_0 0x04
+#define START_MODE_PREINC 0x08
+#define START_MODE_DSKEJECTED 0x10
+
 typedef struct cfgfile_
 {
     int8_t   signature[16];                 //"HXCFECFGV1.0" or "HXCFECFGV2.0"    --- 0x00
@@ -44,6 +50,7 @@ typedef struct cfgfile_
                                            // 0x02 -> In normal mode auto load STARTUPB.HFE at power up
                                            // 0x04 -> In slot mode use slot 0 at power up (ignore index)
                                            // 0x08 -> Pre increment index when inserting the sdcard (no button/lcd mode)
+										   // 0x10 -> Disk ejected at powerup
     uint8_t  enable_drive_b;
     uint8_t  index_mode;
 

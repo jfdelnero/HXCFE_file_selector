@@ -495,11 +495,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 
 				number_of_slot = 1;
 
-				if(cfgfile_ptr->load_last_floppy)
-					slot_index = 0;
-				else
-					slot_index = 1;
-
+				slot_index = 1;
 
 				floppyselectorindex=128;                      // Fisrt slot offset
 				memset( sdfecfg_file,0,512);                  // Clear the sector
@@ -622,10 +618,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 
 				cfgfile_ptr=(cfgfile * )cfgfile_header;
 
-				if(cfgfile_ptr->load_last_floppy)
-					slot_index = 0;
-				else
-					slot_index = 1;
+				slot_index = 1;
 
 				i = 1;
 				do
@@ -672,10 +665,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 				fl_fseek(cfg_file_handle , 0 , SEEK_SET);
 
 				// Update the file header
-				if(cfgfile_ptr->load_last_floppy)
-					cfgfile_ptr->cur_slot_number = ENDIAN_32BIT(0);
-				else
-					cfgfile_ptr->cur_slot_number = ENDIAN_32BIT(1);
+				cfgfile_ptr->cur_slot_number = ENDIAN_32BIT(1);
 
 				cfgfile_ptr->slot_index = 0;
 
@@ -966,11 +956,11 @@ void ui_config_menu(ui_context * uicontext)
 
 	i++;
 	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS+(i*8), "Load AUTOBOOT.HFE at power up :");
-	hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->startup_mode&0x04?"on":"off");
+	hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->startup_mode & START_MODE_SLOT_0?"on":"off");
 
 	i++;
 	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS+(i*8), "Eject disk at power up :");
-	hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->load_last_floppy?"on":"off");
+	hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->startup_mode & START_MODE_DSKEJECTED?"on":"off");
 
 	i=i+2;
 	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "--- Exit ---");
@@ -1053,13 +1043,13 @@ void ui_config_menu(ui_context * uicontext)
 					break;
 
 					case 7:
-						cfgfile_ptr->startup_mode = cfgfile_ptr->startup_mode  ^ 0x04;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",(cfgfile_ptr->startup_mode&0x4)?"on":"off");
+						cfgfile_ptr->startup_mode ^= START_MODE_SLOT_0;
+						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",(cfgfile_ptr->startup_mode & START_MODE_SLOT_0)?"on":"off");
 					break;
 
 					case 8:
-						cfgfile_ptr->load_last_floppy ^= 0xFF;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->load_last_floppy?"on":"off");
+						cfgfile_ptr->startup_mode ^= START_MODE_DSKEJECTED;
+						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",(cfgfile_ptr->startup_mode & START_MODE_DSKEJECTED)?"on":"off");
 					break;
 				}
 				invert_line(0,HELP_Y_POS+(i*8));
@@ -1078,12 +1068,12 @@ void ui_config_menu(ui_context * uicontext)
 						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"off":"on");
 					break;
 					case 7:
-						cfgfile_ptr->startup_mode = cfgfile_ptr->startup_mode  ^ 0x04;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",(cfgfile_ptr->startup_mode&0x4)?"on":"off");
+						cfgfile_ptr->startup_mode ^= START_MODE_SLOT_0;
+						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",(cfgfile_ptr->startup_mode & START_MODE_SLOT_0)?"on":"off");
 					break;
 					case 8:
-						cfgfile_ptr->load_last_floppy ^= 0xFF;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->load_last_floppy?"on":"off");
+						cfgfile_ptr->startup_mode ^= START_MODE_DSKEJECTED;
+						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",(cfgfile_ptr->startup_mode & START_MODE_DSKEJECTED)?"on":"off");
 					break;
 				}
 
