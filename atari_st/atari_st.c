@@ -966,3 +966,8 @@ void ithandler(void)
 		keyup  = 2;
 	}
 }
+
+int process_command_line(int argc, char* argv[])
+{
+	return 0;
+}

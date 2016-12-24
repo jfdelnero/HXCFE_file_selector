@@ -85,6 +85,8 @@ unsigned char last_key;
 
 direct_access_status_sector virtual_hxcfe_status;
 
+char dev_path[512];
+
 
 typedef  struct _bmaptype
 {
@@ -128,7 +130,7 @@ int write_mass_storage(unsigned long lba, unsigned char * data)
 {
 	FILE *f;
 
-	f = fopen("/dev/sdc1","wb");
+	f = fopen(dev_path,"wb");
 	if(f)
 	{
 		fseek(f,lba*512,SEEK_SET);
@@ -143,7 +145,7 @@ int read_mass_storage(unsigned long lba, unsigned char * data)
 {
 	FILE *f;
 
-	f = fopen("/dev/sdc1","rb");
+	f = fopen(dev_path,"rb");
 	if(f)
 	{
 		fseek(f,lba*512,SEEK_SET);
@@ -723,3 +725,16 @@ void dbg_printf(char * chaine, ...)
 }
 
 #endif
+
+int process_command_line(int argc, char* argv[])
+{
+	printf("HxC Floppy Emulator File selector\n");
+	if(argc > 1 && argv)
+	{
+		strncpy(dev_path,argv[1],511);
+		return 0;
+	}
+	printf("Usage : HXCFEMNG [Disk device path]\n");
+	
+	return 1;
+}

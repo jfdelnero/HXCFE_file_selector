@@ -1633,3 +1633,8 @@ void init_timer()
 
 	AddIntServer(5,rbfint);
 }
+
+int process_command_line(int argc, char* argv[])
+{
+	return 0;
+}
