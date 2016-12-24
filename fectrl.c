@@ -439,6 +439,8 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 					dbg_printf("Unknown config file version !\n");
 					#endif
 
+					uicontext->cfg_file_format_version = 0;
+
 					ret=3;
 				break;
 			}
@@ -476,6 +478,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 	uint32_t  floppyselectorindex;
 	disk_in_drive * disk;
 	disk_in_drive_v2 * disk_v2;
+	unsigned char temp_buf[512];
 
 	#ifdef DEBUG
 	dbg_printf("enter save_cfg_file\n");
@@ -498,7 +501,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 				slot_index = 1;
 
 				floppyselectorindex=128;                      // Fisrt slot offset
-				memset( sdfecfg_file,0,512);                  // Clear the sector
+				memset( temp_buf,0,512);                      // Clear the sector
 				sect_nb=2;                                    // Slots Sector offset
 
 				i = 1;
@@ -507,7 +510,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 					if( uicontext->slot_map[i>>3] & (0x80 >> (i&7)) )            // Valid slot found
 					{
 						// Drive A
-						disk = (disk_in_drive *)&sdfecfg_file[floppyselectorindex];
+						disk = (disk_in_drive *)&temp_buf[floppyselectorindex];
 						memset(disk,0,sizeof(disk_in_drive));
 						disk->DirEnt.attributes = disks_slots[i*2].attributes;
 						disk->DirEnt.firstCluster = disks_slots[i*2].firstCluster;
@@ -533,7 +536,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 						memcpy(&disk->DirEnt.name[8],&disks_slots[i*2].type,3);
 
 						// Drive B
-						disk = (disk_in_drive *)&sdfecfg_file[floppyselectorindex + 64];
+						disk = (disk_in_drive *)&temp_buf[floppyselectorindex + 64];
 						memset(disk,0,sizeof(disk_in_drive));
 						disk->DirEnt.attributes = disks_slots[(i*2)+1].attributes;
 						disk->DirEnt.firstCluster = disks_slots[(i*2)+1].firstCluster;
@@ -565,14 +568,14 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 						if(!(number_of_slot&0x3))                // Need to change to the next sector
 						{
 							// Save the sector
-							if (fl_fswrite((unsigned char*)sdfecfg_file, 1,sect_nb, cfg_file_handle) != 1)
+							if (fl_fswrite((unsigned char*)temp_buf, 1,sect_nb, cfg_file_handle) != 1)
 							{
 								hxc_printf_box("ERROR: Write file failed!");
 								ret=1;
 							}
 							// Next sector
 							sect_nb++;
-							memset( sdfecfg_file,0,512);                  // Clear the next sector
+							memset( temp_buf,0,512);                  // Clear the next sector
 						}
 					}
 
@@ -581,7 +584,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 
 				if(number_of_slot&0x3)
 				{
-					if (fl_fswrite((unsigned char*)sdfecfg_file, 1,sect_nb, cfg_file_handle) != 1)
+					if (fl_fswrite((unsigned char*)temp_buf, 1,sect_nb, cfg_file_handle) != 1)
 					{
 						hxc_printf_box("ERROR: Write file failed!");
 						ret=1;
@@ -597,11 +600,15 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 
 				// Update the file header
 
-				cfgfile_ptr->number_of_slot=number_of_slot;
+				cfgfile_ptr->number_of_slot = number_of_slot;
 				cfgfile_ptr->slot_index = slot_index;
 
 				if (fl_fswrite((unsigned char*)cfgfile_header, 1,0, cfg_file_handle) != 1)
 				{
+					#ifdef DEBUG
+					dbg_printf("fl_fswrite error : header %d !\n",0);
+					#endif
+					
 					hxc_printf_box("ERROR: Write file failed!");
 					ret=1;
 				}
@@ -1711,6 +1718,11 @@ int main(int argc, char* argv[])
 	ui_context * uicontext;
 
 	uicontext = &g_ui_ctx;
+
+	if(process_command_line(argc, argv))
+	{
+		return 0;
+	}
 
 	cfg_file_handle = 0;
 	memset( uicontext,0,sizeof(ui_context));
