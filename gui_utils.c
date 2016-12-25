@@ -132,7 +132,11 @@ int hxc_printf(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char
 	va_list marker;
 	va_start( marker, chaine );
 
+#if ( _MSC_VER >= 1100 && _MSC_VER <= 1200 ) // VC 6 doesn't have vsnprintf.
+	vsprintf(temp_buffer,chaine,marker);
+#else
 	vsnprintf(temp_buffer,MAXTXTSIZE,chaine,marker);
+#endif
 
 	va_end( marker );
 
@@ -159,7 +163,11 @@ int hxc_printf_box(char * chaine, ...)
 
 	va_start( marker, chaine );
 
+#if ( _MSC_VER >= 1100 && _MSC_VER <= 1200 ) // VC 6 doesn't have vsnprintf.
+	vsprintf(temp_buffer,chaine,marker);
+#else
 	vsnprintf(temp_buffer,1024,chaine,marker);
+#endif
 
 	str_size=strlen(temp_buffer) * 8;
 	str_size=str_size+(4*8);
