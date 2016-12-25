@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "fat_defs.h"
+#include "fat_cache.h"
 #include "fat_access.h"
 #include "fat_table.h"
 #include "fat_write.h"
@@ -248,13 +249,13 @@ int fatfs_sector_reader(struct fatfs *fs, UINT32 start_cluster, UINT32 offset, u
 		for (i=0; i<cluster_to_read; i++)
 		{
 			// Does the entry exist in the cache?
-			if (!fatfs_browse_cache_get_next_cluster(&fs, i, &cluster_chain))
+			if (!fatfs_browse_cache_get_next_cluster(fs, i, &cluster_chain))
 			{
 				// Scan file linked list to find next entry
                 cluster_chain = fatfs_find_next_cluster(fs, cluster_chain);
 
 				// Push entry into cache
-				fatfs_browse_cache_set_next_cluster(&fs, i, cluster_chain);
+				fatfs_browse_cache_set_next_cluster(fs, i, cluster_chain);
             }
 
 		}
