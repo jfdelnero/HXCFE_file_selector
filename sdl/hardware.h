@@ -46,3 +46,5 @@ int process_command_line(int argc, char* argv[]);
 void sleep(int secs);
 #endif
 void waitms(int ms);
+
+void lockup();

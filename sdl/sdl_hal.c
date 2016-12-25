@@ -69,7 +69,6 @@ unsigned char * screen_buffer_backup;
 uint16_t SCREEN_XRESOL;
 uint16_t SCREEN_YRESOL;
 
-
 static unsigned char validcache;
 
 uint16_t sector_pos[16];
@@ -816,6 +815,19 @@ void dbg_printf(char * chaine, ...)
 }
 
 #endif
+
+void lockup()
+{
+	#ifdef DEBUG
+	dbg_printf("lockup : Sofware halted...\n");
+	#endif
+
+	sleep(2);
+	SDL_Quit();
+	exit(0);
+
+	for(;;);
+}
 
 int process_command_line(int argc, char* argv[])
 {

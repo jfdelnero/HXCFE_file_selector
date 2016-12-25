@@ -78,18 +78,6 @@ ui_context g_ui_ctx;
 
 FL_FILE * cfg_file_handle;
 
-void lockup()
-{
-	#ifdef DEBUG
-	dbg_printf("lockup : Sofware halted...\n");
-	#endif
-
-	for(;;)
-	{
-		sleep(100);
-	}
-}
-
 int setlbabase(unsigned long lba)
 {
 	int ret;
@@ -604,7 +592,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 					#ifdef DEBUG
 					dbg_printf("fl_fswrite error : header %d !\n",0);
 					#endif
-					
+
 					hxc_printf_box("ERROR: Write file failed!");
 					ret=1;
 				}
