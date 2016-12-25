@@ -174,7 +174,7 @@ int write_mass_storage(unsigned long lba, unsigned char * data)
 				DeviceIoControl(hMassStorage,(DWORD) FSCTL_UNLOCK_VOLUME, NULL, 0, NULL, 0, &dwNotUsed, NULL);
 
 			CloseHandle (hMassStorage);
-			return 0;
+			return 1;
 		}
 
 		if(locked)
@@ -192,11 +192,11 @@ int write_mass_storage(unsigned long lba, unsigned char * data)
 		fseek(f,lba*512,SEEK_SET);
 		fwrite(data,512,1,f);
 		fclose(f);
-		return 0;
+		return 1;
 	}
 	#endif
 
-	return 1;
+	return 0;
 }
 
 int read_mass_storage(unsigned long lba, unsigned char * data)
@@ -220,7 +220,7 @@ int read_mass_storage(unsigned long lba, unsigned char * data)
 		if (ReadFile (hMassStorage, data, 512, &dwNotUsed, NULL))
 		{
 			CloseHandle (hMassStorage);
-			return 0;
+			return 1;
 		}
 		CloseHandle (hMassStorage);
 	}
@@ -235,11 +235,11 @@ int read_mass_storage(unsigned long lba, unsigned char * data)
 		fseek(f,lba*512,SEEK_SET);
 		fread(data,512,1,f);
 		fclose(f);
-		return 0;
+		return 1;
 	}
 	#endif
 
-	return 1;
+	return 0;
 }
 
 unsigned char writesector(unsigned char sectornum,unsigned char * data)
@@ -292,7 +292,7 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 			return 0;
 		}
 
-		write_mass_storage(virtual_hxcfe_status.lba_base + (sectornum - 1), data);
+		return write_mass_storage(virtual_hxcfe_status.lba_base + (sectornum - 1), data);
 	}
 
 	return 1;
@@ -316,7 +316,7 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 			return 0;
 		}
 
-		read_mass_storage(virtual_hxcfe_status.lba_base + (sectornum - 1), data);
+		return read_mass_storage(virtual_hxcfe_status.lba_base + (sectornum - 1), data);
 	}
 	return 1;
 }
