@@ -127,8 +127,6 @@ int hxc_print(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char 
 
 int hxc_printf(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char * chaine, ...)
 {
-	int line_size,i,linenb;
-	unsigned short x_offset;
 	char temp_buffer[MAXTXTSIZE];
 
 	va_list marker;
@@ -155,10 +153,10 @@ int hxc_printf_box(char * chaine, ...)
 	char temp_buffer[1024];
 	int str_size;
 	unsigned short i;
+	va_list marker;
 
 	save_box();
 
-	va_list marker;
 	va_start( marker, chaine );
 
 	vsnprintf(temp_buffer,1024,chaine,marker);
@@ -190,12 +188,12 @@ int hxc_printf_box(char * chaine, ...)
 	print_char8x8(screen_buffer,bitmap_font8x8_bmp,((SCREEN_XRESOL-str_size)/2),80+8,4);
 
 	va_end( marker );
+
+	return 0;
 }
 
 void init_display_buffer()
 {
-	int i;
-
 	// HxC2001 logo
 	display_sprite(screen_buffer, bitmap_hxc2001_smalllogo_bmp,
 	                                    (SCREEN_XRESOL-bitmap_hxc2001_smalllogo_bmp->Xsize),

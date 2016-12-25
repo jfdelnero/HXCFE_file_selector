@@ -561,8 +561,8 @@ void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, 
 	unsigned char *ptr_src;
 	unsigned char *ptr_dst;
 
-	ptr_dst=(unsigned char*)membuffer;
-	ptr_src=(unsigned char*)&font->data[0];
+	ptr_dst = (unsigned char*)membuffer;
+	ptr_src = (unsigned char*)&font->data[0];
 
 	if( y < SCREEN_YRESOL && x < SCREEN_XRESOL)
 	{
@@ -590,8 +590,8 @@ void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short 
 	unsigned char *ptr_src;
 	unsigned char *ptr_dst;
 
-	ptr_dst=(unsigned char*)membuffer;
-	ptr_src=(unsigned char*)&sprite->data[0];
+	ptr_dst = (unsigned char*)membuffer;
+	ptr_src = (unsigned char*)&sprite->data[0];
 
 	if( y < SCREEN_YRESOL && x < SCREEN_XRESOL)
 	{

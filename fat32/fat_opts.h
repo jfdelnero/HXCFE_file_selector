@@ -12,7 +12,7 @@
 #define FATFS_MAX_LONG_FILENAME				260
 
 // Max open files (reduce to lower memory requirements)
-#define FATFS_MAX_OPEN_FILES				1
+#define FATFS_MAX_OPEN_FILES				2
 
 // Max FAT sectors to buffer (min 1)
 // (mem used is FAT_BUFFERED_SECTORS * FAT_SECTOR_SIZE)

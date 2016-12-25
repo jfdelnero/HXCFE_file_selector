@@ -25,6 +25,8 @@
 //
 */
 
+#pragma pack(1)
+
 typedef struct direct_access_status_sector_
 {
 	char DAHEADERSIGNATURE[8];
@@ -41,8 +43,7 @@ typedef struct direct_access_status_sector_
 	unsigned char SD_CD;
 	unsigned char number_of_sector;
 	unsigned short current_index;
-}__attribute__((__packed__)) direct_access_status_sector ;
-
+} direct_access_status_sector;
 
 typedef struct direct_access_cmd_sector_
 {
@@ -57,7 +58,7 @@ typedef struct direct_access_cmd_sector_
 	unsigned char parameter_6;
 	unsigned char parameter_7;
 	unsigned char cmd_checksum;
-}__attribute__((__packed__)) direct_access_cmd_sector  ;
+} direct_access_cmd_sector;
 
 #define LFN_MAX_SIZE 128
 
@@ -67,4 +68,6 @@ typedef struct DirectoryEntry_ {
 	unsigned long firstCluster;
 	unsigned long size;
 	unsigned char longName[LFN_MAX_SIZE];	// boolean
-}__attribute__((__packed__)) DirectoryEntry;
+} DirectoryEntry;
+
+#pragma pack()

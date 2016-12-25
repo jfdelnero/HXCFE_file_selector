@@ -6,7 +6,9 @@
 //-------------------------------------------------------------
 #ifndef DEF_BYTE
 #define DEF_BYTE
-	//typedef unsigned char BYTE;
+	#ifdef WIN32
+	typedef unsigned char BYTE;
+	#endif
 #endif
 
 #ifndef DEF_UINT16
@@ -34,9 +36,9 @@
 //-------------------------------------------------------------
 // Structure Packing Compile Options
 //-------------------------------------------------------------
-#define STRUCT_PACK	
-#define STRUCT_PACK_BEGIN	
-#define STRUCT_PACK_END		
-#define STRUCT_PACK_PREEND	__attribute__((__packed__))	
+#define STRUCT_PACK
+#define STRUCT_PACK_BEGIN
+#define STRUCT_PACK_END
+#define STRUCT_PACK_PREEND
 
 #endif

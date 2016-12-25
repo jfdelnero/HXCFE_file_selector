@@ -31,6 +31,8 @@
 #define START_MODE_PREINC 0x08
 #define START_MODE_DSKEJECTED 0x10
 
+#pragma pack(1)
+
 typedef struct cfgfile_
 {
     int8_t   signature[16];                 //"HXCFECFGV1.0" or "HXCFECFGV2.0"    --- 0x00
@@ -50,7 +52,7 @@ typedef struct cfgfile_
                                            // 0x02 -> In normal mode auto load STARTUPB.HFE at power up
                                            // 0x04 -> In slot mode use slot 0 at power up (ignore index)
                                            // 0x08 -> Pre increment index when inserting the sdcard (no button/lcd mode)
-										   // 0x10 -> Disk ejected at powerup
+                                           // 0x10 -> Disk ejected at powerup
     uint8_t  enable_drive_b;
     uint8_t  index_mode;
 
@@ -77,7 +79,7 @@ typedef struct cfgfile_
     uint32_t cur_slot_number;              // Current position --- 0x50
     uint32_t ihm_mode;                     // user interface mode
 
-}__attribute__((__packed__)) cfgfile;
+} cfgfile;
 
 
 struct ShortDirectoryEntry {
@@ -86,10 +88,10 @@ struct ShortDirectoryEntry {
     uint32_t firstCluster;
     uint32_t size;
     uint8_t  longName[17];	// boolean
-}__attribute__((__packed__));
+};
+
 
 extern struct DirectoryEntry directoryEntry;
-
 
 typedef struct disk_in_drive_
 {
@@ -99,7 +101,8 @@ typedef struct disk_in_drive_
     uint16_t rpm;
     uint16_t bitrate;
     uint16_t tracklistoffset;
-}__attribute__((__packed__)) disk_in_drive;
+} disk_in_drive;
+
 
 #define MAX_SHORT_NAME_LENGHT ( 64 - ( 3 + 1 + 4 + 4 ) )
 
@@ -110,7 +113,8 @@ typedef struct disk_in_drive_v2_
     uint32_t firstCluster;
     uint32_t size;
     uint8_t  name[MAX_SHORT_NAME_LENGHT];
-}__attribute__((__packed__)) disk_in_drive_v2;
+} disk_in_drive_v2;
+
 
 #define MAX_LONG_NAME_LENGHT ( 256 - ( 3 + 1 + 4 + 4 ) )
 
@@ -121,4 +125,7 @@ typedef struct disk_in_drive_v2_long_
     uint32_t firstCluster;
     uint32_t size;
     uint8_t  name[MAX_LONG_NAME_LENGHT]; //Max entry name : 256 - (4+4+1+3)
-}__attribute__((__packed__)) disk_in_drive_v2_long;
+} disk_in_drive_v2_long;
+
+
+#pragma pack()

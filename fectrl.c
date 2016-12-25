@@ -89,8 +89,6 @@ void lockup()
 int setlbabase(unsigned long lba)
 {
 	int ret;
-	unsigned char cmd_cnt;
-	uint32_t lbatemp;
 	unsigned char sector[512];
 
 	#ifdef DEBUG
@@ -107,11 +105,11 @@ int setlbabase(unsigned long lba)
 
 	sprintf(dacs->DAHEADERSIGNATURE,"HxCFEDA");
 	dacs->cmd_code=1;
-	dacs->parameter_0=(lba>>0)&0xFF;
-	dacs->parameter_1=(lba>>8)&0xFF;
-	dacs->parameter_2=(lba>>16)&0xFF;
-	dacs->parameter_3=(lba>>24)&0xFF;
-	dacs->parameter_4=0xA5;
+	dacs->parameter_0 = (unsigned char)((lba>>0)&0xFF);
+	dacs->parameter_1 = (unsigned char)((lba>>8)&0xFF);
+	dacs->parameter_2 = (unsigned char)((lba>>16)&0xFF);
+	dacs->parameter_3 = (unsigned char)((lba>>24)&0xFF);
+	dacs->parameter_4 = 0xA5;
 
 	ret = writesector( 0,(unsigned char *)&sector);
 	if(!ret)
@@ -160,7 +158,6 @@ int media_init()
 {
 	unsigned char ret;
 	unsigned char sector[512];
-	int i;
 	direct_access_status_sector * dass;
 
 	#ifdef DEBUG
@@ -211,7 +208,7 @@ int media_init()
 
 int media_read( unsigned long sector, unsigned char *buffer )
 {
-	int ret,retry;
+	int ret;
 	direct_access_status_sector * dass;
 
 	dass= (direct_access_status_sector *)buffer;
@@ -256,9 +253,6 @@ int media_read( unsigned long sector, unsigned char *buffer )
 
 int media_write( unsigned long sector, unsigned char *buffer )
 {
-	int ret,retry;
-	direct_access_status_sector * dass;
-
 	#ifdef DEBUG
 	dbg_printf("media_write : 0x%.8X\n",sector);
 	#endif
@@ -340,7 +334,7 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 						number_of_slots = ( MAX_NUMBER_OF_SLOT / 2 ) - 1;
 
 					if( number_of_slots > uicontext->config_file_number_max_of_slot )
-						number_of_slots = uicontext->config_file_number_max_of_slot - 1;
+						number_of_slots = (unsigned short) (uicontext->config_file_number_max_of_slot - 1);
 
 					uicontext->number_of_slots = number_of_slots;
 					fl_fseek(cfg_file_handle , 1024 , SEEK_SET);
@@ -395,7 +389,7 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 
 					memset(uicontext->change_map,0,512);
 
-					number_of_slots = ENDIAN_32BIT( cfgfile_ptr->max_slot_number );
+					number_of_slots = (unsigned short) ENDIAN_32BIT( cfgfile_ptr->max_slot_number );
 					fl_fseek(cfg_file_handle , 512 * ENDIAN_32BIT(cfgfile_ptr->slots_map_position) , SEEK_SET);
 					fl_fread(uicontext->slot_map, 1, 512 , cfg_file_handle);
 
@@ -405,7 +399,7 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 					{
 						if( uicontext->slot_map[i>>3] & (0x80 >> (i&7)) )
 						{
-							sector_offset = ( ( i * 64 * uicontext->number_of_drive ) / 512 );
+							sector_offset = (short) ( ( i * 64 * uicontext->number_of_drive ) / 512 );
 							if(last_sector_offset != sector_offset )
 							{
 								if( sector_offset - last_sector_offset != 1 )
@@ -419,7 +413,7 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 							d = 0;
 							while( d < uicontext->number_of_drive )
 							{
-								slot_offset = ( ( i * 64 * uicontext->number_of_drive ) + ( 64 * d ) ) % 512;
+								slot_offset = (unsigned short) ( ( i * 64 * uicontext->number_of_drive ) + ( 64 * d ) ) % 512;
 								if( ( (i*uicontext->number_of_drive) + d ) < MAX_NUMBER_OF_SLOT )
 								{
 									memcpy( &disks_slots[ (i*uicontext->number_of_drive) + d ],
@@ -477,7 +471,6 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 	cfgfile * cfgfile_ptr;
 	uint32_t  floppyselectorindex;
 	disk_in_drive * disk;
-	disk_in_drive_v2 * disk_v2;
 	unsigned char temp_buf[512];
 
 	#ifdef DEBUG
@@ -635,7 +628,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 						// Yes, save the modified sector
 						floppyselectorindex=(64*uicontext->number_of_drive)*i;
 
-						sect_nb = ENDIAN_32BIT(cfgfile_ptr->slots_position) + (floppyselectorindex >> 9);
+						sect_nb = (unsigned short) ENDIAN_32BIT(cfgfile_ptr->slots_position) + (floppyselectorindex >> 9);
 						if (fl_fswrite( ((unsigned char*)&disks_slots) + (floppyselectorindex & ~0x1FF) , 1, sect_nb, cfg_file_handle) != 1)
 						{
 							#ifdef DEBUG
@@ -729,7 +722,6 @@ void displayFolder(ui_context * uicontext)
 
 void enter_sub_dir(ui_context * uicontext,disk_in_drive_v2_long *disk_ptr)
 {
-	uint32_t first_cluster;
 	int currentPathLength;
 	unsigned char folder[128+1];
 	unsigned char c;
@@ -882,8 +874,6 @@ int getext(char * path,char * exttodest)
 
 void print_help()
 {
-	int i;
-
 	clear_list(0);
 
 	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS, (char*)help_scr1_msg);
@@ -1141,7 +1131,7 @@ int ui_command_menu(ui_context * uicontext)
 				{
 					uicontext->page_mode_index++;
 
-					if(uicontext->page_mode_index >= 2 + uicontext->number_of_drive)
+					if(uicontext->page_mode_index >= (int)(2 + uicontext->number_of_drive))
 						uicontext->page_mode_index = 0;
 				}
 
