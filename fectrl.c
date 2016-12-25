@@ -83,20 +83,23 @@ void lockup()
 	#ifdef DEBUG
 	dbg_printf("lockup : Sofware halted...\n");
 	#endif
-	for(;;);
+
+	for(;;)
+	{
+		sleep(100);
+	}
 }
 
 int setlbabase(unsigned long lba)
 {
 	int ret;
 	unsigned char sector[512];
+	direct_access_cmd_sector * dacs;
+	direct_access_status_sector * dass;
 
 	#ifdef DEBUG
 	dbg_printf("setlbabase : 0x%.8X\n",lba);
 	#endif
-
-	direct_access_cmd_sector * dacs;
-	direct_access_status_sector * dass;
 
 	dass=(direct_access_status_sector *)sector;
 	dacs=(direct_access_cmd_sector  *)sector;
@@ -236,7 +239,7 @@ int media_read( unsigned long sector, unsigned char *buffer )
 
 	}while((sector-L_INDIAN(dass->lba_base))>=8);
 
-	if(!readsector((sector-last_setlbabase)+1,buffer,0))
+	if(!readsector((unsigned char)(sector-last_setlbabase)+1,buffer,0))
 	{
 		hxc_printf_box("ERROR: Read ERROR ! fsector %d",(sector-last_setlbabase)+1);
 		lockup();
@@ -265,7 +268,7 @@ int media_write( unsigned long sector, unsigned char *buffer )
 		setlbabase(sector);
 	}
 
-	if(!writesector((sector-last_setlbabase)+1,buffer))
+	if(!writesector((unsigned char)(sector-last_setlbabase)+1,buffer))
 	{
 		hxc_printf_box("ERROR: Write sector ERROR !");
 		lockup();
