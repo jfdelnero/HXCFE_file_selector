@@ -25,7 +25,9 @@
 //
 */
 
+#ifdef WIN32
 #pragma pack(1)
+#endif
 
 typedef struct direct_access_status_sector_
 {
@@ -43,7 +45,11 @@ typedef struct direct_access_status_sector_
 	unsigned char SD_CD;
 	unsigned char number_of_sector;
 	unsigned short current_index;
-} direct_access_status_sector;
+#ifndef WIN32
+}__attribute__((__packed__)) direct_access_status_sector;
+#else
+}direct_access_status_sector;
+#endif
 
 typedef struct direct_access_cmd_sector_
 {
@@ -58,7 +64,11 @@ typedef struct direct_access_cmd_sector_
 	unsigned char parameter_6;
 	unsigned char parameter_7;
 	unsigned char cmd_checksum;
-} direct_access_cmd_sector;
+#ifndef WIN32
+}__attribute__((__packed__)) direct_access_cmd_sector;
+#else
+}direct_access_cmd_sector;
+#endif
 
 #define LFN_MAX_SIZE 128
 
@@ -68,6 +78,12 @@ typedef struct DirectoryEntry_ {
 	unsigned long firstCluster;
 	unsigned long size;
 	unsigned char longName[LFN_MAX_SIZE];	// boolean
-} DirectoryEntry;
+#ifndef WIN32
+}__attribute__((__packed__)) DirectoryEntry;
+#else
+}DirectoryEntry;
+#endif
 
+#ifdef WIN32
 #pragma pack()
+#endif

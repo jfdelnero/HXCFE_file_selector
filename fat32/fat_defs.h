@@ -88,7 +88,9 @@
 #define FAT32_LAST_CLUSTER		0xFFFFFFFF
 #define FAT32_INVALID_CLUSTER	0xFFFFFFFF
 
+#ifdef WIN32
 #pragma pack(1)
+#endif
 
 STRUCT_PACK_BEGIN
 struct fat_dir_entry STRUCT_PACK
@@ -108,6 +110,8 @@ struct fat_dir_entry STRUCT_PACK
 } STRUCT_PACK_PREEND;
 STRUCT_PACK_END
 
+#ifdef WIN32
 #pragma pack()
+#endif
 
 #endif

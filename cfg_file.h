@@ -31,7 +31,9 @@
 #define START_MODE_PREINC 0x08
 #define START_MODE_DSKEJECTED 0x10
 
+#ifdef WIN32
 #pragma pack(1)
+#endif
 
 typedef struct cfgfile_
 {
@@ -78,9 +80,11 @@ typedef struct cfgfile_
     uint32_t number_of_drive_per_slot;     // 2 by default.
     uint32_t cur_slot_number;              // Current position --- 0x50
     uint32_t ihm_mode;                     // user interface mode
-
-} cfgfile;
-
+#ifndef WIN32
+}__attribute__((__packed__)) cfgfile;
+#else
+}cfgfile;
+#endif
 
 struct ShortDirectoryEntry {
     uint8_t  name[12];
@@ -88,8 +92,11 @@ struct ShortDirectoryEntry {
     uint32_t firstCluster;
     uint32_t size;
     uint8_t  longName[17];	// boolean
+#ifndef WIN32
+}__attribute__((__packed__));
+#else
 };
-
+#endif
 
 extern struct DirectoryEntry directoryEntry;
 
@@ -101,8 +108,11 @@ typedef struct disk_in_drive_
     uint16_t rpm;
     uint16_t bitrate;
     uint16_t tracklistoffset;
-} disk_in_drive;
-
+#ifndef WIN32
+}__attribute__((__packed__)) disk_in_drive;
+#else
+}disk_in_drive;
+#endif
 
 #define MAX_SHORT_NAME_LENGHT ( 64 - ( 3 + 1 + 4 + 4 ) )
 
@@ -113,8 +123,11 @@ typedef struct disk_in_drive_v2_
     uint32_t firstCluster;
     uint32_t size;
     uint8_t  name[MAX_SHORT_NAME_LENGHT];
-} disk_in_drive_v2;
-
+#ifndef WIN32
+}__attribute__((__packed__)) disk_in_drive_v2;
+#else
+}disk_in_drive_v2;
+#endif
 
 #define MAX_LONG_NAME_LENGHT ( 256 - ( 3 + 1 + 4 + 4 ) )
 
@@ -125,7 +138,12 @@ typedef struct disk_in_drive_v2_long_
     uint32_t firstCluster;
     uint32_t size;
     uint8_t  name[MAX_LONG_NAME_LENGHT]; //Max entry name : 256 - (4+4+1+3)
-} disk_in_drive_v2_long;
+#ifndef WIN32
+}__attribute__((__packed__)) disk_in_drive_v2_long;
+#else
+}disk_in_drive_v2_long;
+#endif
 
-
+#ifdef WIN32
 #pragma pack()
+#endif

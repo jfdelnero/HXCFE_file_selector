@@ -39,6 +39,10 @@
 #define STRUCT_PACK
 #define STRUCT_PACK_BEGIN
 #define STRUCT_PACK_END
+#ifndef WIN32
+#define STRUCT_PACK_PREEND __attribute__((__packed__))
+#else
 #define STRUCT_PACK_PREEND
+#endif
 
 #endif
