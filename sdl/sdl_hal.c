@@ -32,6 +32,10 @@
 #include <stdint.h>
 #include <SDL/SDL.h>
 
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 #include "conf.h"
 
 #include "keysfunc_defs.h"
@@ -96,7 +100,7 @@ typedef  struct _bmaptype
 	int size;
 	int csize;
 	unsigned char * data;
-}bmaptype __attribute__ ((aligned (2)));
+}bmaptype;
 
 #endif
 
@@ -110,6 +114,18 @@ void waitms(int ms)
 	SDL_Delay(ms);
 }
 
+#ifdef WIN32
+void sleep(int secs)
+{
+	int i;
+
+	for(i=0;i<secs;i++)
+	{
+		waitms(1000);
+	}
+}
+#endif
+
 void alloc_error()
 {
 	hxc_printf_box(0,"ERROR: Memory Allocation Error -> No more free mem ?");
@@ -119,6 +135,7 @@ void alloc_error()
 int jumptotrack(unsigned char t)
 {
 	track_number = t;
+	return 1;
 }
 
 int get_start_unit(char * path)
@@ -128,6 +145,45 @@ int get_start_unit(char * path)
 
 int write_mass_storage(unsigned long lba, unsigned char * data)
 {
+	#ifdef WIN32
+	DWORD   dwNotUsed,locked;
+	HANDLE  hMassStorage;
+	char drv_path[64];
+
+	#define FSCTL_LOCK_VOLUME            0x00090018
+	#define FSCTL_UNLOCK_VOLUME          0x0009001C
+
+	strcpy(drv_path,"\\\\.\\");
+	strncat(drv_path,dev_path,sizeof(drv_path)-1);
+
+	locked = NULL;
+
+	hMassStorage = CreateFile (drv_path, GENERIC_WRITE,
+					FILE_SHARE_READ|FILE_SHARE_WRITE,
+					NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
+					NULL);
+	if (hMassStorage != INVALID_HANDLE_VALUE)
+	{
+		if(DeviceIoControl(hMassStorage,(DWORD) FSCTL_LOCK_VOLUME, NULL, 0, NULL, 0, &dwNotUsed, NULL))
+			locked = 1;
+
+		SetFilePointer (hMassStorage, 512 * lba, NULL, FILE_BEGIN);
+		if (WriteFile (hMassStorage, data, 512, &dwNotUsed, NULL))
+		{
+			if(locked)
+				DeviceIoControl(hMassStorage,(DWORD) FSCTL_UNLOCK_VOLUME, NULL, 0, NULL, 0, &dwNotUsed, NULL);
+
+			CloseHandle (hMassStorage);
+			return 0;
+		}
+
+		if(locked)
+			DeviceIoControl(hMassStorage,(DWORD) FSCTL_UNLOCK_VOLUME, NULL, 0, NULL, 0, &dwNotUsed, NULL);
+
+		CloseHandle (hMassStorage);
+	}
+
+	#else
 	FILE *f;
 
 	f = fopen(dev_path,"wb");
@@ -136,13 +192,41 @@ int write_mass_storage(unsigned long lba, unsigned char * data)
 		fseek(f,lba*512,SEEK_SET);
 		fwrite(data,512,1,f);
 		fclose(f);
+		return 0;
 	}
+	#endif
 
-	return 0;
+	return 1;
 }
 
 int read_mass_storage(unsigned long lba, unsigned char * data)
 {
+	#ifdef WIN32
+	DWORD   dwNotUsed;
+	HANDLE  hMassStorage;
+	char drv_path[64];
+
+	strcpy(drv_path,"\\\\.\\");
+	strncat(drv_path,dev_path,sizeof(drv_path)-1);
+
+	hMassStorage = CreateFile (drv_path, GENERIC_READ,
+					FILE_SHARE_READ|FILE_SHARE_WRITE,
+					NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
+					NULL);
+
+	if (hMassStorage != INVALID_HANDLE_VALUE)
+	{
+		SetFilePointer (hMassStorage, 512 * lba, NULL, FILE_BEGIN);
+		if (ReadFile (hMassStorage, data, 512, &dwNotUsed, NULL))
+		{
+			CloseHandle (hMassStorage);
+			return 0;
+		}
+		CloseHandle (hMassStorage);
+	}
+
+	#else
+
 	FILE *f;
 
 	f = fopen(dev_path,"rb");
@@ -151,8 +235,11 @@ int read_mass_storage(unsigned long lba, unsigned char * data)
 		fseek(f,lba*512,SEEK_SET);
 		fread(data,512,1,f);
 		fclose(f);
+		return 0;
 	}
-	return 0;
+	#endif
+
+	return 1;
 }
 
 unsigned char writesector(unsigned char sectornum,unsigned char * data)
@@ -281,7 +368,6 @@ void flush_char()
 
 unsigned char get_char()
 {
-	unsigned char buffer;
 	unsigned char key,i,c;
 	unsigned char function_code,key_code;
 
@@ -437,7 +523,6 @@ void init_timer()
 int update_screen()
 {
 	unsigned char *buffer_dat;
-	int i;
 
 	buffer_dat = (unsigned char *)bBuffer->pixels;
 
@@ -448,11 +533,11 @@ int update_screen()
 	SDL_BlitSurface( bBuffer, NULL, screen, &rBuffer );
 	SDL_UpdateRect( screen, 0, 0, 0, 0 );
 
+	return 0;
 }
 
 int init_display()
 {
-	unsigned short loop,yr;
 	int i;
 
 	track_number = 0;
@@ -461,7 +546,13 @@ int init_display()
 	SCREEN_YRESOL = 256;
 
 	screen_buffer = malloc(SCREEN_XRESOL*SCREEN_YRESOL);
+	if(!screen_buffer)
+		return 1;
+
+	memset(screen_buffer,0,SCREEN_XRESOL*SCREEN_YRESOL);
+
 	screen_buffer_backup=(unsigned char*)malloc(8*1024*2);
+
 
 	SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER );
 
@@ -485,7 +576,7 @@ int init_display()
 	rBuffer.w = bBuffer->w;
 	rBuffer.h = bBuffer->h;
 
-// copie  de la palette
+	// Default Palette init.
 	for(i=0;i<256;i++)
 	{
 		colors[i].r = i;
@@ -557,7 +648,7 @@ unsigned char set_color_scheme(unsigned char color)
 
 void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, unsigned short y,unsigned char c)
 {
-	unsigned short i,j,k,l,c1;
+	unsigned short i,j;
 	unsigned char *ptr_src;
 	unsigned char *ptr_dst;
 
@@ -586,7 +677,7 @@ void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, 
 
 void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short x, unsigned short y)
 {
-	unsigned long i,j,k,l,x_offset,base_offset;
+	unsigned long i,j,k,l,base_offset;
 	unsigned char *ptr_src;
 	unsigned char *ptr_dst;
 
@@ -735,6 +826,6 @@ int process_command_line(int argc, char* argv[])
 		return 0;
 	}
 	printf("Usage : HXCFEMNG [Disk device path]\n");
-	
+
 	return 1;
 }
