@@ -1,11 +1,12 @@
 CC=gcc
 AS=as
 
-#CFLAGS= -O0 -I . -I .. -I ../fat32 -g -DFATFS_IS_LITTLE_ENDIAN=1
 CFLAGS= -O3 -I . -I .. -I ../fat32 -DFATFS_IS_LITTLE_ENDIAN=1
+#CFLAGS= -O0 -I . -I .. -I ../fat32 -g -DFATFS_IS_LITTLE_ENDIAN=1 -DDEBUG -fsanitize=address  -fno-omit-frame-pointer
 
-#LDFLAGS=  -Wl,-Map,foo.map -lSDL
 LDFLAGS= -s -Wl,-Map,foo.map -lSDL
+#LDFLAGS=  -Wl,-Map,foo.map -lasan -lSDL
+
 EXEC=HXCFEMNG
 
 all: $(EXEC)
