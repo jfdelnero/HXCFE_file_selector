@@ -14,7 +14,5 @@ HxC Floppy Emulator project
 
                     HxC Floppy Emulator File selector/Manager
 
-    Current supported machines : Amiga, Atari ST.
+    Current supported machines : Amiga, Atari ST, Windows, Linux.
     Planned : Amstrad CPC, PC XT/AT.
-
-
