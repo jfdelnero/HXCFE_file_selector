@@ -69,6 +69,8 @@ SDL_Rect	rScreen;
 SDL_Rect	rBuffer;
 SDL_Color   *colors;
 
+SDL_TimerID sdl_timer_id;
+
 unsigned char * screen_buffer;
 unsigned char * screen_buffer_backup;
 uint16_t SCREEN_XRESOL;
@@ -517,7 +519,8 @@ uint32_t sdl_timer(Uint32 interval, void *param)
 
 void init_timer()
 {
-	if(!SDL_AddTimer(30, sdl_timer, "a"))
+	sdl_timer_id = SDL_AddTimer(30, sdl_timer, "a");
+	if(!sdl_timer_id)
 	{
 		SDL_Quit();
 		exit(-1);
@@ -541,6 +544,7 @@ int init_display()
 
 	screen_buffer_backup=(unsigned char*)malloc(8*1024*2);
 
+	sdl_timer_id = 0;
 
 	SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER );
 
@@ -763,6 +767,8 @@ void restore_box()
 
 void reboot()
 {
+	if(sdl_timer_id)
+		SDL_RemoveTimer(sdl_timer_id);
 	SDL_Quit();
 	exit(0);
 	for(;;);
@@ -812,7 +818,12 @@ void lockup()
 	#endif
 
 	sleep(2);
+
+	if(sdl_timer_id)
+		SDL_RemoveTimer(sdl_timer_id);
+
 	SDL_Quit();
+
 	exit(0);
 
 	for(;;);
