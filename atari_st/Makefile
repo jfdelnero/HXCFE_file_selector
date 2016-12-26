@@ -11,7 +11,7 @@
 ARCH             = cygwin
 
 GCCBIN           = m68k-atari-mint-gcc
-GCCOPT           = -Os -I . -I .. -I ../fat32 -Wall
+GCCOPT           = -Os -I . -I .. -I ../fat32 -DFATFS_IS_LITTLE_ENDIAN=0 -Wall
 GCLOPT           = -Os -nostdlib -Wl,-Map,symbols.map -Wl,--traditional-format -fomit-frame-pointer -m68000
 
 VASMBIN          = build-tools/vbcc/bin-$(ARCH)/vasmm68k_mot
