@@ -13,9 +13,14 @@ FATFS_MAX_OPEN_FILES
   The more files you wish to have concurrently open, the greater this number should be.
   This increases the number of FL_FILE file structures in the library, each of these is around 1K in size (assuming 512 byte sectors).
 
-FAT_BUFFERED_SECTOR
+FAT_BUFFER_SECTORS
   Minimum is 1, more increases performance.
-  This defines how many FAT table sectors can be buffered.
+  This defines how many FAT sectors can be buffered per FAT_BUFFER entry.
+
+FAT_BUFFERS
+  Minimum is 1, more increases performance.
+  This defines how many FAT buffer entries are available.
+  Memory usage is FAT_BUFFERS * FAT_BUFFER_SECTORS * FAT_SECTOR_SIZE
 
 FATFS_INC_WRITE_SUPPORT
   Support file write functionality.
@@ -38,5 +43,11 @@ FATFS_INC_LFN_SUPPORT 	[1/0]
 FATFS_DIR_LIST_SUPPORT 	[1/0]
   Include support for directory listing.
 
+FATFS_INC_TIME_DATE_SUPPORT  [1/0]
+  Use time/date functions provided by time.h to update creation & modification timestamps.
+
 FATFS_INC_FORMAT_SUPPORT
   Include support for formatting disks (FAT16 only).
+
+FAT_PRINTF_NOINC_STDIO
+  Disable use of printf & inclusion of stdio.h

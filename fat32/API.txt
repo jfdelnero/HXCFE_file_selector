@@ -6,7 +6,7 @@ void fl_init(void)
   Called to initialize FAT IO library.
   This should be called prior to any other functions.
 
-void fl_attach_locks(struct fatfs *fs, void (*lock)(void), void (*unlock)(void))
+void fl_attach_locks(void (*lock)(void), void (*unlock)(void))
 
   [Optional] File system thread safety locking functions.
   For thread safe operation, you should provide lock() and unlock() functions.
