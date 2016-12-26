@@ -9,21 +9,7 @@
 //
 //
 
-
-#ifndef BMAPTYPEDEF
-#define BMAPTYPEDEF
-
-typedef  struct _bmaptype
-{
-   int type;
-   int Xsize;
-   int Ysize;
-   int size;
-   int csize;
-   unsigned char * data;
-}bmaptype;
-
-#endif
+#include "bmaptype.h"
 
 #ifdef WIN32
 unsigned char data_bmpfont8x8_bmp[]={
@@ -98,10 +84,5 @@ unsigned char __attribute__ ((aligned (2))) data_bmpfont8x8_bmp[]={
 
 static bmaptype bitmap_font8x8_bmp[]=
 {
- 1,
- 128,
- 128,
- 2048,
- 2049,
- data_bmpfont8x8_bmp
+	{1, 128, 128, 2048, 2049, data_bmpfont8x8_bmp}
 };

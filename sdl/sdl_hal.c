@@ -29,11 +29,12 @@
 #include <malloc.h>
 #include <string.h>
 
-#include <stdint.h>
 #include <SDL/SDL.h>
 
 #ifdef WIN32
 #include <windows.h>
+#else
+#include <unistd.h>
 #endif
 
 #include "conf.h"
@@ -42,7 +43,11 @@
 #include "keys_defs.h"
 #include "keymap.h"
 
+#include "graphx/bmaptype.h"
+
 #include "color_table.h"
+
+#include "gui_utils.h"
 
 #include "../hxcfeda.h"
 
@@ -69,8 +74,6 @@ unsigned char * screen_buffer_backup;
 uint16_t SCREEN_XRESOL;
 uint16_t SCREEN_YRESOL;
 
-static unsigned char validcache;
-
 uint16_t sector_pos[16];
 
 unsigned char keyup;
@@ -83,25 +86,9 @@ uint32_t virt_lba;
 unsigned char * keys_stat;
 unsigned char last_key;
 
-#ifndef BMAPTYPEDEF
-#define BMAPTYPEDEF
-
 direct_access_status_sector virtual_hxcfe_status;
 
 char dev_path[512];
-
-
-typedef  struct _bmaptype
-{
-	int type;
-	int Xsize;
-	int Ysize;
-	int size;
-	int csize;
-	unsigned char * data;
-}bmaptype;
-
-#endif
 
 void waitus(int centus)
 {
@@ -145,7 +132,8 @@ int get_start_unit(char * path)
 int write_mass_storage(unsigned long lba, unsigned char * data)
 {
 	#ifdef WIN32
-	DWORD   dwNotUsed,locked;
+	int locked;
+	DWORD   dwNotUsed;
 	HANDLE  hMassStorage;
 	char drv_path[64];
 
@@ -155,7 +143,7 @@ int write_mass_storage(unsigned long lba, unsigned char * data)
 	strcpy(drv_path,"\\\\.\\");
 	strncat(drv_path,dev_path,sizeof(drv_path)-1);
 
-	locked = NULL;
+	locked = 0;
 
 	hMassStorage = CreateFile (drv_path, GENERIC_WRITE,
 					FILE_SHARE_READ|FILE_SHARE_WRITE,
@@ -227,14 +215,15 @@ int read_mass_storage(unsigned long lba, unsigned char * data)
 	#else
 
 	FILE *f;
+	int ret;
 
 	f = fopen(dev_path,"rb");
 	if(f)
 	{
 		fseek(f,lba*512,SEEK_SET);
-		fread(data,512,1,f);
+		ret = fread(data,512,1,f);
 		fclose(f);
-		return 1;
+		return ret;
 	}
 	#endif
 
@@ -320,7 +309,7 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 	return 1;
 }
 
-void init_fdc(unsigned char drive)
+void init_fdc(int drive)
 {
 	memset(&virtual_hxcfe_status,0,sizeof(virtual_hxcfe_status));
 	memcpy((char*)&virtual_hxcfe_status.DAHEADERSIGNATURE,	(const char *)"HxCFEDA",	strlen("HxCFEDA"));
@@ -490,6 +479,22 @@ void setvideomode(int mode)
 {
 }
 
+int update_screen()
+{
+	unsigned char *buffer_dat;
+
+	buffer_dat = (unsigned char *)bBuffer->pixels;
+
+	SDL_LockSurface(bBuffer);
+	memcpy(buffer_dat,screen_buffer,(SCREEN_XRESOL*SCREEN_YRESOL));
+	SDL_UnlockSurface(bBuffer);
+
+	SDL_BlitSurface( bBuffer, NULL, screen, &rBuffer );
+	SDL_UpdateRect( screen, 0, 0, 0, 0 );
+
+	return 0;
+}
+
 uint32_t sdl_timer(Uint32 interval, void *param)
 {
 	SDL_Event evt;
@@ -517,22 +522,6 @@ void init_timer()
 		SDL_Quit();
 		exit(-1);
 	}
-}
-
-int update_screen()
-{
-	unsigned char *buffer_dat;
-
-	buffer_dat = (unsigned char *)bBuffer->pixels;
-
-	SDL_LockSurface(bBuffer);
-	memcpy(buffer_dat,screen_buffer,(SCREEN_XRESOL*SCREEN_YRESOL));
-	SDL_UnlockSurface(bBuffer);
-
-	SDL_BlitSurface( bBuffer, NULL, screen, &rBuffer );
-	SDL_UpdateRect( screen, 0, 0, 0, 0 );
-
-	return 0;
 }
 
 int init_display()
@@ -645,9 +634,9 @@ unsigned char set_color_scheme(unsigned char color)
 	return color;
 }
 
-void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, unsigned short y,unsigned char c)
+void print_char8x8(unsigned char * membuffer, bmaptype * font,int x, int y,unsigned char c)
 {
-	unsigned short i,j;
+	int i,j;
 	unsigned char *ptr_src;
 	unsigned char *ptr_dst;
 
@@ -674,9 +663,9 @@ void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, 
 
 }
 
-void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short x, unsigned short y)
+void display_sprite(unsigned char * membuffer, bmaptype * sprite,int x, int y)
 {
-	unsigned long i,j,k,l,base_offset;
+	int i,j,k,l,base_offset;
 	unsigned char *ptr_src;
 	unsigned char *ptr_dst;
 
@@ -703,10 +692,10 @@ void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short 
 	}
 }
 
-void h_line(unsigned short y_pos,unsigned short val)
+void h_line(int y_pos,unsigned short val)
 {
 	unsigned char *ptr_dst;
-	unsigned long i,ptroffset;
+	int i,ptroffset;
 
 	ptr_dst = screen_buffer;
 	ptroffset = SCREEN_XRESOL * y_pos;
@@ -718,10 +707,10 @@ void h_line(unsigned short y_pos,unsigned short val)
 	}
 }
 
-void box(unsigned short x_p1,unsigned short y_p1,unsigned short x_p2,unsigned short y_p2,unsigned short fillval,unsigned char fill)
+void box(int x_p1,int y_p1,int x_p2,int y_p2,unsigned short fillval,unsigned char fill)
 {
 	unsigned short *ptr_dst;
-	unsigned short i,j,ptroffset,x_size;
+	int i,j,ptroffset,x_size;
 
 	ptr_dst=(unsigned short*)screen_buffer;
 
@@ -732,7 +721,7 @@ void box(unsigned short x_p1,unsigned short y_p1,unsigned short x_p2,unsigned sh
 	{
 		for(i=0;i<x_size/2;i++)
 		{
-			ptr_dst[ptroffset+(i*2)]=(fillval>>8);
+			ptr_dst[ptroffset+(i*2)]  =(fillval>>8);
 			ptr_dst[ptroffset+(i*2)+1]=(fillval)&0xFF;
 		}
 		ptroffset = SCREEN_XRESOL * (y_p1+j);
@@ -740,13 +729,13 @@ void box(unsigned short x_p1,unsigned short y_p1,unsigned short x_p2,unsigned sh
 
 }
 
-void invert_line(unsigned short x_pos,unsigned short y_pos)
+void invert_line(int x_pos,int y_pos)
 {
-	unsigned short i,j;
+	int i,j;
 	unsigned char *ptr_dst;
-	unsigned long ptroffset;
+	int ptroffset;
 
-	if( y_pos < SCREEN_YRESOL && x_pos < SCREEN_XRESOL)
+	if( y_pos < SCREEN_YRESOL && x_pos < SCREEN_XRESOL )
 	{
 
 		for(j=0;j<8;j++)

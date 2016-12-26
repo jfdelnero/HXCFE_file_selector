@@ -83,13 +83,11 @@ int setlbabase(unsigned long lba)
 	int ret;
 	unsigned char sector[512];
 	direct_access_cmd_sector * dacs;
-	direct_access_status_sector * dass;
 
 	#ifdef DEBUG
 	dbg_printf("setlbabase : 0x%.8X\n",lba);
 	#endif
 
-	dass=(direct_access_status_sector *)sector;
 	dacs=(direct_access_cmd_sector  *)sector;
 
 	memset(&sector,0,512);
@@ -164,7 +162,7 @@ int media_init()
 		if(!strcmp(dass->DAHEADERSIGNATURE,"HxCFEDA"))
 		{
 			strncpy(FIRMWAREVERSION,dass->FIRMWAREVERSION,sizeof(FIRMWAREVERSION));
-			hxc_printf(LEFT_ALIGNED,0,SCREEN_YRESOL - ( 8 + 2 ),"FW Ver %s",FIRMWAREVERSION);
+			hxc_printf(LEFT_ALIGNED,0, (uint16_t)(SCREEN_YRESOL - ( 8 + 2 )) ,"FW Ver %s",FIRMWAREVERSION);
 
 			test_floppy_if();
 
@@ -199,7 +197,6 @@ int media_init()
 
 int media_read( unsigned long sector, unsigned char *buffer )
 {
-	int ret;
 	direct_access_status_sector * dass;
 
 	dass= (direct_access_status_sector *)buffer;
@@ -209,8 +206,6 @@ int media_read( unsigned long sector, unsigned char *buffer )
 	#endif
 
 	hxc_printf(LEFT_ALIGNED,8*79,1,"%c",23);
-
-	ret=0;
 
 	do
 	{
@@ -227,7 +222,7 @@ int media_read( unsigned long sector, unsigned char *buffer )
 
 	}while((sector-L_INDIAN(dass->lba_base))>=8);
 
-	if(!readsector((unsigned char)(sector-last_setlbabase)+1,buffer,0))
+	if(!readsector((unsigned char)((sector-last_setlbabase)+1),buffer,0))
 	{
 		hxc_printf_box("ERROR: Read ERROR ! fsector %d",(sector-last_setlbabase)+1);
 		lockup();
@@ -256,7 +251,7 @@ int media_write( unsigned long sector, unsigned char *buffer )
 		setlbabase(sector);
 	}
 
-	if(!writesector((unsigned char)(sector-last_setlbabase)+1,buffer))
+	if(!writesector((unsigned char)((sector-last_setlbabase)+1),buffer))
 	{
 		hxc_printf_box("ERROR: Write sector ERROR !");
 		lockup();
@@ -703,7 +698,7 @@ void displayFolder(ui_context * uicontext)
 	hxc_print(LEFT_ALIGNED,0,CURDIR_Y_POS,(char*)cur_folder_msg);
 
 	for(i=15*8;i<SCREEN_XRESOL;i=i+8)
-		hxc_print(LEFT_ALIGNED,i,CURDIR_Y_POS," ");
+		hxc_print(LEFT_ALIGNED,(uint16_t)i,(uint16_t)CURDIR_Y_POS," ");
 
 	if(strlen(uicontext->currentPath)<32)
 		hxc_printf(LEFT_ALIGNED,15*8,CURDIR_Y_POS,"%s",uicontext->currentPath);
@@ -714,7 +709,7 @@ void displayFolder(ui_context * uicontext)
 void enter_sub_dir(ui_context * uicontext,disk_in_drive_v2_long *disk_ptr)
 {
 	int currentPathLength;
-	unsigned char folder[128+1];
+	char folder[128+1];
 	unsigned char c;
 	int i;
 	int old_index;
@@ -814,16 +809,16 @@ void show_all_slots(ui_context * uicontext,int drive)
 				if( slotnumber > 9 )
 				{
 					xoffset = 8;
-					hxc_printf(LEFT_ALIGNED,0,FILELIST_Y_POS + (i*8),"0");
+					hxc_printf(LEFT_ALIGNED,0,(uint16_t)(FILELIST_Y_POS + (i*8)),"0");
 				}
 				else
 				{
 					xoffset = 16;
-					hxc_printf(LEFT_ALIGNED,0,FILELIST_Y_POS + (i*8),"00");
+					hxc_printf(LEFT_ALIGNED,0,(uint16_t)(FILELIST_Y_POS + (i*8)),"00");
 				}
 			}
 
-			hxc_printf(LEFT_ALIGNED,xoffset,FILELIST_Y_POS + (i*8),"%d:%s", slotnumber, tmp_str);
+			hxc_printf(LEFT_ALIGNED,xoffset,(uint16_t)(FILELIST_Y_POS + (i*8)),"%d:%s", slotnumber, tmp_str);
 		}
 	}
 }
@@ -1442,7 +1437,7 @@ void ui_mainfileselector(ui_context * uicontext)
 					y_pos=y_pos+8;
 
 					// Get the file name extension.
-					getext(dir_entry.filename,(unsigned char *)&DirectoryEntry_tab[i].type);
+					getext(dir_entry.filename,(char*)&DirectoryEntry_tab[i].type);
 
 					j = 0;
 					while(j<MAX_LONG_NAME_LENGHT && dir_entry.filename[j])

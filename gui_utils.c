@@ -50,10 +50,10 @@ extern unsigned short SCREEN_XRESOL;
 extern unsigned short SCREEN_YRESOL;
 unsigned char NUMBER_OF_FILE_ON_DISPLAY;
 
-void print_str(unsigned char * membuffer,char * buf,unsigned short maxsize,unsigned short x_pos,unsigned short y_pos,int linefeed)
+void print_str(unsigned char * membuffer,char * buf,int maxsize,int x_pos,int y_pos,int linefeed)
 {
-	unsigned short i;
-	unsigned short x_offset,y_offset;
+	int i;
+	int x_offset,y_offset;
 
 	x_offset = x_pos;
 	y_offset = y_pos;
@@ -78,10 +78,10 @@ void print_str(unsigned char * membuffer,char * buf,unsigned short maxsize,unsig
 	}
 }
 
-int hxc_print(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char * string)
+int hxc_print(unsigned char mode,int x_pos,int y_pos,char * string)
 {
 	int line_size,i,linenb;
-	unsigned short x_offset;
+	int x_offset;
 	int linefeed;
 
 	if(mode&DONTPARSE)
@@ -125,7 +125,7 @@ int hxc_print(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char 
 	return 0;
 }
 
-int hxc_printf(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char * chaine, ...)
+int hxc_printf(unsigned char mode,int x_pos,int y_pos,char * chaine, ...)
 {
 	char temp_buffer[MAXTXTSIZE];
 
@@ -145,9 +145,9 @@ int hxc_printf(unsigned char mode,unsigned short x_pos,unsigned short y_pos,char
 	return 0;
 }
 
-void clear_line(unsigned short y_pos,unsigned short val)
+void clear_line(int y_pos,unsigned short val)
 {
-	unsigned short i;
+	int i;
 	for(i=0;i<8;i++)
 		h_line(y_pos+i,val);
 }
@@ -156,7 +156,7 @@ int hxc_printf_box(char * chaine, ...)
 {
 	char temp_buffer[1024];
 	int str_size;
-	unsigned short i;
+	int i;
 	va_list marker;
 
 	save_box();

@@ -27,6 +27,8 @@
 
 #include <intuition/intuitionbase.h>
 
+#include <clib/graphics_protos.h>
+#include <clib/intuition_protos.h>
 #include <graphics/gfxbase.h>
 #include <graphics/videocontrol.h>
 
@@ -50,6 +52,8 @@
 
 #include "hardware.h"
 #include "amiga_regs.h"
+
+#include "gui_utils.h"
 
 #include "reboot.h"
 
@@ -115,7 +119,7 @@ struct ColorMap *cm=NULL;
 
 struct TextAttr MyFont =
 {
-		"topaz.font", // Font Name
+		(STRPTR)"topaz.font", // Font Name
 		TOPAZ_SIXTY, // Font Height
 		FS_NORMAL, // Style
 		FPF_ROMFONT, // Preferences
@@ -123,42 +127,27 @@ struct TextAttr MyFont =
 
 struct NewScreen screen_cfg =
 {
-		0, /* the LeftEdge should be equal to zero */
-		0, /* TopEdge */
-		640, /* Width (low-resolution) */
-		256, /* Height (non-interlace) */
-		1, /* Depth (4 colors will be available) */
-		0, 1, /* the DetailPen and BlockPen specifications */
-		NULL, /* no special display modes */
+		(WORD)0,   /* the LeftEdge should be equal to zero */
+		(WORD)0,   /* TopEdge */
+		(WORD)640, /* Width (low-resolution) */
+		(WORD)256, /* Height (non-interlace) */
+		(WORD)1,   /* Depth (4 colors will be available) */
+		(UBYTE)0, (UBYTE)1, /* the DetailPen and BlockPen specifications */
+		(UWORD)0,  /* no special display modes */
 		CUSTOMSCREEN, /* the screen type */
 		&MyFont, /* use my own font */
-		"HxC Floppy Emulator Manager", /* this declaration is compiled as a text pointer */
-		NULL, /* no special screen gadgets */
-		NULL, /* no special CustomBitMap */
+		(UBYTE *)"HxC Floppy Emulator Manager", /* this declaration is compiled as a text pointer */
+		(struct Gadget *)NULL, /* no special screen gadgets */
+		(struct BitMap *)NULL  /* no special CustomBitMap */
 };
 
 struct TagItem vcTags[] =
 {
-	{VTAG_ATTACH_CM_SET, NULL },
-	{VTAG_VIEWPORTEXTRA_SET, NULL },
-	{VTAG_NORMAL_DISP_SET, NULL },
-	{VTAG_END_CM, NULL }
+	{VTAG_ATTACH_CM_SET, (ULONG)NULL },
+	{VTAG_VIEWPORTEXTRA_SET, (ULONG)NULL },
+	{VTAG_NORMAL_DISP_SET, (ULONG)NULL },
+	{VTAG_END_CM, (ULONG)NULL }
 };
-
-#ifndef BMAPTYPEDEF
-#define BMAPTYPEDEF
-
-typedef  struct _bmaptype
-{
-	int type;
-	int Xsize;
-	int Ysize;
-	int size;
-	int csize;
-	unsigned char * data;
-}bmaptype __attribute__ ((aligned (2)));
-
-#endif
 
 #ifdef DEBUG
 
@@ -202,7 +191,6 @@ void dbg_printf(char * chaine, ...)
 
 void waitus(int centus)
 {
-	int cnt;
 	unsigned short time;
 
 	WRITEREG_B(CIAB_CRA, (READREG_B(CIAB_CRA)&0xC0) | 0x08 );
@@ -217,7 +205,6 @@ void waitus(int centus)
 	do
 	{
 	}while(!(READREG_B(CIAB_ICR)&1));
-
 }
 
 void waitms(int ms)
@@ -307,7 +294,7 @@ LONG GetUnitNumFromPath(char *path) {
 		dbg_printf("GetUnitNumFromPath : %s\n",path);
 		#endif
 
-		BPTR lock = Lock(path, ACCESS_READ);
+		BPTR lock = Lock((CONST_STRPTR)path, ACCESS_READ);
 		if(lock != 0) {
 			unitNum = GetUnitNumFromLock(lock);
 			UnLock(lock);
@@ -336,106 +323,6 @@ UWORD GetLibraryVersion(struct Library *library)
 
 	return library->lib_Version;
 }
-
-int get_start_unit(char * path)
-{
-	int i;
-	LONG startedFromUnitNum;
-
-	#ifdef DEBUG
-	dbg_printf("get_start_unit\n");
-	#endif
-
-	if( GetLibraryVersion((struct Library *) DOSBase) >= 36 )
-	{
-		startedFromUnitNum = GetUnitNumFromLock( GetProgramDir() );
-	}
-	else
-	{
-		startedFromUnitNum = GetUnitNumFromPath( path );
-	}
-
-	if( startedFromUnitNum < 0 )
-		startedFromUnitNum = 0;
-
-	for( i = 0; i < 4; i++ )
-	{
-		if(test_drive((startedFromUnitNum + i) & 0x3))
-		{
-			#ifdef DEBUG
-			dbg_printf("get_start_unit : drive %d\n",(startedFromUnitNum + i) & 0x3);
-			#endif
-			return (startedFromUnitNum + i) & 0x3;
-		}
-	}
-
-	#ifdef DEBUG
-	dbg_printf("get_start_unit : drive not found !\n");
-	#endif
-
-	return -1;
-}
-
-int jumptotrack(unsigned char t)
-{
-	unsigned short i,j,k;
-
-	Forbid();
-	WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ));
-
-	#ifdef DEBUG
-	dbg_printf("jumptotrack : %d\n",t);
-	#endif
-
-	waitms(100);
-
-	#ifdef DEBUG
-	dbg_printf("jumptotrack %d - seek track 0...\n",t);
-	#endif
-
-	k = 0;
-	while((READREG_B(CIAAPRA) & CIAAPRA_DSKTRACK0) && k<1024)
-	{
-		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL  | CIABPRB_DSKSTEP));
-		waitms(1);
-		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ) );
-		waitms(1);
-
-		k++;
-	}
-
-	if(k < 1024)
-	{
-		#ifdef DEBUG
-		dbg_printf("jumptotrack %d - track 0 found\n",t);
-		#endif
-
-		for(j=0;j<t;j++)
-		{
-			WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL | CIABPRB_DSKDIREC |CIABPRB_DSKSTEP) );
-			waitms(1);
-			WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL | CIABPRB_DSKDIREC ) );
-			waitms(1);
-		}
-
-		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ) );
-
-		#ifdef DEBUG
-		dbg_printf("jumptotrack %d - jump done\n",t);
-		#endif
-
-		Permit();
-
-		return 0;
-	}
-
-	#ifdef DEBUG
-	dbg_printf("jumptotrack %d - track 0 not found!!\n",t);
-	#endif
-
-	Permit();
-	return 1;
-};
 
 int test_drive(int drive)
 {
@@ -504,6 +391,106 @@ int test_drive(int drive)
 
 	return 0;
 }
+
+int get_start_unit(char * path)
+{
+	int i;
+	LONG startedFromUnitNum;
+
+	#ifdef DEBUG
+	dbg_printf("get_start_unit\n");
+	#endif
+
+	if( GetLibraryVersion((struct Library *) DOSBase) >= 36 )
+	{
+		startedFromUnitNum = GetUnitNumFromLock( GetProgramDir() );
+	}
+	else
+	{
+		startedFromUnitNum = GetUnitNumFromPath( path );
+	}
+
+	if( startedFromUnitNum < 0 )
+		startedFromUnitNum = 0;
+
+	for( i = 0; i < 4; i++ )
+	{
+		if(test_drive((startedFromUnitNum + i) & 0x3))
+		{
+			#ifdef DEBUG
+			dbg_printf("get_start_unit : drive %d\n",(startedFromUnitNum + i) & 0x3);
+			#endif
+			return (startedFromUnitNum + i) & 0x3;
+		}
+	}
+
+	#ifdef DEBUG
+	dbg_printf("get_start_unit : drive not found !\n");
+	#endif
+
+	return -1;
+}
+
+int jumptotrack(unsigned char t)
+{
+	unsigned short j,k;
+
+	Forbid();
+	WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ));
+
+	#ifdef DEBUG
+	dbg_printf("jumptotrack : %d\n",t);
+	#endif
+
+	waitms(100);
+
+	#ifdef DEBUG
+	dbg_printf("jumptotrack %d - seek track 0...\n",t);
+	#endif
+
+	k = 0;
+	while((READREG_B(CIAAPRA) & CIAAPRA_DSKTRACK0) && k<1024)
+	{
+		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL  | CIABPRB_DSKSTEP));
+		waitms(1);
+		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ) );
+		waitms(1);
+
+		k++;
+	}
+
+	if(k < 1024)
+	{
+		#ifdef DEBUG
+		dbg_printf("jumptotrack %d - track 0 found\n",t);
+		#endif
+
+		for(j=0;j<t;j++)
+		{
+			WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL | CIABPRB_DSKDIREC |CIABPRB_DSKSTEP) );
+			waitms(1);
+			WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL | CIABPRB_DSKDIREC ) );
+			waitms(1);
+		}
+
+		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ) );
+
+		#ifdef DEBUG
+		dbg_printf("jumptotrack %d - jump done\n",t);
+		#endif
+
+		Permit();
+
+		return 0;
+	}
+
+	#ifdef DEBUG
+	dbg_printf("jumptotrack %d - track 0 not found!!\n",t);
+	#endif
+
+	Permit();
+	return 1;
+};
 
 int waitindex()
 {
@@ -812,7 +799,7 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 
 unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned char invalidate_cache)
 {
-	unsigned short i,j,t;
+	unsigned short i,j;
 	unsigned char sectorfound,tc;
 	unsigned char c,retry,badcrc,retry2;
 	unsigned char CRC16_High,CRC16_Low;
@@ -978,7 +965,8 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 
 						for(j=0;j<2;j++)
 						{
-							c = MFMTOBIN(track_buffer_rd[i++]);
+							c = MFMTOBIN(track_buffer_rd[i]);
+							i++;
 							//CRC16_Update(&CRC16_High, &CRC16_Low,c);
 						}
 
@@ -1025,6 +1013,7 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 	return sectorfound;
 }
 
+#if 0
 static void setnoclick(ULONG unitnum, ULONG onoff)
 {
 	struct MsgPort *port;
@@ -1035,7 +1024,7 @@ static void setnoclick(ULONG unitnum, ULONG onoff)
 		ioreq = CreateIORequest(port, sizeof(*ioreq));
 		if (ioreq)
 		{
-			if (OpenDevice(TD_NAME, unitnum, (APTR) ioreq, 0) == 0)
+			if (OpenDevice((CONST_STRPTR)TD_NAME, unitnum, (APTR) ioreq, 0) == 0)
 			{
 				struct TDU_PublicUnit *unit = (APTR) ioreq->io_Unit;
 				Forbid();
@@ -1051,8 +1040,9 @@ static void setnoclick(ULONG unitnum, ULONG onoff)
 		DeleteMsgPort(port);
 	}
 }
+#endif 
 
-void init_fdc(unsigned char drive)
+void init_fdc(int drive)
 {
 	unsigned short i;
 
@@ -1176,17 +1166,12 @@ unsigned char Keyboard()
 	return( code );
 }
 
-int kbhit()
-{
-}
-
 void flush_char()
 {
 }
 
 unsigned char get_char()
 {
-	unsigned char buffer;
 	unsigned char key,i,c;
 	unsigned char function_code,key_code;
 
@@ -1356,11 +1341,11 @@ int init_display()
 	memset(&my_rast_port,0,sizeof(struct RastPort));
 	screen_buffer_backup=(unsigned char*)malloc(8*1024);
 
-	IntuitionBase= (struct IntuitionBase *) OpenLibrary( "intuition.library", 0 );
+	IntuitionBase= (struct IntuitionBase *) OpenLibrary( (CONST_STRPTR)"intuition.library", 0 );
 	screen=(struct Screen *)OpenScreen(&screen_cfg);
 
 	/* Open the Graphics library: */
-	GfxBaseptr = (struct GfxBase *) OpenLibrary( "graphics.library", 0 );
+	GfxBaseptr = (struct GfxBase *) OpenLibrary( (CONST_STRPTR)"graphics.library", 0 );
 	if( !GfxBaseptr )  return -1;
 
 	/* Save the current View, so we can restore it later: */
@@ -1509,9 +1494,9 @@ unsigned char set_color_scheme(unsigned char color)
 	return color;
 }
 
-void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, unsigned short y,unsigned char c)
+void print_char8x8(unsigned char * membuffer, bmaptype * font,int x, int y,unsigned char c)
 {
-	unsigned short j,k,l,c1;
+	int j;
 	unsigned char *ptr_src;
 	unsigned char *ptr_dst;
 
@@ -1530,9 +1515,10 @@ void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, 
 	}
 }
 
-void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short x, unsigned short y)
+void display_sprite(unsigned char * membuffer, bmaptype * sprite,int x, int y)
 {
-	unsigned short i,j,k,l,x_offset,base_offset;
+	int i,j,base_offset;
+	unsigned short k,l;
 	unsigned short *ptr_src;
 	unsigned short *ptr_dst;
 
@@ -1544,7 +1530,7 @@ void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short 
 	base_offset = ((y*80)+ ((x>>3)))/2;
 	for(j=0;j<(sprite->Ysize);j++)
 	{
-		l=base_offset +(40*j);
+		l = base_offset + (40*j);
 		for(i=0;i<(sprite->Xsize/16);i++)
 		{
 			ptr_dst[l] = ptr_src[k];
@@ -1554,13 +1540,13 @@ void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short 
 	}
 }
 
-void h_line(unsigned short y_pos,unsigned short val)
+void h_line(int y_pos,unsigned short val)
 {
 	unsigned short *ptr_dst;
-	unsigned short i,ptroffset;
+	int i,ptroffset;
 
-	ptr_dst=(unsigned short*)screen_buffer;
-	ptroffset=40* y_pos;
+	ptr_dst = (unsigned short*)screen_buffer;
+	ptroffset = 40* y_pos;
 
 	for(i=0;i<40;i++)
 	{
@@ -1568,10 +1554,10 @@ void h_line(unsigned short y_pos,unsigned short val)
 	}
 }
 
-void box(unsigned short x_p1,unsigned short y_p1,unsigned short x_p2,unsigned short y_p2,unsigned short fillval,unsigned char fill)
+void box(int x_p1,int y_p1,int x_p2,int y_p2,unsigned short fillval,unsigned char fill)
 {
 	unsigned short *ptr_dst;
-	unsigned short i,j,ptroffset,x_size;
+	int i,j,ptroffset,x_size;
 
 	ptr_dst=(unsigned short*)screen_buffer;
 
@@ -1588,11 +1574,11 @@ void box(unsigned short x_p1,unsigned short y_p1,unsigned short x_p2,unsigned sh
 	}
 }
 
-void invert_line(unsigned short x_pos,unsigned short y_pos)
+void invert_line(int x_pos,int y_pos)
 {
-	unsigned char i,j;
+	int i,j;
 	unsigned short *ptr_dst;
-	unsigned short ptroffset;
+	int ptroffset;
 
 	for(j=0;j<8;j++)
 	{

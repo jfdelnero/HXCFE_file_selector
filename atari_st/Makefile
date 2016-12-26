@@ -11,7 +11,7 @@
 ARCH             = cygwin
 
 GCCBIN           = m68k-atari-mint-gcc
-GCCOPT           = -Os -I . -I .. -I ../fat32
+GCCOPT           = -Os -I . -I .. -I ../fat32 -Wall
 GCLOPT           = -Os -nostdlib -Wl,-Map,symbols.map -Wl,--traditional-format -fomit-frame-pointer -m68000
 
 VASMBIN          = build-tools/vbcc/bin-$(ARCH)/vasmm68k_mot
@@ -48,7 +48,7 @@ $(EXEC):        libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o  fe
 	cd loader   && make all
 
 atari_st.o:       atari_st.c
-	$(C)          $(CFLAGS)        -c $< -o $@ -Wall
+	$(C)          $(CFLAGS)        -c $< -o $@
 
 gui_utils.o: ../gui_utils.c
 	$(C)          $(CFLAGS)        -c $< -o $@
@@ -81,10 +81,10 @@ fat_cache.o: ../fat32/fat_cache.c
 	$(C)          $(CFLAGS)        -c $< -o $@
 
 libc/mStartup.o: libc/mStartup.c
-	$(C)          $(CFLAGS)        -c $< -o $@ -Wall -Wno-unused-value
+	$(C)          $(CFLAGS)        -c $< -o $@ -Wno-unused-value
 
 libc/snprintf/snprintf.o: libc/snprintf/snprintf.c libc/snprintf/snprintf.h
-	$(C)          $(CFLAGS)        -c $< -o $@ -Wall
+	$(C)          $(CFLAGS)        -c $< -o $@
 
 libc/mStartupAsmC.o: libc/mStartupAsmC.s
 	$(VASMBIN)    $(VASMOPT)          $< -o $@

@@ -48,6 +48,8 @@
 #include "keymap.h"
 #include "hardware.h"
 
+#include "graphx/bmaptype.h"
+
 #include "gui_utils.h"
 
 #include "atari_hw.h"
@@ -92,21 +94,6 @@ unsigned char keyup;
 unsigned long timercnt;
 
 WORD fdcDmaMode = 0;
-
-#ifndef BMAPTYPEDEF
-#define BMAPTYPEDEF
-
-typedef  struct _bmaptype
-{
-   int type;
-   int Xsize;
-   int Ysize;
-   int size;
-   int csize;
-   unsigned char * data;
-}bmaptype __attribute__ ((aligned (2)));
-
-#endif
 
 #ifdef DEBUG
 
@@ -204,7 +191,7 @@ void su_get_hz200(void)
 	return;
 }
 
-void waitms(unsigned long  ms)
+void waitms(int  ms)
 {
 	if(ms < 5)
 		ms = 5;
@@ -468,7 +455,7 @@ int jumptotrack(unsigned char t)
 	return 1;
 };
 
-void init_fdc(unsigned char drive)
+void init_fdc(int drive)
 {
 	#ifdef DEBUG
 	dbg_printf("init_fdc\n");
@@ -554,7 +541,7 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 		return 0;
 }
 
-void init_fdc(unsigned char drive)
+void init_fdc(int drive)
 {
 	valid_cache = 0;
 	floppydrive = drive;
@@ -619,11 +606,6 @@ unsigned char Keyboard()
 	}
 
 	return 0x80;
-}
-
-int kbhit()
-{
-	return 0;
 }
 
 void flush_char()
@@ -845,15 +827,15 @@ void disablemousepointer()
 
 }
 
-void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, unsigned short y,unsigned char c)
+void print_char8x8(unsigned char * membuffer, bmaptype * font,int x, int y,unsigned char c)
 {
-	unsigned short j,k;
+	int j,k;
 	unsigned char *ptr_src;
 	unsigned char *ptr_dst;
 	unsigned long base_offset;
 
 	ptr_dst = membuffer;
-	ptr_src=(unsigned char*)&font->data[0];
+	ptr_src = (unsigned char*)&font->data[0];
 
 	k=((c>>4)*(8*8*2))+(c&0xF);
 
@@ -868,9 +850,9 @@ void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, 
 	}
 }
 
-void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short x, unsigned short y)
+void display_sprite(unsigned char * membuffer, bmaptype * sprite,int x, int y)
 {
-	unsigned short i,j,k;
+	int i,j,k;
 	unsigned short *ptr_src;
 	unsigned short *ptr_dst;
 	unsigned long  base_offset, l;
@@ -895,10 +877,10 @@ void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short 
 
 }
 
-void h_line(unsigned short y_pos,unsigned short val)
+void h_line(int y_pos,unsigned short val)
 {
 	unsigned short * ptr_dst;
-	unsigned short i;
+	int i;
 
 	ptr_dst=(unsigned short *) screen_buffer;
 	ptr_dst += (unsigned long) LINE_WORDS * y_pos;
@@ -921,10 +903,9 @@ void h_line(unsigned short y_pos,unsigned short val)
 	}
 }
 
-void invert_line(unsigned short x_pos,unsigned short y_pos)
+void invert_line(int x_pos,int y_pos)
 {
-	unsigned short i;
-	unsigned char j;
+	int i,j;
 	unsigned char  *ptr_dst;
 	unsigned short *ptr_dst2;
 

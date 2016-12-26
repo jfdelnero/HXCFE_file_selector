@@ -1,4 +1,6 @@
-void init_fdc(unsigned char drive);
+#include "graphx/bmaptype.h"
+
+void init_fdc(int drive);
 int jumptotrack(unsigned char t);
 unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned char invalidate_cache);
 unsigned char writesector(unsigned char sectornum,unsigned char * data);
@@ -8,6 +10,7 @@ unsigned char Keyboard();
 unsigned char wait_function_key();
 unsigned char get_char();
 void flush_char();
+char *strlwr(char *s);
 
 void reboot();
 
@@ -16,24 +19,8 @@ unsigned short get_vid_mode();
 void setvideomode(int mode);
 void disablemousepointer();
 
-
-#ifndef BMAPTYPEDEF
-#define BMAPTYPEDEF
-
-typedef  struct _bmaptype
-{
-   int type;
-   int Xsize;
-   int Ysize;
-   int size;
-   int csize;
-   unsigned char * data;
-}bmaptype;
-
-#endif
-
-void display_sprite(unsigned char * membuffer, bmaptype * sprite,unsigned short x, unsigned short y);
-void print_char8x8(unsigned char * membuffer, bmaptype * font,unsigned short x, unsigned short y,unsigned char c);
+void display_sprite(unsigned char * membuffer, bmaptype * sprite,int x, int y);
+void print_char8x8(unsigned char * membuffer, bmaptype * font,int x, int y,unsigned char c);
 
 void init_timer();
 
@@ -46,5 +33,6 @@ int process_command_line(int argc, char* argv[]);
 void sleep(int secs);
 #endif
 void waitms(int ms);
+void sleep(int secs);
 
 void lockup();

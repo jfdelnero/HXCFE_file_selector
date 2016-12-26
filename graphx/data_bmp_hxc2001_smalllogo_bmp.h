@@ -9,21 +9,7 @@
 //
 //
 
-
-#ifndef BMAPTYPEDEF
-#define BMAPTYPEDEF
-
-typedef  struct _bmaptype
-{
-   int type;
-   int Xsize;
-   int Ysize;
-   int size;
-   int csize;
-   unsigned char * data;
-}bmaptype;
-
-#endif
+#include "bmaptype.h"
 
 #ifdef WIN32
 unsigned char data_bmphxc2001_smalllogo_bmp[]={
@@ -36,10 +22,5 @@ unsigned char __attribute__ ((aligned (2))) data_bmphxc2001_smalllogo_bmp[]={
 
 static bmaptype bitmap_hxc2001_smalllogo_bmp[]=
 {
- 1,
- 64,
- 11,
- 88,
- 89,
- data_bmphxc2001_smalllogo_bmp
+	{ 1, 64, 11, 88, 89, data_bmphxc2001_smalllogo_bmp }
 };

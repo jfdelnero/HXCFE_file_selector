@@ -37,7 +37,7 @@
 
 typedef struct cfgfile_
 {
-    int8_t   signature[16];                 //"HXCFECFGV1.0" or "HXCFECFGV2.0"    --- 0x00
+    char     signature[16];                 //"HXCFECFGV1.0" or "HXCFECFGV2.0"    --- 0x00
     uint8_t  step_sound;                    //0x00 -> off 0xFF->on                --- 0x10
     uint8_t  ihm_sound;                     //0x00 -> off 0xFF->on
     uint8_t  back_light_tmr;                //0x00 always off, 0xFF always on, other -> on x second
@@ -87,11 +87,11 @@ typedef struct cfgfile_
 #endif
 
 struct ShortDirectoryEntry {
-    uint8_t  name[12];
+    char     name[12];
     uint8_t  attributes;
     uint32_t firstCluster;
     uint32_t size;
-    uint8_t  longName[17];	// boolean
+    char     longName[17];	// boolean
 #ifndef WIN32
 }__attribute__((__packed__));
 #else
@@ -118,11 +118,11 @@ typedef struct disk_in_drive_
 
 typedef struct disk_in_drive_v2_
 { 
-    uint8_t  type[3];
+    char     type[3];
     uint8_t  attributes;
     uint32_t firstCluster;
     uint32_t size;
-    uint8_t  name[MAX_SHORT_NAME_LENGHT];
+    char     name[MAX_SHORT_NAME_LENGHT];
 #ifndef WIN32
 }__attribute__((__packed__)) disk_in_drive_v2;
 #else
@@ -133,11 +133,11 @@ typedef struct disk_in_drive_v2_
 
 typedef struct disk_in_drive_v2_long_
 { 
-    uint8_t  type[3];
+    char     type[3];
     uint8_t  attributes;
     uint32_t firstCluster;
     uint32_t size;
-    uint8_t  name[MAX_LONG_NAME_LENGHT]; //Max entry name : 256 - (4+4+1+3)
+    char     name[MAX_LONG_NAME_LENGHT]; //Max entry name : 256 - (4+4+1+3)
 #ifndef WIN32
 }__attribute__((__packed__)) disk_in_drive_v2_long;
 #else
