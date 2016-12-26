@@ -4,8 +4,14 @@ const char startup_msg[]=
 {
 	"HxC Floppy Emulator file selector\n"
 	"V" VERSIONCODE " - " DATECODE "\n"
+	"\n"
 	"(c) 2009-2016 HxC2001 / Jean-Francois DEL NERO\n"
+	"\n"
 	"Email : hxc2001@free.fr\n"
+	"\n"
+	"\n"
+	">>> Press HELP key for the function key list <<<"
+	"\n"
 	"\n"
 	"Check for updates on :\n"
 	"http://hxc2001.free.fr/floppy_drive_emulator/\n"
@@ -13,11 +19,10 @@ const char startup_msg[]=
 	"\n"
 	"Forum : http://torlus.com/floppy/forum\n"
 	"\n"
-	"Sources on http://github.com/jfdelnero\n"
+	"Source code on http://github.com/jfdelnero\n"
 	"\n"
-	"\n"
-	"\n"
-	">>> Press HELP key for the function key list <<<"
+	"This software use the FAT16/32 File IO Library v2.6\n"
+	"(c) 2003-2013 Ultra-Embedded.com\n"
 };
 
 const char help_scr1_msg[]=
@@ -75,6 +80,7 @@ const char help_scr3_msg[]=
 	"\n"	
 	"HxC Floppy Emulator file selector\n"
 	"V" VERSIONCODE " - " DATECODE "\n"
+	"\n"
 	"(c) 2006-2016 HxC2001 / Jean-Francois DEL NERO\n"
 	"Email : hxc2001@free.fr\n"
 	"\n"
@@ -87,6 +93,9 @@ const char help_scr3_msg[]=
 	"Forum : http://torlus.com/floppy/forum\n"
 	"Sources on http://github.com/jfdelnero\n"
 	"\n"
+	"This software use the\n"
+	"FAT16/32 File IO Library v2.6\n"
+	"(c) 2003-2013 Ultra-Embedded.com\n"
 	"\n"
 	"---Press Enter / Fire to continue---"
 };
