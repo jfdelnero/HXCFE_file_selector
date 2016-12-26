@@ -107,4 +107,4 @@ const char command_menu_msg[]=
 
 const char cur_folder_msg[]= "Current folder:";
 const char reboot_msg[]= ">>>>>Rebooting...<<<<<";
-const char title_msg[]= { "HxC Floppy Emulator Manager v" VERSIONCODE};
+const char title_msg[]= { "HxC Floppy Emulator file selector v" VERSIONCODE};

@@ -136,7 +136,7 @@ struct NewScreen screen_cfg =
 		(UWORD)0,  /* no special display modes */
 		CUSTOMSCREEN, /* the screen type */
 		&MyFont, /* use my own font */
-		(UBYTE *)"HxC Floppy Emulator Manager", /* this declaration is compiled as a text pointer */
+		(UBYTE *)"HxC Floppy Emulator file selector", /* this declaration is compiled as a text pointer */
 		(struct Gadget *)NULL, /* no special screen gadgets */
 		(struct BitMap *)NULL  /* no special CustomBitMap */
 };
