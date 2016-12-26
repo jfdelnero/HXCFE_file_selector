@@ -59,8 +59,8 @@ static disk_in_drive_v2 disks_slots[MAX_NUMBER_OF_SLOT];
 static disk_in_drive_v2_long DirectoryEntry_tab[40];
 
 // File listing pages directory offset buffer
-static struct fs_dir_list_status file_list_status;
-static struct fs_dir_list_status file_list_status_tab[MAX_PAGES_PER_DIRECTORY];
+FL_DIR file_list_status;
+FL_DIR file_list_status_tab[MAX_PAGES_PER_DIRECTORY];
 
 static struct fs_dir_ent dir_entry;
 
@@ -195,68 +195,80 @@ int media_init()
 	return 0;
 }
 
-int media_read( unsigned long sector, unsigned char *buffer )
+int media_read(uint32 sector, uint8 *buffer, uint32 sector_count)
 {
+	uint32 i;
 	direct_access_status_sector * dass;
 
 	dass= (direct_access_status_sector *)buffer;
 
 	#ifdef DEBUG
-	dbg_printf("media_read : 0x%.8X\n",sector);
+	dbg_printf("media_read sector : 0x%.8X, cnt : %d \n",sector,sector_count);
 	#endif
 
 	hxc_printf(LEFT_ALIGNED,8*79,1,"%c",23);
 
-	do
+	for(i=0;i<sector_count;i++)
 	{
-		if((sector-last_setlbabase)>=8)
+		do
 		{
-			setlbabase(sector);
-		}
+			if((sector-last_setlbabase)>=8)
+			{
+				setlbabase(sector);
+			}
 
-		if(!readsector(0,buffer,0))
+			if(!readsector(0,buffer,0))
+			{
+				hxc_printf_box("ERROR: Read ERROR ! fsector %d",(sector-last_setlbabase)+1);
+			}
+			last_setlbabase = L_INDIAN(dass->lba_base);
+
+		}while((sector-L_INDIAN(dass->lba_base))>=8);
+
+		if(!readsector((unsigned char)((sector-last_setlbabase)+1),&buffer[i*512],0))
 		{
 			hxc_printf_box("ERROR: Read ERROR ! fsector %d",(sector-last_setlbabase)+1);
+			lockup();
 		}
-		last_setlbabase = L_INDIAN(dass->lba_base);
 
-	}while((sector-L_INDIAN(dass->lba_base))>=8);
+		sector++;
 
-	if(!readsector((unsigned char)((sector-last_setlbabase)+1),buffer,0))
-	{
-		hxc_printf_box("ERROR: Read ERROR ! fsector %d",(sector-last_setlbabase)+1);
-		lockup();
+		#ifdef DEBUG
+		print_hex_array(buffer,512);
+		#endif
 	}
-
-	#ifdef DEBUG
-	print_hex_array(buffer,512);
-	#endif
 
 	hxc_print(LEFT_ALIGNED,8*79,1," ");
 
 	return 1;
 }
 
-int media_write( unsigned long sector, unsigned char *buffer )
+int media_write(uint32 sector, uint8 *buffer, uint32 sector_count)
 {
+	uint32 i;
+
 	#ifdef DEBUG
 	dbg_printf("media_write : 0x%.8X\n",sector);
 	#endif
 
 	hxc_printf(LEFT_ALIGNED,8*79,1,"%c",23);
 
-	if((sector-last_setlbabase)>=8)
+	for(i=0;i<sector_count;i++)
 	{
-		last_setlbabase=sector;
-		setlbabase(sector);
-	}
+		if((sector-last_setlbabase)>=8)
+		{
+			last_setlbabase=sector;
+			setlbabase(sector);
+		}
 
-	if(!writesector((unsigned char)((sector-last_setlbabase)+1),buffer))
-	{
-		hxc_printf_box("ERROR: Write sector ERROR !");
-		lockup();
-	}
+		if(!writesector((unsigned char)((sector-last_setlbabase)+1),buffer))
+		{
+			hxc_printf_box("ERROR: Write sector ERROR !");
+			lockup();
+		}
 
+		sector++;
+	}
 	hxc_print(LEFT_ALIGNED,8*79,1," ");
 
 	#ifdef DEBUG
@@ -756,16 +768,16 @@ void enter_sub_dir(ui_context * uicontext,disk_in_drive_v2_long *disk_ptr)
 
 	uicontext->selectorpos=0;
 
-	if(!fl_list_opendir(uicontext->currentPath, &file_list_status))
+	if(!fl_opendir(uicontext->currentPath, &file_list_status))
 	{
 		uicontext->currentPath[old_index]=0;
-		fl_list_opendir(uicontext->currentPath, &file_list_status);
+		fl_opendir(uicontext->currentPath, &file_list_status);
 		displayFolder(uicontext);
 	}
 
-	for(i=0;i<512;i++)
+	for(i=0;i<MAX_PAGES_PER_DIRECTORY;i++)
 	{
-		memcpy(&file_list_status_tab[i],&file_list_status ,sizeof(struct fs_dir_list_status));
+		memcpy(&file_list_status_tab[i],&file_list_status ,sizeof(FL_DIR));
 	}
 
  	clear_list(0);
@@ -1065,7 +1077,7 @@ void ui_config_menu(ui_context * uicontext)
 		}
 	}while( (c!=FCT_SELECT_FILE_DRIVEA) || i != 10 );
 
-	memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
+	memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(FL_DIR));
 	clear_list(0);
 	uicontext->read_entry=1;
 }
@@ -1407,7 +1419,7 @@ void ui_mainfileselector(ui_context * uicontext)
 		do
 		{
 			displayentry=0xFF;
-			if(fl_list_readdir(&file_list_status, &dir_entry))
+			if(!fl_readdir(&file_list_status, &dir_entry))
 			{
 				if(uicontext->filtermode)
 				{
@@ -1469,7 +1481,7 @@ void ui_mainfileselector(ui_context * uicontext)
 		uicontext->filtermode=0;
 
 		if(uicontext->page_number < MAX_PAGES_PER_DIRECTORY - 1 )
-			memcpy(&file_list_status_tab[uicontext->page_number+1],&file_list_status ,sizeof(struct fs_dir_list_status));
+			memcpy(&file_list_status_tab[uicontext->page_number+1],&file_list_status ,sizeof(FL_DIR));
 
 		hxc_print(LEFT_ALIGNED,0,FILELIST_Y_POS+(uicontext->selectorpos*8),">");
 		invert_line(0,FILELIST_Y_POS+(uicontext->selectorpos*8));
@@ -1495,7 +1507,7 @@ void ui_mainfileselector(ui_context * uicontext)
 							uicontext->page_number--;
 						clear_list(0);
 						uicontext->read_entry=1;
-						memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
+						memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(FL_DIR));
 
 						#ifdef DEBUG
 						dbg_printf("Page change : %d\n",uicontext->page_number);
@@ -1520,7 +1532,7 @@ void ui_mainfileselector(ui_context * uicontext)
 						uicontext->read_entry=1;
 						if(!last_file && uicontext->page_number < MAX_PAGES_PER_DIRECTORY)
 							uicontext->page_number++;
-						memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
+						memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(FL_DIR));
 
 						#ifdef DEBUG
 						dbg_printf("Page change : %d\n",uicontext->page_number);
@@ -1538,7 +1550,7 @@ void ui_mainfileselector(ui_context * uicontext)
 					if(!last_file && uicontext->page_number < MAX_PAGES_PER_DIRECTORY)
 						uicontext->page_number++;
 
-					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
+					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(FL_DIR));
 
 					clear_list(0);
 					uicontext->read_entry=1;
@@ -1552,7 +1564,7 @@ void ui_mainfileselector(ui_context * uicontext)
 					if(uicontext->page_number)
 						uicontext->page_number--;
 
-					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
+					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(FL_DIR));
 
 					clear_list(0);
 					uicontext->read_entry=1;
@@ -1589,7 +1601,7 @@ void ui_mainfileselector(ui_context * uicontext)
 							}
 						}while(!ret && uicontext->page_mode_index <  uicontext->number_of_drive + 1 );
 
-						memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
+						memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(FL_DIR));
 						uicontext->read_entry = 1;
 					}
 					break;
@@ -1616,7 +1628,7 @@ void ui_mainfileselector(ui_context * uicontext)
 
 				case FCT_SAVE:
 					ui_save(uicontext);
-					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
+					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(FL_DIR));
 					clear_list(0);
 					uicontext->read_entry=1;
 					break;
@@ -1627,7 +1639,7 @@ void ui_mainfileselector(ui_context * uicontext)
 
 				case FCT_HELP:
 					print_help();
-					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
+					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(FL_DIR));
 					clear_list(0);
 					uicontext->read_entry=1;
 					break;
@@ -1645,7 +1657,7 @@ void ui_mainfileselector(ui_context * uicontext)
 
 				case FCT_TOP:
 					uicontext->page_number=0;
-					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(struct fs_dir_list_status));
+					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(FL_DIR));
 					clear_list(0);
 					uicontext->read_entry=1;
 					break;
@@ -1672,7 +1684,7 @@ void ui_mainfileselector(ui_context * uicontext)
 					hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2+(8*8)+(8*8),CURDIR_Y_POS,"[%s]",uicontext->filter);
 					uicontext->selectorpos=0;
 					uicontext->page_number=0;
-					memcpy(&file_list_status ,&file_list_status_tab[0],sizeof(struct fs_dir_list_status));
+					memcpy(&file_list_status ,&file_list_status_tab[0],sizeof(FL_DIR));
 
 					clear_list(0);
 					uicontext->read_entry=1;
@@ -1776,11 +1788,11 @@ int main(int argc, char* argv[])
 
 		displayFolder(uicontext);
 
-		fl_list_opendir(uicontext->currentPath, &file_list_status);
+		fl_opendir(uicontext->currentPath, &file_list_status);
 
-		for(i=0;i<512;i++)
+		for(i=0;i<MAX_PAGES_PER_DIRECTORY;i++)
 		{
-			memcpy(&file_list_status_tab[i],&file_list_status ,sizeof(struct fs_dir_list_status));
+			memcpy(&file_list_status_tab[i],&file_list_status ,sizeof(FL_DIR));
 		}
 
 		ui_mainfileselector(uicontext);

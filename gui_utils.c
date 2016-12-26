@@ -58,6 +58,10 @@ void print_str(unsigned char * membuffer,char * buf,int maxsize,int x_pos,int y_
 	x_offset = x_pos;
 	y_offset = y_pos;
 
+	#ifdef DEBUG
+	dbg_printf("UIOut x:%d y:%d %s\n",y_pos,y_pos,buf);
+	#endif
+
 	i = 0;
 	while(buf[i] && i < maxsize)
 	{

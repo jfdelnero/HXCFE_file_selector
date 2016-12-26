@@ -1040,7 +1040,7 @@ static void setnoclick(ULONG unitnum, ULONG onoff)
 		DeleteMsgPort(port);
 	}
 }
-#endif 
+#endif
 
 void init_fdc(int drive)
 {
