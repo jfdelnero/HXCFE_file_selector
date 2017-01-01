@@ -1775,6 +1775,7 @@ int main(int argc, char* argv[])
 		if (!cfg_file_handle)
 		{
 			hxc_printf_box("ERROR: Can't open HXCSDFE.CFG !");
+			lockup();
 		}
 
 		read_cfg_file(uicontext,cfgfile_header);
