@@ -25,6 +25,8 @@
 //
 */
 
+#define _FILE_OFFSET_BITS 64
+
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
@@ -175,10 +177,10 @@ int write_mass_storage(unsigned long lba, unsigned char * data)
 	#else
 	FILE *f;
 
-	f = fopen(dev_path,"wb");
+	f = fopen(dev_path,"rb+");
 	if(f)
 	{
-		fseek(f,lba*512,SEEK_SET);
+		fseeko(f,(off_t)lba*(off_t)512,SEEK_SET);
 		fwrite(data,512,1,f);
 		fclose(f);
 		return 1;
@@ -222,7 +224,7 @@ int read_mass_storage(unsigned long lba, unsigned char * data)
 	f = fopen(dev_path,"rb");
 	if(f)
 	{
-		fseek(f,lba*512,SEEK_SET);
+		fseeko(f,(off_t)lba*(off_t)512,SEEK_SET);
 		ret = fread(data,512,1,f);
 		fclose(f);
 		return ret;
