@@ -798,6 +798,9 @@ int fatfs_list_directory_next(struct fatfs *fs, struct fs_dir_list_status *dirls
                 if ( fatfs_entry_lfn_text(directoryEntry) )
                     fatfs_lfn_cache_entry(&lfn, fs->currentsector.sector+recordoffset);
 
+                else if(directoryEntry->Name[0]==FILE_HEADER_BLANK)
+                    return 0;
+
                 // If Invalid record found delete any long file name information collated
                 else if ( fatfs_entry_lfn_invalid(directoryEntry) )
                     fatfs_lfn_cache_init(&lfn, 0);
