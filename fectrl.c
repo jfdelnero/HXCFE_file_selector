@@ -1,6 +1,6 @@
 /*
 //
-// Copyright (C) 2009-2016 Jean-François DEL NERO
+// Copyright (C) 2009-2017 Jean-François DEL NERO
 //
 // This file is part of the HxCFloppyEmulator file selector.
 //
@@ -461,7 +461,7 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 	return ret;
 }
 
-char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
+char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_selected_slot)
 {
 	unsigned char number_of_slot,slot_index;
 	unsigned char ret;
@@ -489,7 +489,10 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 
 				number_of_slot = 1;
 
-				slot_index = 1;
+				if(pre_selected_slot>=0)
+					slot_index = pre_selected_slot;
+				else
+					slot_index = 1;
 
 				floppyselectorindex=128;                      // Fisrt slot offset
 				memset( temp_buf,0,512);                      // Clear the sector
@@ -663,7 +666,11 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file)
 				fl_fseek(cfg_file_handle , 0 , SEEK_SET);
 
 				// Update the file header
-				cfgfile_ptr->cur_slot_number = ENDIAN_32BIT(1);
+
+				if(pre_selected_slot>=0)
+					cfgfile_ptr->cur_slot_number = ENDIAN_32BIT(pre_selected_slot);
+				else
+					cfgfile_ptr->cur_slot_number = ENDIAN_32BIT(1);
 
 				cfgfile_ptr->slot_index = 0;
 
@@ -891,10 +898,10 @@ void print_help()
 	while(wait_function_key()!=FCT_SELECT_FILE_DRIVEA);
 }
 
-void ui_savereboot(ui_context * uicontext)
+void ui_savereboot(ui_context * uicontext,int preselected_slot)
 {
 	hxc_printf_box("Saving selection and restart...");
-	save_cfg_file(uicontext,cfgfile_header);
+	save_cfg_file(uicontext,cfgfile_header,preselected_slot);
 	restore_box();
 	hxc_printf_box((char*)reboot_msg);
 	sleep(1);
@@ -905,7 +912,7 @@ void ui_savereboot(ui_context * uicontext)
 void ui_save(ui_context * uicontext)
 {
 	hxc_printf_box("Saving selection...");
-	save_cfg_file(uicontext,cfgfile_header);
+	save_cfg_file(uicontext,cfgfile_header,-1);
 	restore_box();
 }
 
@@ -1142,7 +1149,7 @@ int ui_command_menu(ui_context * uicontext)
 			break;
 
 			case FCT_SAVEREBOOT:
-				ui_savereboot(uicontext);
+				ui_savereboot(uicontext,-1);
 			break;
 
 			case FCT_SAVE:
@@ -1165,7 +1172,7 @@ int ui_command_menu(ui_context * uicontext)
 			break;
 
 			case 2:
-				ui_savereboot(uicontext);
+				ui_savereboot(uicontext,-1);
 			break;
 
 			case 3:
@@ -1299,7 +1306,7 @@ int ui_slots_menu(ui_context * uicontext)
 				uicontext->change_map[slot>>3] |= (0x80 >> (slot&7));
 
 				// All drive empty - clear the slot
-				if( i == uicontext->number_of_drive)
+				if( i == uicontext->number_of_drive )
 				{
 					uicontext->slot_map[slot>>3] &= ~(0x80 >> (slot&7));
 				}
@@ -1308,6 +1315,15 @@ int ui_slots_menu(ui_context * uicontext)
 				invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
 			break;
 
+			case FCT_SELECTSAVEREBOOT:
+
+				slot = (uicontext->slotselectorpos + (uicontext->slotselectorpage * (NUMBER_OF_FILE_ON_DISPLAY-1)));
+				if( uicontext->slot_map[slot>>3] & (0x80 >> (slot&7)) )
+				{
+					ui_savereboot(uicontext,slot);
+				}
+
+			break;
 			case FCT_SELECT_FILE_DRIVEA:
 				if(!uicontext->slotselectorpos)
 				{
@@ -1326,7 +1342,7 @@ int ui_slots_menu(ui_context * uicontext)
 			break;
 
 			case FCT_SAVEREBOOT:
-				ui_savereboot(uicontext);
+				ui_savereboot(uicontext,-1);
 			break;
 
 			case FCT_SAVE:
@@ -1379,7 +1395,7 @@ void ui_mainfileselector(ui_context * uicontext)
 	int ret;
 	short i,j,y_pos;
 	unsigned char displayentry;
-	unsigned char entrytype;
+	unsigned char entrytype_icon;
 	unsigned char key,c;
 	unsigned char last_file;
 	disk_in_drive_v2_long * disk_ptr;
@@ -1435,16 +1451,16 @@ void ui_mainfileselector(ui_context * uicontext)
 				{
 					if(dir_entry.is_dir)
 					{
-						entrytype=10;
+						entrytype_icon = 10;
 						DirectoryEntry_tab[i].attributes=0x10;
 					}
 					else
 					{
-						entrytype=12;
+						entrytype_icon = 12;
 						DirectoryEntry_tab[i].attributes=0x00;
 					}
 
-					hxc_printf(LEFT_ALIGNED | DONTPARSE,0,y_pos," %c%s",entrytype,dir_entry.filename);
+					hxc_printf(LEFT_ALIGNED | DONTPARSE,0,y_pos," %c%s",entrytype_icon,dir_entry.filename);
 
 					y_pos=y_pos+8;
 
@@ -1615,15 +1631,16 @@ void ui_mainfileselector(ui_context * uicontext)
 					}
 					else
 					{
+						// Update the Slot 1, select it and reboot...
 						memcpy((void*)&disks_slots[1*uicontext->number_of_drive],(void*)&DirectoryEntry_tab[uicontext->selectorpos],sizeof(disk_in_drive_v2));
 						uicontext->slot_map[1>>3] |= (0x80 >> (1&7));
 						uicontext->change_map[1>>3] |= (0x80 >> (1&7));
-						ui_savereboot(uicontext);
+						ui_savereboot(uicontext,1);
 					}
 					break;
 
 				case FCT_SAVEREBOOT:
-					ui_savereboot(uicontext);
+					ui_savereboot(uicontext,-1);
 					break;
 
 				case FCT_SAVE:
