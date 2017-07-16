@@ -25,7 +25,7 @@
 //
 */
 
-// Amiga Boot block builder (Construc Header + Checksum calculation)
+// Amiga Boot block builder (Construct Header + Checksum calculation)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,7 +58,7 @@ typedef struct _bblock
 
 int main (int argc, char *argv[])
 {
-	int i;
+	int i,code_size;
 	FILE * f_out;
 	FILE * f_in;
 	uint32_t * ptr;
@@ -89,6 +89,32 @@ int main (int argc, char *argv[])
 		BOOTBLOCK.rootblock = ENDIAN_32BIT(880);
 		BOOTBLOCK.checksum = 0x00000000;
 
+		// Reading block code
+		f_in = fopen(argv[1],"rb");
+		if(f_in)
+		{
+			fseek(f_in,0,SEEK_END);
+			code_size = ftell(f_in);
+			fseek(f_in,0,SEEK_SET);
+			printf("Reading %s... %d byte(s)\n",argv[2],code_size);
+			if(code_size < sizeof(BOOTBLOCK.code))
+			{
+				fread(&BOOTBLOCK.code,code_size,1,f_in);
+				fclose(f_in);
+			}
+			else
+			{
+				printf("Error ! No enough space for this code block !!!\n");
+				fclose(f_in);
+				exit(-1);
+			}
+		}
+		else
+		{
+			printf("Error ! Can't open %s !!!\n",argv[2]);
+			exit(-1);
+		}
+
 		// Compute checksum...
 		ptr = (uint32_t *)&BOOTBLOCK;
 		checksum = 0x00000000;
@@ -107,13 +133,19 @@ int main (int argc, char *argv[])
 
 		BOOTBLOCK.checksum = ENDIAN_32BIT(checksum);
 
+		printf("Block checksum : 0x%.8X\n",checksum);
+
 		printf("Writing %s...\n",argv[2]);
 		f_out = fopen(argv[2],"wb");
 		if(f_out)
 		{
-
 			fwrite(&BOOTBLOCK,sizeof(BOOTBLOCK),1,f_out);
 			fclose(f_out);
+		}
+		else
+		{
+			printf("Error ! Can't create the output file !\n");
+			exit(-1);
 		}
 	}
 	else

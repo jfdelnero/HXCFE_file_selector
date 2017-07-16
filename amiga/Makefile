@@ -5,7 +5,7 @@ CFLAGS= -Os -I . -I .. -noixemul -I ../fat32 -DFATFS_IS_LITTLE_ENDIAN=0 -m68000 
 LDFLAGS=-s  -Wl,-Map,foo.map   -noixemul  -amiga-debug-hunk -m68000
 EXEC=HXCFEMNG
 
-all: $(EXEC)
+all: $(EXEC) bootblock.bin
 	m68k-amigaos-strip -s $(EXEC)
 	#./upx  -9 $(EXEC)
 	#./Shrinkler $(EXEC) $(EXEC).PACK
@@ -13,14 +13,11 @@ all: $(EXEC)
 	mv $(EXEC) "H:\SDHxCFloppySelector.amigados\$(EXEC)"
 	cmd /c 'startfe.bat' &
 
-make_bootsector: make_bootsector.c
-	gcc make_bootsector.c -o $@
-
-HXCFEMNG:      fectrl.o gui_utils.o amiga.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o reboot.o msg_txt.o
+HXCFEMNG: fectrl.o gui_utils.o amiga.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o reboot.o msg_txt.o
 	$(CC) -o $@    $^ $(LDFLAGS)
 
 reboot.o: reboot.S
-	$(AS) -o $@ $< 
+	$(AS) -o $@ $<
 
 fectrl.o: ../fectrl.c
 	$(CC) -o $@ -c $< $(CFLAGS)
@@ -58,9 +55,20 @@ fat_write.o: ../fat32/fat_write.c
 fat_cache.o: ../fat32/fat_cache.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-clean:
-	rm -rf *.o
+bootblock.bin: make_bootsector bootblock_code.bin
+	./make_bootsector bootblock_code.bin bootblock.bin
 
+bootblock_code.o: bootblock_code.S
+	$(AS) -o $@ $<
+
+bootblock_code.bin : bootblock_code.o
+	m68k-amigaos-objcopy -O binary $< $@
+
+make_bootsector: make_bootsector.c
+	gcc   -o $@ $<
+
+clean:
+	rm -rf *.o *.bin make_bootsector.exe
 
 mrproper: clean
 	rm -rf $(EXEC)
