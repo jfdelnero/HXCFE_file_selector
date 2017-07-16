@@ -1339,7 +1339,7 @@ int init_display()
 	memset(&rasInfo,0,sizeof(struct RasInfo));
 	memset(&my_bit_map,0,sizeof(struct BitMap));
 	memset(&my_rast_port,0,sizeof(struct RastPort));
-	screen_buffer_backup=(unsigned char*)malloc(8*1024);
+	screen_buffer_backup=(unsigned char*)AllocMem(8*1024, MEMF_PUBLIC|MEMF_CLEAR);
 
 	IntuitionBase= (struct IntuitionBase *) OpenLibrary( (CONST_STRPTR)"intuition.library", 0 );
 	screen=(struct Screen *)OpenScreen(&screen_cfg);
