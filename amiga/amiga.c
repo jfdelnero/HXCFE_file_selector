@@ -101,8 +101,12 @@ unsigned char keyup;
 
 unsigned long timercnt;
 
+unsigned long __commandline;
+unsigned long __commandlen;
+
 struct Interrupt *rbfint, *priorint;
 
+struct Library * DOSBase;
 struct Library * libptr;
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBaseptr;
@@ -113,7 +117,7 @@ struct RasInfo rasInfo;
 struct BitMap my_bit_map;
 struct RastPort my_rast_port;
 struct Screen *screen;
-extern struct DosLibrary *DOSBase;
+
 UWORD  *pointer;
 struct ColorMap *cm=NULL;
 
@@ -1333,6 +1337,8 @@ int init_display()
 	unsigned short loop,yr;
 
 	SCREEN_XRESOL = 640;
+
+	DOSBase = OpenLibrary((CONST_STRPTR)"dos.library", 0);
 
 	memset(&view,0,sizeof(struct View));
 	memset(&viewPort,0,sizeof(struct ViewPort));
