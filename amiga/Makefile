@@ -13,6 +13,9 @@ all: $(EXEC)
 	mv $(EXEC) "H:\SDHxCFloppySelector.amigados\$(EXEC)"
 	cmd /c 'startfe.bat' &
 
+make_bootsector: make_bootsector.c
+	gcc make_bootsector.c -o $@
+
 HXCFEMNG:      fectrl.o gui_utils.o amiga.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o reboot.o msg_txt.o
 	$(CC) -o $@    $^ $(LDFLAGS)
 
