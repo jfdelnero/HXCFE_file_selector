@@ -38,7 +38,7 @@
 #else
 	// Little Endian
 	#define ENDIAN_32BIT(value)	( ((uint32_t)(value&0x000000FF)<<24) + \
-	                              ((uint32_t)(value&0x0000FF00)<<8) + \
+								  ((uint32_t)(value&0x0000FF00)<<8) + \
 								  ((uint32_t)(value&0x00FF0000)>>8) + \
 								  ((uint32_t)(value&0xFF000000)>>24) )
 
@@ -66,7 +66,7 @@ int main (int argc, char *argv[])
 
 	bblock BOOTBLOCK;
 
-	printf("Amiga Boot block builder v0.1\n");
+	printf("Amiga Boot block builder v0.2\n");
 
 	if(argc == 3 )
 	{
@@ -90,14 +90,14 @@ int main (int argc, char *argv[])
 		BOOTBLOCK.checksum = 0x00000000;
 
 		// Reading block code
-		f_in = fopen(argv[1],"rb");
+		f_in = fopen(argv[1],"r+b");
 		if(f_in)
 		{
 			fseek(f_in,0,SEEK_END);
 			code_size = ftell(f_in);
 			fseek(f_in,0,SEEK_SET);
-			printf("Reading %s... %d byte(s)\n",argv[2],code_size);
-			if(code_size < sizeof(BOOTBLOCK.code))
+			printf("Reading %s... %d byte(s)\n",argv[1],code_size);
+			if(code_size <= sizeof(BOOTBLOCK.code))
 			{
 				fread(&BOOTBLOCK.code,code_size,1,f_in);
 				fclose(f_in);
@@ -111,25 +111,25 @@ int main (int argc, char *argv[])
 		}
 		else
 		{
-			printf("Error ! Can't open %s !!!\n",argv[2]);
+			printf("Error ! Can't open %s !!!\n",argv[1]);
 			exit(-1);
 		}
 
 		// Compute checksum...
 		ptr = (uint32_t *)&BOOTBLOCK;
 		checksum = 0x00000000;
-		for( i = 0 ; i < sizeof(BOOTBLOCK)/4 ; i++ )
+		for( i = 0 ; i < sizeof(BOOTBLOCK) / sizeof(uint32_t) ; i++ )
 		{
-			d = ENDIAN_32BIT(ptr[i]);
+			d = ENDIAN_32BIT( ptr[i] );
 
-			if ( ( 0xFFFFFFFF - checksum ) < d )	// overflow ?
+			if( (checksum + d) < checksum )
 			{
 				checksum++;
 			}
 
 			checksum += d;
 		}
-		checksum ^= 0xFFFFFFFF;
+		checksum = ~checksum;
 
 		BOOTBLOCK.checksum = ENDIAN_32BIT(checksum);
 
@@ -140,6 +140,12 @@ int main (int argc, char *argv[])
 		if(f_out)
 		{
 			fwrite(&BOOTBLOCK,sizeof(BOOTBLOCK),1,f_out);
+			// Pad to make an adf file...
+			memset(&BOOTBLOCK,0,sizeof(BOOTBLOCK));
+			for(i=0;i<((1760/2)-1);i++)
+			{
+				fwrite(&BOOTBLOCK,sizeof(BOOTBLOCK),1,f_out);
+			}
 			fclose(f_out);
 		}
 		else

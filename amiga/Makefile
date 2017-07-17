@@ -7,7 +7,7 @@ LDFLAGS=-s  -Wl,-Map,foo.map -nostdlib -m68000
 
 EXEC=HXCFEMNG
 
-all: $(EXEC) bootblock.bin
+all: $(EXEC) bootblock.adf
 	m68k-amigaos-strip -s $(EXEC)
 	#./upx  -9 $(EXEC)
 	#./Shrinkler $(EXEC) $(EXEC).PACK
@@ -57,18 +57,6 @@ fat_write.o: ../fat32/fat_write.c
 fat_cache.o: ../fat32/fat_cache.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-bootblock.bin: make_bootsector bootblock_code.bin
-	./make_bootsector bootblock_code.bin bootblock.bin
-
-bootblock_code.o: bootblock_code.S
-	$(AS) -o $@ $< -m68000
-
-bootblock_code.bin : bootblock_code.o
-	m68k-amigaos-objcopy -O binary $< $@
-
-make_bootsector: make_bootsector.c
-	gcc   -o $@ $<
-
 libc/mStartup.o: libc/mStartup.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -84,8 +72,12 @@ libc/amiga_api.o: libc/amiga_api.S
 libc/ncrt0.o: libc/ncrt0.S
 	$(AS) -o $@ $< -m68000
 
+bootblock.adf: bootblock/bootblock.c
+	cd bootblock && $(MAKE) bootblock.adf
+
 clean:
 	rm -rf *.o *.bin make_bootsector.exe
+	cd bootblock && $(MAKE) clean 
 
 mrproper: clean
 	rm -rf $(EXEC)
