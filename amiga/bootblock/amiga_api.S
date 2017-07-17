@@ -24,6 +24,7 @@ _LVOGetProgramDir = -600
 .globl	_UnLock
 .globl	_GetProgramDir
 .globl	_Delay
+.globl	_PutStr
 
 .globl	_FreeCprList
 .globl	_FreeVPortCopLists
@@ -53,14 +54,14 @@ _LVOGetProgramDir = -600
 
 _Forbid:
 	move.l  a6,-(sp)
-	movea.l _SysBase,a6
+	movea.l _SysBase(pc),a6
 	jsr	a6@(_LVOForbid:W)
 	movea.l (sp)+,a6
 	rts
 
 _Permit:
 	move.l  a6,-(sp)
-	movea.l _SysBase,a6
+	movea.l _SysBase(pc),a6
 	jsr	a6@(_LVOPermit:W)
 	movea.l (sp)+,a6
 	rts
@@ -70,7 +71,7 @@ _AllocMem:
 	arg_4=  8
 
 	move.l  a6,-(sp)
-	movea.l _SysBase,a6
+	movea.l _SysBase(pc),a6
 	move.l  4+arg_0(sp),d0
 	move.l  4+arg_4(sp),d1
 	jsr		a6@(_LVOAllocMem:W)
@@ -82,7 +83,7 @@ _FreeMem:
 	arg_4=  8
 
 	move.l  a6,-(sp)
-	movea.l _SysBase,a6
+	movea.l _SysBase(pc),a6
 	movea.l 4+arg_0(sp),a1
 	move.l  4+arg_4(sp),d0
 	jsr		a6@(_LVOFreeMem:W)
@@ -94,7 +95,7 @@ _AddIntServer:
 	arg_4           =  8
 
 	move.l  a6,-(sp)
-	movea.l _SysBase,a6
+	movea.l _SysBase(pc),a6
 	move.l  4+arg_0(sp),d0
 	movea.l 4+arg_4(sp),a1
 	jsr     -0xA8(a6)
@@ -106,7 +107,7 @@ _OpenLibrary:
 	arg_4           =  8
 
 	move.l  a6,-(sp)
-	movea.l _SysBase,a6
+	movea.l _SysBase(pc),a6
 	movea.l 4+arg_0(sp),a1
 	move.l  4+arg_4(sp),d0
 	jsr     -0x228(a6)
@@ -167,6 +168,16 @@ _Delay:
 	movea.l _DOSBase,a6
 	move.l  4+arg_0(sp),d1
 	jsr     -0xC6(a6)
+	movea.l (sp)+,a6
+	rts
+
+_PutStr:
+	arg_0           =  4
+
+	move.l  a6,-(sp)
+	movea.l _DOSBase(pc),a6
+	move.l  4+arg_0(sp),d1
+	jsr     -0x3B4(a6)
 	movea.l (sp)+,a6
 	rts
 

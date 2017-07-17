@@ -1,16 +1,21 @@
 | Minimal ncrt0.S for Amiga bootblock env
 | (c)2017 JF.DEL NERO / HxC2001
 
+	.globl	_SysBase
+	.globl	_ioreq
 
 	.text
 
-start:                     | Entry point
-	movel   a6,_SysBase    | Save SysBase + Ioreq for the C usage
-	movel   a1,_ioreq
+start:                          | Entry point
+    lea     _SysBase(pc), a0    | Save SysBase + Ioreq for the C usage
+	move.l  a6,  (a0)
+	move.l  a1, 4(a0)
 
-	jbsr    _bootblock_main| Enter C void bootblock_main(void).
-	                       | D0 should contain the main return code...
-	                       | If D0 != 0 -> Error !
-	lea     start(pc),a0   | Restart point...
+	bsr.w   _bootblock_main     | Enter C void bootblock_main(void).
+	                            | D0 should contain the main return code...
+	                            | If D0 != 0 -> Error !
+	lea     start(pc),a0        | Restart point...
 	rts
 
+_SysBase:   dc.l    0
+_ioreq:     dc.l    0

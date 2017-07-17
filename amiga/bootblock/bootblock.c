@@ -1,12 +1,22 @@
+#include <clib/exec_protos.h>
+#include <clib/dos_protos.h>
 
-unsigned long SysBase;
-unsigned long DOSBase;
-unsigned long GfxBaseptr;
-unsigned long IntuitionBase;
-unsigned long ioreq;
+extern unsigned long ioreq;
+
+struct Library * DOSBase;
+struct Library * GfxBaseptr;
+struct Library * IntuitionBase;
 
 int bootblock_main()
 {
-	for(;;);
-	return 0;
+	DOSBase = OpenLibrary((CONST_STRPTR)"dos.library", 0);
+	if(DOSBase)
+	{
+		for(;;)
+		{
+			PutStr((CONST_STRPTR)"Texte Test !!!! :)\r\n");
+		}
+	}
+
+	return 1;
 }

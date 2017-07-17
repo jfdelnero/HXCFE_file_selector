@@ -1,8 +1,8 @@
 CC=m68k-amigaos-gcc
 AS=m68k-amigaos-as
 
-CFLAGS= -Os -I . -nostdlib -DFATFS_IS_LITTLE_ENDIAN=0 -m68000 -Wall -msoft-float -fno-builtin -fomit-frame-pointer #-DDEBUG
-LDFLAGS=-s  -Wl,-Map,foo.map -nostdlib -m68000
+CFLAGS= -Os -I . -nostdlib -DFATFS_IS_LITTLE_ENDIAN=0 -m68000 -Wall -msoft-float -fno-builtin -fomit-frame-pointer -mpcrel #-DDEBUG
+LDFLAGS=-s  -Wl,-Map,foo.map -nostdlib -m68000 -mpcrel
 
 EXEC=bootblock.adf
 
