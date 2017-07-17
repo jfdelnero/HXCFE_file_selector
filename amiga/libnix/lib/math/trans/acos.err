@@ -1,4 +1,0 @@
-In file included from /home/Jeff/buildlibnix/libnix/sources/math/trans/acos.c:1:
-/usr/local/amiga/lib/gcc/m68k-amigaos/3.4.0/../../../../m68k-amigaos/sys-include/proto/mathieeedoubtrans.h:16:38: inline/mathieeedoubtrans.h: No such file or directory
-/home/Jeff/buildlibnix/libnix/sources/math/trans/acos.c: In function `acos':
-/home/Jeff/buildlibnix/libnix/sources/math/trans/acos.c:4: warning: implicit declaration of function `IEEEDPAcos'
