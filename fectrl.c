@@ -92,7 +92,7 @@ int setlbabase(unsigned long lba)
 
 	memset(&sector,0,512);
 
-	sprintf(dacs->DAHEADERSIGNATURE,"HxCFEDA");
+	strcpy(dacs->DAHEADERSIGNATURE,"HxCFEDA");
 	dacs->cmd_code=1;
 	dacs->parameter_0 = (unsigned char)((lba>>0)&0xFF);
 	dacs->parameter_1 = (unsigned char)((lba>>8)&0xFF);
