@@ -45,7 +45,13 @@ _LVOGetProgramDir = -600
 
 .globl	_OpenScreen
 
+.globl	___main
+
 .text
+
+/* Called at the main() entry function */
+___main:
+rts
 
 /* ---------- SysBase ------------ */
 

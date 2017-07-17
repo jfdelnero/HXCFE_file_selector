@@ -6,6 +6,9 @@
 #include <ctype.h>
 #include <stdlib.h>
 
+void *__INIT_LIST__[2]={ 0,0 };
+void *__EXIT_LIST__[2]={ 0,0 };
+
 void* memset ( void * ptr, int value, size_t num )
 {
 	unsigned char* pTemp = (unsigned char*) ptr;

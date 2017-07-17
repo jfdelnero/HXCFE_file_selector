@@ -1,11 +1,9 @@
 #CC=i386-pc-linux-gcc
-CC=m68k-amigaos-gcc.exe
-AS=m68k-amigaos-as.exe
-CFLAGS= -Os -I . -I .. -noixemul -I ../fat32 -DFATFS_IS_LITTLE_ENDIAN=0 -m68000 -Wall #-DDEBUG
-#CFLAGS= -Os -I . -I .. -nostdlib -I ../fat32 -DFATFS_IS_LITTLE_ENDIAN=0 -m68000 -Wall #-DDEBUG
+CC=m68k-amigaos-gcc
+AS=m68k-amigaos-as
 
-LDFLAGS=-s  -Wl,-Map,foo.map   -noixemul  -amiga-debug-hunk -m68000
-#LDFLAGS=-s  -Wl,-Map,foo.map   -nostdlib  -amiga-debug-hunk -m68000
+CFLAGS= -Os -I . -I .. -nostdlib -I ../fat32 -DFATFS_IS_LITTLE_ENDIAN=0 -m68000 -Wall -msoft-float -fno-builtin -fomit-frame-pointer #-DDEBUG
+LDFLAGS=-s  -Wl,-Map,foo.map -nostdlib -m68000
 
 EXEC=HXCFEMNG
 
@@ -17,7 +15,7 @@ all: $(EXEC) bootblock.bin
 	mv $(EXEC) "H:\SDHxCFloppySelector.amigados\$(EXEC)"
 	cmd /c 'startfe.bat' &
 
-HXCFEMNG: libc/amiga_api.o libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o libc/ncrt0.o fectrl.o gui_utils.o amiga.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o reboot.o msg_txt.o
+HXCFEMNG: libc/ncrt0.o libc/amiga_api.o libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o libc/ncrt0.o fectrl.o gui_utils.o amiga.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o reboot.o msg_txt.o
 	$(CC) -o $@    $^ $(LDFLAGS)
 
 reboot.o: reboot.S
@@ -63,7 +61,7 @@ bootblock.bin: make_bootsector bootblock_code.bin
 	./make_bootsector bootblock_code.bin bootblock.bin
 
 bootblock_code.o: bootblock_code.S
-	$(AS) -o $@ $<
+	$(AS) -o $@ $< -m68000
 
 bootblock_code.bin : bootblock_code.o
 	m68k-amigaos-objcopy -O binary $< $@
@@ -72,19 +70,19 @@ make_bootsector: make_bootsector.c
 	gcc   -o $@ $<
 
 libc/mStartup.o: libc/mStartup.c
-	$(CC) $(CFLAGS) -c $< -o $@ -Wno-unused-value
+	$(CC) $(CFLAGS) -c $< -o $@
 
 libc/snprintf/snprintf.o: libc/snprintf/snprintf.c libc/snprintf/snprintf.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 libc/mStartupAsmC.o: libc/mStartupAsmC.s
-	$(AS) -o $@ $<
+	$(AS) -o $@ $< -m68000
 
-libc/amiga_api.o: libc/amiga_api.s
-	$(AS) -o $@ $<
+libc/amiga_api.o: libc/amiga_api.S
+	$(AS) -o $@ $< -m68000
 
 libc/ncrt0.o: libc/ncrt0.S
-	$(AS) -o $@ $<
+	$(AS) -o $@ $< -m68000
 
 clean:
 	rm -rf *.o *.bin make_bootsector.exe
