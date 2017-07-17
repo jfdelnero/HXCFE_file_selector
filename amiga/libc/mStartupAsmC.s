@@ -95,7 +95,7 @@ _strlen:
 
 _strstr:
  /* this code is 52 bytes bigger than the c implementation. But it is way faster. */
- /*from http: /*cristi.indefero.net/p/uClibc-cristi/source/tree/ff250619f58caa6b10c951911c43fbb8a34fda8d/libc/string/strstr.c */
+ /*from http: cristi.indefero.net/p/uClibc-cristi/source/tree/ff250619f58caa6b10c951911c43fbb8a34fda8d/libc/string/strstr.c */
             movem.l 4(sp),a0-a1
             movem.l d2/a2-a3,-(sp)
  /*a0: aystack */
@@ -170,7 +170,7 @@ _strstr:
  /* -------------------------------------------------------------- */
 
 ___mulsi3:
- /* from upx-ucl-3.08/src/stub/src/m68k-atari.tos.S */
+ /* from http: upx-ucl-3.08/src/stub/src/m68k-atari.tos.S */
      /* compute high-word */
         lea     4(sp),a0             /*                    8 */
         move.w  (a0)+,d1             /*                    8 */
@@ -189,7 +189,7 @@ ___mulsi3:
 
  /* -------------------------------------------------------------- */
 
- /*from http: /*svn.opentom.org/opentom/trunk/linux-2.6/arch/m68knommu/lib/umodsi3.S */
+ /*from http: svn.opentom.org/opentom/trunk/linux-2.6/arch/m68knommu/lib/umodsi3.S */
 ___umodsi3:
     move.l  8(sp),d1         /*d1 = divisor */
     move.l  4(sp),d0         /*d0 = dividend */
@@ -208,7 +208,7 @@ ___umodsi3:
 
  /* -------------------------------------------------------------- */
 
- /*from http: /*svn.opentom.org/opentom/trunk/linux-2.6/arch/m68knommu/lib/modsi3.S */
+ /*from http: svn.opentom.org/opentom/trunk/linux-2.6/arch/m68knommu/lib/modsi3.S */
  /*(modified) */
 ___modsi3:
     move.l  8(sp),d1         /* d1 = divisor */
@@ -277,7 +277,7 @@ L6: move.l  (sp)+,d2
 
  /* -------------------------------------------------------------- */
 
- /* from http: /*svn.opentom.org/opentom/trunk/linux-2.6/arch/m68knommu/lib/divsi3.S */
+ /* from http: svn.opentom.org/opentom/trunk/linux-2.6/arch/m68knommu/lib/divsi3.S */
 ___divsi3:
     move.l  d2,-(sp)
 
