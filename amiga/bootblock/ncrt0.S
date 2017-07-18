@@ -1,13 +1,13 @@
 | Minimal ncrt0.S for Amiga bootblock env
 | (c)2017 JF.DEL NERO / HxC2001
 
-	.globl	_SysBase
-	.globl	_ioreq
+	.globl _SysBase
+	.globl _ioreq
 
 	.text
 
 start:                          | Entry point
-    lea     _SysBase(pc), a0    | Save SysBase + Ioreq for the C usage
+	lea     _SysBase(pc), a0    | Save SysBase + Ioreq for the C usage
 	move.l  a6,  (a0)
 	move.l  a1, 4(a0)
 
