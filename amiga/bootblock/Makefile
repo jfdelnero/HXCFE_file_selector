@@ -4,12 +4,12 @@ AS=m68k-amigaos-as
 CFLAGS= -Os -I . -nostdlib -DFATFS_IS_LITTLE_ENDIAN=0 -m68000 -Wall -msoft-float -fno-builtin -fomit-frame-pointer -mpcrel #-DDEBUG
 LDFLAGS=-s  -Wl,-Map,foo.map -nostdlib -m68000 -mpcrel
 
-EXEC=bootblock.adf
+EXEC=AUTOBOOT.ADF
 
 all: $(EXEC)
 
-bootblock.adf: make_bootsector bootblock_bin.raw
-	./make_bootsector bootblock_bin.raw bootblock.adf
+AUTOBOOT.ADF: make_bootblock bootblock_bin.raw
+	./make_bootblock bootblock_bin.raw ../AUTOBOOT.ADF ../HXCFEMNG
 
 bootblock_bin.raw : bootblock_code.exe
 	m68k-amigaos-objcopy -O binary $< $@
@@ -27,11 +27,11 @@ ncrt0.o: ncrt0.S
 bootblock.o : bootblock.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-make_bootsector: make_bootsector.c
+make_bootblock: make_bootblock.c
 	gcc   -o $@ $<
 
 clean:
-	rm -rf *.o *.bin *.raw *.exe *.adf
+	rm -rf *.o *.bin *.raw *.exe *.ADF *.map 
 
 mrproper: clean
 	rm -rf $(EXEC)

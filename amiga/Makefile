@@ -7,16 +7,22 @@ LDFLAGS=-s  -Wl,-Map,foo.map -nostdlib -m68000
 
 EXEC=HXCFEMNG
 
-all: $(EXEC) bootblock.adf
-	m68k-amigaos-strip -s $(EXEC)
+
+all: AUTOBOOT.ADF
 	#./upx  -9 $(EXEC)
 	#./Shrinkler $(EXEC) $(EXEC).PACK
 	#mv $(EXEC).PACK "H:\SDHxCFloppySelector.amigados\$(EXEC)"
-	mv $(EXEC) "H:\SDHxCFloppySelector.amigados\$(EXEC)"
-	cmd /c 'startfe.bat' &
+
+AUTOBOOT.ADF: HXCFEMNG bootblock/bootblock.c bootblock/ncrt0.S bootblock/make_bootblock.c
+	# Generate ADF with the new exe, Build the bootblock, and patch the adf with the new bootblock
+	cp $(EXEC) ./HxCFESelector.amigados/$(EXEC)
+	hxcfe  -conv:AMIGA_ADF -finput:HxCFESelector.amigados -foutput:$@
+	cd bootblock && $(MAKE) $@
+	hxcfe  -conv:HXC_HFE -finput:$@ -foutput:AUTOBOOT.HFE
 
 HXCFEMNG: libc/ncrt0.o libc/amiga_api.o libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o libc/ncrt0.o fectrl.o gui_utils.o amiga.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o reboot.o msg_txt.o
 	$(CC) -o $@    $^ $(LDFLAGS)
+	m68k-amigaos-strip -s $@
 
 reboot.o: reboot.S
 	$(AS) -o $@ $<
@@ -72,12 +78,9 @@ libc/amiga_api.o: libc/amiga_api.S
 libc/ncrt0.o: libc/ncrt0.S
 	$(AS) -o $@ $< -m68000
 
-bootblock.adf: bootblock/bootblock.c
-	cd bootblock && $(MAKE) bootblock.adf
-
 clean:
-	rm -rf *.o *.bin make_bootsector.exe
-	cd bootblock && $(MAKE) clean 
+	rm -rf *.o *.bin *.map *.ADF *.HFE make_bootblock.exe
+	cd bootblock && $(MAKE) clean
 
 mrproper: clean
 	rm -rf $(EXEC)
