@@ -18,6 +18,7 @@ _LVOGetProgramDir = -600
 .globl	_FreeMem
 .globl	_AddIntServer
 .globl	_OpenLibrary
+.globl	_DoIO
 
 .globl	_Info
 .globl	_Lock
@@ -111,6 +112,16 @@ _OpenLibrary:
 	movea.l 4+arg_0(sp),a1
 	move.l  4+arg_4(sp),d0
 	jsr     -0x228(a6)
+	movea.l (sp)+,a6
+	rts
+
+_DoIO:
+	arg_0           =  4
+
+	move.l  a6,-(sp)
+	movea.l _SysBase(pc),a6
+	move.l  4+arg_0(sp),a1
+	jsr     -0x1c8(a6)
 	movea.l (sp)+,a6
 	rts
 
