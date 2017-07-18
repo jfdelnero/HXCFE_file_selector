@@ -3,7 +3,7 @@
 
 	.globl _SysBase
 	.globl _ioreq
-
+	.globl _Params
 	.text
 
 start:                          | Entry point
@@ -17,5 +17,8 @@ start:                          | Entry point
 	lea     start(pc),a0        | Restart point...
 	rts
 
-_SysBase:   dc.l    0
-_ioreq:     dc.l    0
+.align 4
+_SysBase:    dc.l    0
+_ioreq:      dc.l    0
+.ascii       "<HXCFEM>"         | Param Area marker (3*4Bytes)
+_Params:     ds.l    20         | (4 Entries * 2 longs) + 3*4 = 20 longs
