@@ -11,8 +11,8 @@ start:                          | Entry point
 	move.l  a6,  (a0)
 	move.l  a1, 4(a0)
 
-	bsr.w   _bootblock_main     | Enter C void bootblock_main(void).
-	                            | D0 should contain the main return code...
+	bsr.w   _bootblock_main     | Enter C "int bootblock_main(void)" function.
+	                            | D0 should contain the bootblock_main return code...
 	                            | If D0 != 0 -> Error !
 	lea     start(pc),a0        | Restart point...
 	rts
