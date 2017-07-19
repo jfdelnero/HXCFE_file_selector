@@ -170,7 +170,10 @@ _Delay:
 	move.l  a6,-(sp)
 	movea.l _DOSBase,a6
 	move.l  4+arg_0(sp),d1
+	cmpa.l  #0,a6
+	jeq nodoslib
 	jsr     -0xC6(a6)
+nodoslib:
 	movea.l (sp)+,a6
 	rts
 
