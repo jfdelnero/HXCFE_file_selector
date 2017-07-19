@@ -29,26 +29,36 @@
 
 #include <clib/exec_protos.h>
 #include <clib/dos_protos.h>
+#include <dos/doshunks.h>
+
 #include <stdint.h>
 
 #include "params.h"
 
-extern struct IOStdReq *ioreq;
-extern params Params;
+static void memcpy(char* d,char *s,int size)
+{
+	while(size--)
+		*d++ = *s++;
+}
 
-int bootblock_main()
+static void memset(char* d,char val,int size)
+{
+	while(size--)
+		*d++ = val;
+}
+
+int bootblock_main(params * paramszone)
 {
 	unsigned char * loading_mem;
 	int block,i,j,out_offset,in_offset;
 	unsigned long checksum;
 	int retry;
-
-	params * paramszone;
+	struct IOStdReq *ioreq;
 
 	retry = 3;
-	paramszone = &Params;
+	ioreq = paramszone->ioreq;
 
-	loading_mem = AllocMem(64*1024, MEMF_CHIP|MEMF_CLEAR|MEMF_PUBLIC);
+	loading_mem = AllocMem(paramszone->total_blocks_size, MEMF_CHIP|MEMF_CLEAR|MEMF_PUBLIC);
 	if( loading_mem )
 	{
 		while(retry)
@@ -93,9 +103,9 @@ int bootblock_main()
 				checksum += loading_mem[i];
 			}
 
-			if( paramszone->exec_checksum == checksum )
+			if( paramszone->exec_checksum != checksum )
 			{
-				// Good !
+				// Good ! -> Parsing the Hunk and start it!
 				for(;;);
 			}
 			else
@@ -104,10 +114,10 @@ int bootblock_main()
 			}
 		}
 
-		// Error...
-		FreeMem(loading_mem, 256*1024);
+		// 3x Error...
+		FreeMem(loading_mem, paramszone->total_blocks_size);
 	}
 
-	// Something wrong happened...
+	// Something wrong happened... Return to kickstart...
 	return 1;
 }
