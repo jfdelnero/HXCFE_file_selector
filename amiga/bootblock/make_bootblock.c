@@ -94,7 +94,7 @@ int checkexec(unsigned char * exec,int execsize, unsigned char * adf,int adfsize
 	if( blocknb * (512-24) < execsize )
 		blocknb++;
 
-	paramszone->total_nb_block = ENDIAN_32BIT(blocknb*512);
+	paramszone->total_blocks_size = ENDIAN_32BIT(blocknb*512);
 
 	ldtindex = 0;
 	blocksize = 512-24;
