@@ -2,23 +2,29 @@
 | (c)2017 JF.DEL NERO / HxC2001
 
 	.globl _SysBase
-	.globl _ioreq
-	.globl _Params
+
 	.text
 
-start:                          | Entry point
-	lea     _SysBase(pc), a0    | Save SysBase + Ioreq for the C usage
-	move.l  a6,  (a0)
-	move.l  a1, 4(a0)
+start:                                   | Entry point
 
-	bsr.w   _bootblock_main     | Enter C "int bootblock_main(void)" function.
-	                            | D0 should contain the bootblock_main return code...
-	                            | If D0 != 0 -> Error !
-	lea     start(pc),a0        | Restart point...
-	rts
+	lea     _GlobalParamsArea(pc), a0    | Save SysBase + Ioreq for the C usage
+	move.l  a6,  (a0)                    | SysBase
+	move.l  a1, 4(a0)                    | IOReq
 
-.align 4
+	move.l  a0,-(sp)                     | Push the Params Area offset to the function parameter
+	lea     _bootblock_main(pc),a0       | Get/compute the main function absolute offset.
+	jsr     (a0)                         | Enter the C "int bootblock_main(params * paramszone)" function.
+	addq.l  #4,sp                        | Fix the Stack pointer.
+	                                     | D0 should contain the bootblock_main return code...
+	                                     | If D0 != 0 -> Error !
+	lea     start(pc),a0                 | Restart point...
+	rts                                  | Return to the Kickstart
+
+.align 4                                 | All datas after this limit be dword aligned !
+
+.ascii       "<HXCFEM>"                  | Param Area marker (8 Bytes)
+
+_GlobalParamsArea:
 _SysBase:    dc.l    0
 _ioreq:      dc.l    0
-.ascii       "<HXCFEM>"         | Param Area marker (3*4Bytes)
-_Params:     ds.l    20         | (4 Entries * 2 longs) + 3*4 = 20 longs
+_Params:     ds.l    20                  | (4 Entries * 2 longs) + 3*4 = 20 longs
