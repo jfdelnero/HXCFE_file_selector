@@ -70,13 +70,13 @@ libc/snprintf/snprintf.o: libc/snprintf/snprintf.c libc/snprintf/snprintf.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 libc/mStartupAsmC.o: libc/mStartupAsmC.s
-	$(AS) -o $@ $< -m68000
+	$(AS) -o $@ $< -m68000 -pcrel
 
 libc/amiga_api.o: libc/amiga_api.S
-	$(AS) -o $@ $< -m68000
+	$(AS) -o $@ $< -m68000 -pcrel
 
 libc/ncrt0.o: libc/ncrt0.S
-	$(AS) -o $@ $< -m68000
+	$(AS) -o $@ $< -m68000 -pcrel
 
 clean:
 	rm -rf *.o *.bin *.map *.ADF *.HFE make_bootblock.exe

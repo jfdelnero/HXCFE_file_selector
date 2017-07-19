@@ -106,7 +106,7 @@ unsigned long __commandlen;
 
 struct Interrupt *rbfint, *priorint;
 
-struct Library * DOSBase;
+extern struct Library * DOSBase;
 struct Library * libptr;
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBaseptr;
@@ -405,13 +405,21 @@ int get_start_unit(char * path)
 	dbg_printf("get_start_unit\n");
 	#endif
 
-	if( GetLibraryVersion((struct Library *) DOSBase) >= 36 )
+	if( DOSBase )
 	{
-		startedFromUnitNum = GetUnitNumFromLock( GetProgramDir() );
+		if( GetLibraryVersion((struct Library *) DOSBase) >= 36 )
+		{
+			startedFromUnitNum = GetUnitNumFromLock( GetProgramDir() );
+		}
+		else
+		{
+			startedFromUnitNum = GetUnitNumFromPath( path );
+		}
 	}
 	else
 	{
-		startedFromUnitNum = GetUnitNumFromPath( path );
+		// No DOS Library ? We are probably trackloaded.
+		startedFromUnitNum = 0;
 	}
 
 	if( startedFromUnitNum < 0 )
@@ -1337,8 +1345,6 @@ int init_display()
 	unsigned short loop,yr;
 
 	SCREEN_XRESOL = 640;
-
-	DOSBase = OpenLibrary((CONST_STRPTR)"dos.library", 0);
 
 	memset(&view,0,sizeof(struct View));
 	memset(&viewPort,0,sizeof(struct ViewPort));

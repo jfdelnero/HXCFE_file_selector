@@ -9,6 +9,7 @@ _LVOFindTask	=	-294
 _LVOGetMsg	=	-372
 _LVOReplyMsg	=	-378
 _LVOWaitPort	=	-384
+_LVOOpenLibrary	=	-552
 
 pr_MsgPort	=	  92
 pr_CLI		=	 172
@@ -17,6 +18,7 @@ pr_CLI		=	 172
 
 		.globl	__exit
 		.globl	_geta4
+		.globl	_DOSBase;
 		.text
 
 | first entry - init some vars, check for cli or wb start
@@ -28,6 +30,14 @@ start:
 		movel	sp,___SaveSP
 		movel	4:W,a6
 		movel	a6,_SysBase
+
+		lea		doslibname,a1
+		subl	d0,d0
+		jsr		a6@(_LVOOpenLibrary:W)
+
+		move.l	d0,_DOSBase
+
+		jeq		trackloaded
 
 		subal	a1,a1
 		jsr	a6@(_LVOFindTask:W)
@@ -50,11 +60,14 @@ fromCLI:
 		moveql	#-1,d2
 		jbsr	callfuncs
 
+trackloaded: 
+
 		movel	___env,sp@-
 		movel	___argv,sp@-
 		movel	___argc,sp@-
 
-		jbsr	_main
+		lea		_main(pc),a0
+		jsr		(a0)
 
 looptest:
  bra looptest
@@ -117,6 +130,8 @@ _geta4: 	rts
 
 		.stabs	"_exit",11,0,0,0
 		.stabs	"__exit",1,0,0,0
+doslibname:
+		.ascii		"dos.library\0"
 
 | data area
 
@@ -130,3 +145,4 @@ _geta4: 	rts
 .comm		___argv,4
 .comm		___env,4
 .lcomm		cleanupflag,4
+.comm		_DOSBase,4
