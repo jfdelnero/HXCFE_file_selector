@@ -1,14 +1,16 @@
-typedef struct _ldtable
+
+typedef struct ldtable_
 {
 	uint32_t startoffset;
 	uint32_t lenght;
-} __attribute__ ((packed)) ldtable;
+} ldtable;
 
-typedef struct _params
+typedef struct params_
 {
+	uint32_t SysBase;
+	uint32_t ioreq;
 	uint32_t exec_size;
 	uint32_t exec_checksum;
 	uint32_t total_nb_block;
 	ldtable  blocktable[4];
-} __attribute__ ((packed)) params;
-
+} params;
