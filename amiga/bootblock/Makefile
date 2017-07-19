@@ -14,11 +14,14 @@ AUTOBOOT.ADF: make_bootblock bootblock_bin.raw
 bootblock_bin.raw : bootblock_code.exe
 	m68k-amigaos-objcopy -O binary $< $@
 
-bootblock_code.exe: ncrt0.o amiga_api.o bootblock.o
+bootblock_code.exe: ncrt0.o amiga_api.o bootblock.o jump_to_exec.o
 	$(CC) -o $@    $^ $(LDFLAGS)
 	m68k-amigaos-strip -s $@
 
 amiga_api.o: amiga_api.S
+	$(AS) -o $@ $< -m68000
+
+jump_to_exec.o: jump_to_exec.S
 	$(AS) -o $@ $< -m68000
 
 ncrt0.o: ncrt0.S
