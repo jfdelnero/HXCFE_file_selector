@@ -8,7 +8,8 @@
 .globl	_Jump_To_Exec
 
 .text
-// void Jump_To_Exec(void * entry,void * ioreq)
+
+| void Jump_To_Exec(void * entry,struct IOStdReq * ioreq)
 
 _Jump_To_Exec:
 	arg_0=  4
