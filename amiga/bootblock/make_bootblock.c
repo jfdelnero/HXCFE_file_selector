@@ -320,6 +320,8 @@ int main (int argc, char *argv[])
 		// Compute payload checksum...
 		paramszone->exec_checksum = payload_checksum( (uint32_t *)execfile_data,execfile_size>>2);
 
+		printf("Payload checksum : 0x%.8X\n", ENDIAN_32BIT(paramszone->exec_checksum));
+
 		// Compute bootblock checksum...
 		ptr = (uint32_t *)&BOOTBLOCK;
 		checksum = 0x00000000;
@@ -338,7 +340,7 @@ int main (int argc, char *argv[])
 
 		BOOTBLOCK.checksum = ENDIAN_32BIT(checksum);
 
-		printf("Block checksum : 0x%.8X\n",checksum);
+		printf("Bootblock checksum : 0x%.8X\n",checksum);
 
 		printf("Writing to %s...\n",argv[2]);
 		f_out = fopen(argv[2],"r+");
