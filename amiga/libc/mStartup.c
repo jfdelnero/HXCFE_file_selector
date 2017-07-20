@@ -9,6 +9,9 @@
 void *__INIT_LIST__[2]={ 0,0 };
 void *__EXIT_LIST__[2]={ 0,0 };
 
+extern struct Library * DOSBase;
+extern volatile unsigned long timercnt;
+
 void* memset ( void * ptr, int value, size_t num )
 {
 	unsigned char* pTemp = (unsigned char*) ptr;
@@ -34,13 +37,13 @@ inline char *strcpy(char *dest, const char* src)
 
 int strcmp(const char *s1, const char *s2)
 {
-    for ( ; *s1 == *s2; s1++, s2++)
+	for ( ; *s1 == *s2; s1++, s2++)
 	{
 		if (*s1 == '\0')
 			return 0;
 	}
-   
-   return ((*(unsigned char *)s1 < *(unsigned char *)s2) ? -1 : +1);
+
+	return ((*(unsigned char *)s1 < *(unsigned char *)s2) ? -1 : +1);
 }
 
 void* memmove(void *destination, const void *source, size_t n)
@@ -203,5 +206,30 @@ int tolowers (int c) {
 
 void sleep(int secs)
 {
-	Delay( secs * 50 );
+	unsigned long curtick,delta;
+	int i;
+
+	if(DOSBase)
+	{
+		// DOS.Library available, use the system Delay instead.
+		Delay( secs * 50 );
+	}
+	else
+	{
+		// Delay based on the tick timer (vbl)
+		i = 0;
+		do
+		{
+			curtick = timercnt;
+			do{
+				if(timercnt >= curtick )
+					delta = timercnt - curtick;
+				else
+				{
+					delta = ( 0xFFFFFFFF - curtick) +  timercnt;
+				}
+			}while( delta < 50 );
+			i++;
+		}while( i  < secs);
+	}
 }
