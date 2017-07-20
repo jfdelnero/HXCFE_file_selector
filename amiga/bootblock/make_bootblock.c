@@ -212,6 +212,23 @@ unsigned char * loadfile(char *filename,void * destptr, int * size)
 	return destptr;
 }
 
+uint32_t payload_checksum(uint32_t * read_ptr,int size)
+{
+	int i;
+	uint32_t checksum,data;
+	uint32_t * last_ptr;
+
+	checksum = 0;
+	last_ptr = read_ptr + size;
+	while( read_ptr != last_ptr )
+	{
+		data = *read_ptr++;
+		checksum += ENDIAN_32BIT(data);
+	}
+
+	return ENDIAN_32BIT(checksum);
+}
+
 int main (int argc, char *argv[])
 {
 	int i,code_size,size,exec_pos;
@@ -299,14 +316,11 @@ int main (int argc, char *argv[])
 		}
 
 		paramszone->exec_size = ENDIAN_32BIT(execfile_size);
-		checksum = 0;
-		for(i=0;i<execfile_size;i++)
-		{
-			checksum += execfile_data[i];
-		}
-		paramszone->exec_checksum = ENDIAN_32BIT(checksum);
 
-		// Compute checksum...
+		// Compute payload checksum...
+		paramszone->exec_checksum = payload_checksum( (uint32_t *)execfile_data,execfile_size>>2);
+
+		// Compute bootblock checksum...
 		ptr = (uint32_t *)&BOOTBLOCK;
 		checksum = 0x00000000;
 		for( i = 0 ; i < sizeof(BOOTBLOCK) / sizeof(uint32_t) ; i++ )
