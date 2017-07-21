@@ -255,7 +255,7 @@ int media_write(uint32 sector, uint8 *buffer, uint32 sector_count)
 
 	for(i=0;i<sector_count;i++)
 	{
-		if((sector-last_setlbabase)>=8)
+		if( sector - last_setlbabase >=8)
 		{
 			last_setlbabase=sector;
 			setlbabase(sector);
@@ -879,28 +879,31 @@ int getext(char * path,char * exttodest)
 
 void print_help()
 {
-	clear_list(0);
+	int i;
+	int key;
 
-	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS, (char*)help_scr1_msg);
+	i = 0;
 
-	while(wait_function_key()!=FCT_SELECT_FILE_DRIVEA);
+	key = FCT_NO_FUNCTION;
 
-	clear_list(0);
+	while(help_pages[i].txt && key!=FCT_ESCAPE)
+	{
+		clear_list(0);
 
-	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS, (char*)help_scr2_msg);
+		hxc_print(help_pages[i].align,0,HELP_Y_POS, (char*)help_pages[i].txt);
 
-	while(wait_function_key()!=FCT_SELECT_FILE_DRIVEA);
+		do
+		{
+			key = wait_function_key();
+		}while(key!=FCT_SELECT_FILE_DRIVEA && key!=FCT_ESCAPE);
 
-	clear_list(0);
-
-	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS, (char*)help_scr3_msg);
-
-	while(wait_function_key()!=FCT_SELECT_FILE_DRIVEA);
+		i++;
+	}
 }
 
 void ui_savereboot(ui_context * uicontext,int preselected_slot)
 {
-	hxc_printf_box("Saving selection and restart...");
+	hxc_printf_box((char*)save_and_restart_msg);
 	save_cfg_file(uicontext,cfgfile_header,preselected_slot);
 	restore_box();
 	hxc_printf_box((char*)reboot_msg);
@@ -911,7 +914,7 @@ void ui_savereboot(ui_context * uicontext,int preselected_slot)
 
 void ui_save(ui_context * uicontext)
 {
-	hxc_printf_box("Saving selection...");
+	hxc_printf_box((char*)save_msg);
 	save_cfg_file(uicontext,cfgfile_header,-1);
 	restore_box();
 }

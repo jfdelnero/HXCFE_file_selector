@@ -1,5 +1,8 @@
 #include "version.h"
 
+#include "gui_utils.h"
+#include "msg_txt.h"
+
 const char startup_msg[]=
 {
 	"HxC Floppy Emulator file selector\n"
@@ -100,6 +103,14 @@ const char help_scr3_msg[]=
 	"---Press Enter / Fire to continue---"
 };
 
+const pagedesc help_pages[]=
+{
+	{help_scr1_msg,LEFT_ALIGNED},
+	{help_scr2_msg,LEFT_ALIGNED},
+	{help_scr3_msg,CENTER_ALIGNED},
+	{0,0}
+};
+
 const char command_menu_msg[]=
 {
 	"--- Save and Settings ---\n"
@@ -114,6 +125,9 @@ const char command_menu_msg[]=
 	"Help / About\n"
 };
 
-const char cur_folder_msg[]= "Current folder:";
-const char reboot_msg[]= ">>>>>Rebooting...<<<<<";
-const char title_msg[]= { "HxC Floppy Emulator file selector v" VERSIONCODE};
+const char cur_folder_msg[] = "Current folder:";
+const char reboot_msg[] = ">>>>>Rebooting...<<<<<";
+const char save_msg[] = "Saving selection...";
+const char save_and_restart_msg[] = "Saving selection and restart...";
+const char title_msg[] = { "HxC Floppy Emulator file selector v" VERSIONCODE};
+
