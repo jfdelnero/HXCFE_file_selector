@@ -51,6 +51,8 @@
 
 #include "gui_utils.h"
 
+#include "slot_list_gen.h"
+
 #include "../hxcfeda.h"
 
 
@@ -831,15 +833,118 @@ void lockup()
 	for(;;);
 }
 
+int isOption(int argc, char* argv[],char * paramtosearch,char * argtoparam)
+{
+	int param=1;
+	int i,j;
+
+	char option[512];
+
+	memset(option,0,512);
+	while(param<=argc)
+	{
+		if(argv[param])
+		{
+			if(argv[param][0]=='-')
+			{
+				memset(option,0,512);
+
+				j=0;
+				i=1;
+				while( argv[param][i] && argv[param][i]!=':')
+				{
+					option[j]=argv[param][i];
+					i++;
+					j++;
+				}
+
+				if( !strcmp(option,paramtosearch) )
+				{
+					if(argtoparam)
+					{
+						if(argv[param][i]==':')
+						{
+							i++;
+							j=0;
+							while( argv[param][i] )
+							{
+								argtoparam[j]=argv[param][i];
+								i++;
+								j++;
+							}
+							argtoparam[j]=0;
+							return 1;
+						}
+						else
+						{
+							return -1;
+						}
+					}
+					else
+					{
+						return 1;
+					}
+				}
+			}
+		}
+		param++;
+	}
+
+	return 0;
+}
+
+void printhelp(char* argv[])
+{
+	printf("Options:\n");
+	printf("  -help \t\t\t\t: This help\n");
+	printf("  -verbose\t\t\t\t: Verbose mode\n");
+	printf("  -disk:[path]\t\t\t\t: Path to the drive to mount \n");
+	printf("  -getslots:[filename.txt]\t\t: Get the slot list\n");
+	printf("  -setslots:[filename.txt]\t\t: Set the slot list\n");
+	printf("  -clearslots\t\t\t\t: Clear the slots\n");
+	printf("\n");
+}
+
 int process_command_line(int argc, char* argv[])
 {
-	printf("HxC Floppy Emulator File selector\n");
-	if(argc > 1 && argv)
+	char outfile[512];
+
+	printf("HxC Floppy Emulator : HxC Floppy Emulator File selector\n");
+	printf("Copyright (C) 2006-2017 Jean-Francois DEL NERO\n");
+	printf("This program comes with ABSOLUTELY NO WARRANTY\n");
+	printf("This is free software, and you are welcome to redistribute it\n");
+	printf("under certain conditions;\n\n");
+	printf("%s -help to get the command line options\n\n",argv[0]);
+
+	dev_path[0] = 0;
+
+	if(isOption(argc,argv,"help",0)>0)
 	{
-		strncpy(dev_path,argv[1],511);
+		printhelp(argv);
+	}
+	else
+	{
+		isOption(argc,argv,"disk",(char*)&dev_path);
+
+		outfile[0] = 0;
+		if(isOption(argc,argv,"getslots",(char*)&outfile))
+		{
+			if(strlen(dev_path))
+			{
+				generate_slot_list(outfile);
+				return 1;
+			}
+		}
+
+		if(!strlen(dev_path))
+		{
+			printf("\nDisk path not specify !\n");
+			printf("Please use the -disk:[path] option to mount your SD/USB\n\n");
+			return 1;
+		}
+
 		return 0;
 	}
-	printf("Usage : HXCFEMNG [Disk device path]\n");
 
 	return 1;
 }

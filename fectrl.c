@@ -54,7 +54,7 @@ static uint32_t last_setlbabase;
 static unsigned char cfgfile_header[512];
 
 // Slots buffer
-static disk_in_drive_v2 disks_slots[MAX_NUMBER_OF_SLOT];
+disk_in_drive_v2 disks_slots[MAX_NUMBER_OF_SLOT];
 
 static disk_in_drive_v2_long DirectoryEntry_tab[40];
 

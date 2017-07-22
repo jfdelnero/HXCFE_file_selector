@@ -12,7 +12,7 @@ EXEC=HXCFEMNG
 all: $(EXEC)
 	strip -s $(EXEC)
 
-HXCFEMNG:      fectrl.o gui_utils.o sdl_hal.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o msg_txt.o
+HXCFEMNG:      fectrl.o gui_utils.o sdl_hal.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o msg_txt.o slot_list_gen.o
 	$(CC) -o $@    $^ $(LDFLAGS)
 
 fectrl.o: ../fectrl.c
@@ -46,6 +46,9 @@ fat_write.o: ../fat32/fat_write.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 fat_cache.o: ../fat32/fat_cache.c
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+slot_list_gen.o: slot_list_gen.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean:

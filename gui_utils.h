@@ -25,3 +25,4 @@ unsigned char set_color_scheme(unsigned char color);
 void dbg_printf(char * chaine, ...);
 void print_hex_array(unsigned char * buffer,int size);
 #endif
+
