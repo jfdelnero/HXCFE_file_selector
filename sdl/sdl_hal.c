@@ -902,7 +902,7 @@ void printhelp(char* argv[])
 	printf("  -getslots:[filename.txt]\t\t: Get the slot list\n");
 	printf("  -setslots:[filename.txt]\t\t: Set the slot list\n");
 	printf("  -fixslots\t\t\t\t: Fix the bad slot(s)\n");
-	printf("  -populateslots\t\t\t: Scan all supported file and auto add them into the slots\n");	
+	printf("  -populateslots\t\t\t: Scan all supported file and auto add them into the slots\n");
 	printf("  -clearslots\t\t\t\t: Clear the slots\n");
 	printf("\n");
 }
@@ -952,6 +952,15 @@ int process_command_line(int argc, char* argv[])
 			if(strlen(dev_path))
 			{
 				generate_slot_list(0,1);
+				return 1;
+			}
+		}
+
+		if(isOption(argc,argv,"clearslots",0))
+		{
+			if(strlen(dev_path))
+			{
+				clear_all_slots();
 				return 1;
 			}
 		}
