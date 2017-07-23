@@ -146,6 +146,33 @@ int clear_slots(ui_context * uicontext)
 	return 0;
 }
 
+int get_slot_from_cluster(ui_context * uicontext,unsigned long cluster)
+{
+	disk_in_drive_v2 * drive_slots_ptr;
+	int slotnumber;
+	int drive;
+
+	drive = 0;
+
+	for ( slotnumber = 1; slotnumber < uicontext->config_file_number_max_of_slot; slotnumber++ )
+	{
+		for(drive = 0; drive < uicontext->number_of_drive; drive++)
+		{
+			drive_slots_ptr = &disks_slots[ (slotnumber*uicontext->number_of_drive) + drive];
+
+			if( (uicontext->slot_map[slotnumber>>3] & (0x80 >> (slotnumber&7))) )
+			{
+				if( cluster == drive_slots_ptr->firstCluster )
+				{
+					return slotnumber;
+				}
+			}
+		}
+	}
+
+	return -1;
+}
+
 int check_slots(ui_context * uicontext,char * outputfile,int fix)
 {
 	char tmp_str[81];
@@ -400,5 +427,48 @@ int clear_all_slots()
 
 	save_cfg_file(uicontext,(unsigned char*)&cfgfile_header, -1);
 
+	return 0;
+}
+
+int scan_tree(ui_context * uicontext,char * path, unsigned long cluster)
+{
+	struct fs_dir_ent dir_entry;
+	FL_DIR file_list_status;
+	int pathlen,slot;
+
+	fl_opendir(scanfolderpath, &file_list_status);
+	while(!fl_readdir(&file_list_status, &dir_entry))
+	{
+		if(dir_entry.is_dir)
+		{
+			#ifdef DEBUG
+			printf("Folder Entry : %s Cluster 0x%.8X\n",dir_entry.filename,ENDIAN_32BIT(dir_entry.cluster));
+			#endif
+
+			if(strcmp(dir_entry.filename,".") && strcmp(dir_entry.filename,".."))
+			{
+				pathlen = strlen(scanfolderpath);
+				strcat(scanfolderpath,"/");
+				strcat(scanfolderpath,dir_entry.filename);
+				if( scan_tree( uicontext, path, cluster) )
+					return 1;
+				scanfolderpath[pathlen] = 0;
+			}
+		}
+		else
+		{
+			#ifdef DEBUG
+			printf("File Entry : %s Size:%d Cluster 0x%.8X\n",dir_entry.filename,ENDIAN_32BIT(dir_entry.size),ENDIAN_32BIT(dir_entry.cluster));
+			#endif
+
+			slot = get_slot_from_cluster(uicontext,ENDIAN_32BIT(dir_entry.cluster));
+
+			if( slot < 0 )
+			{
+				// If not found...
+				// Add it.
+			}
+		}
+	}
 	return 0;
 }
