@@ -901,13 +901,15 @@ void printhelp(char* argv[])
 	printf("  -disk:[path]\t\t\t\t: Path to the drive to mount \n");
 	printf("  -getslots:[filename.txt]\t\t: Get the slot list\n");
 	printf("  -setslots:[filename.txt]\t\t: Set the slot list\n");
+	printf("  -fixslots\t\t\t\t: Fix the bad slot(s)\n");
+	printf("  -populateslots\t\t\t: Scan all supported file and auto add them into the slots\n");	
 	printf("  -clearslots\t\t\t\t: Clear the slots\n");
 	printf("\n");
 }
 
 int process_command_line(int argc, char* argv[])
 {
-	char outfile[512];
+	char inoutfile[512];
 
 	printf("HxC Floppy Emulator : HxC Floppy Emulator File selector\n");
 	printf("Copyright (C) 2006-2017 Jean-Francois DEL NERO\n");
@@ -926,12 +928,30 @@ int process_command_line(int argc, char* argv[])
 	{
 		isOption(argc,argv,"disk",(char*)&dev_path);
 
-		outfile[0] = 0;
-		if(isOption(argc,argv,"getslots",(char*)&outfile))
+		inoutfile[0] = 0;
+		if(isOption(argc,argv,"getslots",(char*)&inoutfile))
 		{
 			if(strlen(dev_path))
 			{
-				generate_slot_list(outfile);
+				generate_slot_list(inoutfile,0);
+				return 1;
+			}
+		}
+
+		if(isOption(argc,argv,"setslots",(char*)&inoutfile))
+		{
+			if(strlen(dev_path))
+			{
+				insert_slot_list(inoutfile);
+				return 1;
+			}
+		}
+
+		if(isOption(argc,argv,"fixslots",0))
+		{
+			if(strlen(dev_path))
+			{
+				generate_slot_list(0,1);
 				return 1;
 			}
 		}

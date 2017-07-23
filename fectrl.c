@@ -485,7 +485,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_
 				dbg_printf("V1 config file format\n");
 				#endif
 
-				cfgfile_ptr = (cfgfile * )cfgfile_header;
+				cfgfile_ptr = (cfgfile * )sdfecfg_file;
 
 				number_of_slot = 1;
 
@@ -597,7 +597,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_
 				cfgfile_ptr->number_of_slot = number_of_slot;
 				cfgfile_ptr->slot_index = slot_index;
 
-				if (fl_fswrite((unsigned char*)cfgfile_header, 1,0, cfg_file_handle) != 1)
+				if (fl_fswrite((unsigned char*)sdfecfg_file, 1,0, cfg_file_handle) != 1)
 				{
 					#ifdef DEBUG
 					dbg_printf("fl_fswrite error : header %d !\n",0);
@@ -617,7 +617,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_
 
 				number_of_slot = 1;
 
-				cfgfile_ptr=(cfgfile * )cfgfile_header;
+				cfgfile_ptr=(cfgfile * )sdfecfg_file;
 
 				slot_index = 1;
 
@@ -674,7 +674,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_
 
 				cfgfile_ptr->slot_index = 0;
 
-				if (fl_fswrite((unsigned char*)cfgfile_header, 1,0, cfg_file_handle) != 1)
+				if (fl_fswrite((unsigned char*)sdfecfg_file, 1,0, cfg_file_handle) != 1)
 				{
 					#ifdef DEBUG
 					dbg_printf("fl_fswrite error : header %d !\n",0);

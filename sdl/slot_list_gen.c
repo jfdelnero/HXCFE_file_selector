@@ -25,11 +25,12 @@
 //
 */
 
-// Text file Slots list import/export 
+// Text file Slots list import/export
 
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "cfg_file.h"
 
@@ -46,8 +47,10 @@ extern int media_read(uint32 sector, uint8 *buffer, uint32 sector_count);
 extern int media_write(uint32 sector, uint8 *buffer, uint32 sector_count);
 extern FL_FILE * cfg_file_handle;
 extern void init_fdc(int drive);
-
+extern int getext(char * path,char * exttodest);
 extern char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header);
+extern char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_selected_slot);
+
 
 extern ui_context g_ui_ctx;
 extern disk_in_drive_v2 disks_slots[MAX_NUMBER_OF_SLOT];
@@ -118,24 +121,27 @@ int get_path_from_cluster(char * path, unsigned long cluster)
 	return 0;
 }
 
-void check_slots(ui_context * uicontext,char * outputfile)
+int check_slots(ui_context * uicontext,char * outputfile,int fix)
 {
 	char tmp_str[81];
 	disk_in_drive_v2 * drive_slots_ptr;
 	int slotnumber;
-	int drive;
+	int drive,errorcnt;
 	char fullpath[1024];
 	FILE * fout;
 
 	drive = 0;
-
+	errorcnt = 0;
 	fout = 0;
 	if(outputfile)
 	{
-		fout = fopen(outputfile,"wb");
-		if(!fout)
+		if(strlen(outputfile))
 		{
-			printf("Error ! can't create %s !\n",outputfile);
+			fout = fopen(outputfile,"wb");
+			if(!fout)
+			{
+				printf("Error ! can't create %s !\n",outputfile);
+			}
 		}
 	}
 
@@ -157,13 +163,22 @@ void check_slots(ui_context * uicontext,char * outputfile)
 			if(get_path_from_cluster(fullpath, drive_slots_ptr->firstCluster))
 			{
 				if(fout)
-					fprintf(fout,"Slot %d:%s\n",slotnumber,fullpath);
+					fprintf(fout,"%.5d:%s\n",slotnumber,fullpath);
 
 				printf("Slot %d:%s\n",slotnumber,fullpath);
 			}
 			else
 			{
-				printf("File not found ! Bogus Slot %d entry !\n",slotnumber);
+				errorcnt++;
+
+				printf("Slot %d:%s -> ERROR ! Not found ! Bad Slot Entry !\n",slotnumber,tmp_str);
+				if(fix)
+				{
+					printf("Clear Slot %d\n",slotnumber);
+					memset(drive_slots_ptr,0,sizeof(disk_in_drive_v2));
+					uicontext->slot_map[slotnumber>>3] &= ~(0x80 >> (slotnumber&7));
+					uicontext->change_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
+				}
 			}
 		}
 	}
@@ -171,12 +186,14 @@ void check_slots(ui_context * uicontext,char * outputfile)
 	if(fout)
 		fclose(fout);
 
+	return errorcnt;
 }
 
-int generate_slot_list(char * outputfile)
+int generate_slot_list(char * outputfile,int fix)
 {
 	ui_context * uicontext;
 	unsigned char cfgfile_header[512];
+	int errorcnt;
 
 	uicontext = &g_ui_ctx;
 
@@ -198,9 +215,128 @@ int generate_slot_list(char * outputfile)
 
 	read_cfg_file(uicontext,(unsigned char*)&cfgfile_header);
 
-	check_slots(uicontext,outputfile);
+	errorcnt = check_slots(uicontext,outputfile,fix);
+
+	printf("%d Bad slot(s) found...\n",errorcnt);
+
+	if(errorcnt && fix)
+	{
+		printf("Saving...\n");
+		save_cfg_file(uicontext,(unsigned char*)&cfgfile_header, -1);
+	}
 
 	scanfolderpath[0] = 0;
+
+	return 0;
+}
+
+int insert_slot_list(char * inputfile)
+{
+	ui_context * uicontext;
+	unsigned char cfgfile_header[512];
+	char linebuffer[1024];
+	char * filename;
+	char * ptr;
+	FILE * fin;
+	int j,drive;
+	FL_FILE * slotfile;
+	uicontext = &g_ui_ctx;
+	int slotnumber;
+	disk_in_drive_v2_long DirectoryEntry;
+
+	drive = 0;
+
+	memset( uicontext,0,sizeof(ui_context));
+	strcpy( uicontext->currentPath, "/" );
+
+	init_fdc(0);
+
+	attach_and_init_media();
+
+	printf("Reading HXCSDFE.CFG ...\n");
+
+	cfg_file_handle = fl_fopen("/HXCSDFE.CFG", "r");
+	if (!cfg_file_handle)
+	{
+		printf("ERROR: Can't open HXCSDFE.CFG !");
+		return 0;
+	}
+
+	read_cfg_file(uicontext,(unsigned char*)&cfgfile_header);
+
+	printf("Opening %s...\n",inputfile);
+	fin = fopen(inputfile,"r");
+	if(fin)
+	{
+		while(!feof(fin))
+		{
+			memset(&DirectoryEntry,0,sizeof(DirectoryEntry));
+			if(fgets(linebuffer, sizeof(linebuffer), fin))
+			{
+				printf("%s",linebuffer);
+				filename = strchr ( linebuffer, ':' );
+				if(filename)
+				{
+					*filename = 0;
+					filename++;
+
+					ptr = strchr ( filename, '\n' );
+					if(ptr)
+						*ptr = 0;
+
+					ptr = strchr ( filename, '\r' );
+					if(ptr)
+						*ptr = 0;
+
+					slotfile = fl_fopen(filename, "r");
+					if (!slotfile)
+					{
+						printf("ERROR: Can't open %s !\n",filename);
+					}
+					else
+					{
+						slotnumber = atoi(linebuffer);
+						printf("Insert slot %d\n",slotnumber);
+
+						DirectoryEntry.attributes=0x00;
+
+						// Get the file name extension.
+						getext(slotfile->filename,(char*)&DirectoryEntry.type);
+
+						j = 0;
+						while(j<MAX_LONG_NAME_LENGHT && slotfile->filename[j])
+						{
+							DirectoryEntry.name[j] = slotfile->filename[j];
+							j++;
+						}
+
+						DirectoryEntry.name[j] = 0x00;
+
+						DirectoryEntry.firstCluster = ENDIAN_32BIT(slotfile->startcluster) ;
+						DirectoryEntry.size = ENDIAN_32BIT(slotfile->filelength);
+
+						#ifdef DEBUG
+						printf("Entry : %s Size:%d Cluster 0x%.8X\n",DirectoryEntry.name,DirectoryEntry.size,DirectoryEntry.firstCluster);
+						#endif
+
+						memcpy( (void*)&disks_slots[ (slotnumber * uicontext->number_of_drive) + drive ],
+							(void*)&DirectoryEntry,
+							sizeof(disk_in_drive_v2)
+							);
+
+						uicontext->slot_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
+						uicontext->change_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
+
+						fl_fclose(slotfile);
+					}
+				}
+			}
+		}
+
+		fclose(fin);
+
+		save_cfg_file(uicontext,(unsigned char*)&cfgfile_header, -1);
+	}
 
 	return 0;
 }

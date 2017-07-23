@@ -62,6 +62,13 @@ void print_str(unsigned char * membuffer,char * buf,int maxsize,int x_pos,int y_
 	dbg_printf("UIOut x:%d y:%d %s\n",y_pos,y_pos,buf);
 	#endif
 
+	#ifdef SDLHOST
+	if(strlen(buf)>2)
+	{
+		printf("%s\n",buf);
+	}
+	#endif
+
 	i = 0;
 	while(buf[i] && i < maxsize)
 	{
