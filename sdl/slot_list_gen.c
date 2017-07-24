@@ -203,7 +203,8 @@ int check_slots(ui_context * uicontext,char * outputfile,int fix)
 	{
 		memset(tmp_str,0,sizeof(tmp_str));
 		drive_slots_ptr = &disks_slots[ (slotnumber*uicontext->number_of_drive) + drive];
-		if( drive_slots_ptr->size )
+
+		if( (uicontext->slot_map[slotnumber>>3] & (0x80 >> (slotnumber&7))) )
 		{
 			memcpy(tmp_str,&drive_slots_ptr->name,MAX_SHORT_NAME_LENGHT);
 
@@ -325,7 +326,6 @@ int insert_slot_list(char * inputfile)
 			memset(&DirectoryEntry,0,sizeof(DirectoryEntry));
 			if(fgets(linebuffer, sizeof(linebuffer), fin))
 			{
-				printf("%s",linebuffer);
 				filename = strchr ( linebuffer, ':' );
 				if(filename)
 				{
@@ -350,7 +350,7 @@ int insert_slot_list(char * inputfile)
 						slotnumber = atoi(linebuffer);
 						if(slotnumber < uicontext->config_file_number_max_of_slot )
 						{
-							printf("Insert slot %d\n",slotnumber);
+							printf("Slot %d : Set to %s\n",slotnumber,filename);
 
 							DirectoryEntry.attributes=0x00;
 
@@ -385,6 +385,7 @@ int insert_slot_list(char * inputfile)
 						{
 							printf("Error : Can't insert slot %d - Space not available into the cfg file !\n",slotnumber);
 						}
+
 						fl_fclose(slotfile);
 					}
 				}
@@ -430,11 +431,39 @@ int clear_all_slots()
 	return 0;
 }
 
-int scan_tree(ui_context * uicontext,char * path, unsigned long cluster)
+char * supportedformat[]=
+{
+	"adf",
+	"st",
+	"hfe",
+	"img",
+	"dsk",
+	0
+};
+
+int isSupported(char * ext)
+{
+	int i;
+
+	i = 0;
+	strlwr(ext);
+
+	while(supportedformat[i])
+	{
+		if(!strcmp(supportedformat[i],ext))
+			return 1;
+		i++;
+	}
+	return 0;
+}
+
+int scan_tree(ui_context * uicontext)
 {
 	struct fs_dir_ent dir_entry;
 	FL_DIR file_list_status;
-	int pathlen,slot;
+	int pathlen,slot,slotnumber,j;
+	disk_in_drive_v2_long DirectoryEntry;
+	int drive,freeslotfound;
 
 	fl_opendir(scanfolderpath, &file_list_status);
 	while(!fl_readdir(&file_list_status, &dir_entry))
@@ -450,7 +479,7 @@ int scan_tree(ui_context * uicontext,char * path, unsigned long cluster)
 				pathlen = strlen(scanfolderpath);
 				strcat(scanfolderpath,"/");
 				strcat(scanfolderpath,dir_entry.filename);
-				if( scan_tree( uicontext, path, cluster) )
+				if( scan_tree( uicontext ) )
 					return 1;
 				scanfolderpath[pathlen] = 0;
 			}
@@ -467,8 +496,89 @@ int scan_tree(ui_context * uicontext,char * path, unsigned long cluster)
 			{
 				// If not found...
 				// Add it.
+				// Search a free slot...
+				drive = 0;
+				freeslotfound = 0;
+				slotnumber = 1;
+				// Get the file name extension.
+				getext(dir_entry.filename,(char*)&DirectoryEntry.type);
+				if(isSupported((char*)&DirectoryEntry.type))
+				{
+					printf("Adding %s... ",dir_entry.filename);
+					do
+					{
+						if( !(uicontext->slot_map[slotnumber>>3] & (0x80 >> (slotnumber&7))) )
+						{
+							// Free slot found...
+							uicontext->slot_map[slotnumber>>3]   |= (0x80 >> (slotnumber&7));
+							uicontext->change_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
+
+							DirectoryEntry.attributes=0x00;
+
+							j = 0;
+							while(j<MAX_LONG_NAME_LENGHT && dir_entry.filename[j])
+							{
+								DirectoryEntry.name[j] = dir_entry.filename[j];
+								j++;
+							}
+
+							DirectoryEntry.name[j] = 0x00;
+
+							DirectoryEntry.firstCluster = ENDIAN_32BIT(dir_entry.cluster) ;
+							DirectoryEntry.size = ENDIAN_32BIT(dir_entry.size);
+
+							memcpy( (void*)&disks_slots[ (slotnumber * uicontext->number_of_drive) + drive ],
+									(void*)&DirectoryEntry,
+									sizeof(disk_in_drive_v2)
+									);
+							freeslotfound = 1;
+
+							printf("to slot %d\n",slotnumber);
+						}
+
+						slotnumber++;
+					}while(slotnumber < uicontext->config_file_number_max_of_slot && !freeslotfound);
+
+					if(!freeslotfound)
+					{
+						printf("\nError : Can't add %s ! No free space into this cfg file !\n",dir_entry.filename);
+					}
+				}
 			}
 		}
 	}
+	return 0;
+}
+
+int auto_populate_slots()
+{
+	ui_context * uicontext;
+	unsigned char cfgfile_header[512];
+	uicontext = &g_ui_ctx;
+
+	memset( uicontext,0,sizeof(ui_context));
+	strcpy( uicontext->currentPath, "/" );
+
+	init_fdc(0);
+
+	attach_and_init_media();
+
+	printf("Reading HXCSDFE.CFG ...\n");
+
+	cfg_file_handle = fl_fopen("/HXCSDFE.CFG", "r");
+	if (!cfg_file_handle)
+	{
+		printf("ERROR: Can't open HXCSDFE.CFG !");
+		return 0;
+	}
+
+	read_cfg_file(uicontext,(unsigned char*)&cfgfile_header);
+
+	scanfolderpath[0] = 0;
+	scanfolderpath[1] = 0;
+	scan_tree(uicontext);
+
+	save_cfg_file(uicontext,(unsigned char*)&cfgfile_header, -1);
+
 	return 0;
 }

@@ -965,6 +965,15 @@ int process_command_line(int argc, char* argv[])
 			}
 		}
 
+		if(isOption(argc,argv,"populateslots",0))
+		{
+			if(strlen(dev_path))
+			{
+				auto_populate_slots();
+				return 1;
+			}
+		}
+
 		if(!strlen(dev_path))
 		{
 			printf("\nDisk path not specify !\n");
