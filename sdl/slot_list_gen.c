@@ -216,7 +216,7 @@ int check_slots(ui_context * uicontext,char * outputfile,int fix)
 			if(get_path_from_cluster(fullpath, drive_slots_ptr->firstCluster))
 			{
 				if(fout)
-					fprintf(fout,"%.5d:%s\n",slotnumber,fullpath);
+					fprintf(fout,"%.5d:%s\r\n",slotnumber,fullpath);
 
 				printf("Slot %d:%s\n",slotnumber,fullpath);
 			}
@@ -293,11 +293,12 @@ int insert_slot_list(char * inputfile)
 	FILE * fin;
 	int j,drive;
 	FL_FILE * slotfile;
-	uicontext = &g_ui_ctx;
 	int slotnumber;
 	disk_in_drive_v2_long DirectoryEntry;
 
 	drive = 0;
+
+	uicontext = &g_ui_ctx;
 
 	memset( uicontext,0,sizeof(ui_context));
 	strcpy( uicontext->currentPath, "/" );

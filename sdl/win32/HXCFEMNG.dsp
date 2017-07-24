@@ -183,6 +183,10 @@ SOURCE=..\..\msg_txt.c
 
 SOURCE=..\sdl_hal.c
 # End Source File
+# Begin Source File
+
+SOURCE=..\slot_list_gen.c
+# End Source File
 # End Group
 # Begin Group "Header Files"
 
