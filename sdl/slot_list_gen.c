@@ -177,9 +177,7 @@ int scan_tree_slot(ui_context * uicontext,FILE * fout)
 {
 	struct fs_dir_ent dir_entry;
 	FL_DIR file_list_status;
-	int pathlen,slot,slotnumber,j;
-	disk_in_drive_v2_long DirectoryEntry;
-	int drive,freeslotfound;
+	int pathlen,slot;
 
 	fl_opendir(scanfolderpath, &file_list_status);
 	while(!fl_readdir(&file_list_status, &dir_entry))
@@ -230,7 +228,6 @@ int check_slots(ui_context * uicontext,char * outputfile,int fix)
 	disk_in_drive_v2 * drive_slots_ptr;
 	int slotnumber;
 	int drive,errorcnt;
-	char fullpath[1024];
 	FILE * fout;
 
 	drive = 0;
