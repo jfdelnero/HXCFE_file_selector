@@ -173,6 +173,57 @@ int get_slot_from_cluster(ui_context * uicontext,unsigned long cluster)
 	return -1;
 }
 
+int scan_tree_slot(ui_context * uicontext,FILE * fout)
+{
+	struct fs_dir_ent dir_entry;
+	FL_DIR file_list_status;
+	int pathlen,slot,slotnumber,j;
+	disk_in_drive_v2_long DirectoryEntry;
+	int drive,freeslotfound;
+
+	fl_opendir(scanfolderpath, &file_list_status);
+	while(!fl_readdir(&file_list_status, &dir_entry))
+	{
+		if(dir_entry.is_dir)
+		{
+			#ifdef DEBUG
+			printf("Folder Entry : %s Cluster 0x%.8X\n",dir_entry.filename,ENDIAN_32BIT(dir_entry.cluster));
+			#endif
+
+			if(strcmp(dir_entry.filename,".") && strcmp(dir_entry.filename,".."))
+			{
+				pathlen = strlen(scanfolderpath);
+				strcat(scanfolderpath,"/");
+				strcat(scanfolderpath,dir_entry.filename);
+				if( scan_tree_slot( uicontext, fout ) )
+					return 1;
+				scanfolderpath[pathlen] = 0;
+			}
+		}
+		else
+		{
+			#ifdef DEBUG
+			printf("File Entry : %s Size:%d Cluster 0x%.8X\n",dir_entry.filename,ENDIAN_32BIT(dir_entry.size),ENDIAN_32BIT(dir_entry.cluster));
+			#endif
+
+			slot = get_slot_from_cluster(uicontext,ENDIAN_32BIT(dir_entry.cluster));
+
+			if( slot >= 0 )
+			{
+				// Mark it as found... (good)
+				uicontext->change_map[slot>>3] |= (0x80 >> (slot&7));
+
+				// If found...
+				if(fout)
+					fprintf(fout,"%.5d:%s/%s\r\n",slot,scanfolderpath,dir_entry.filename);
+
+				printf("Slot %d:%s/%s\n",slot,scanfolderpath,dir_entry.filename);
+			}
+		}
+	}
+	return 0;
+}
+
 int check_slots(ui_context * uicontext,char * outputfile,int fix)
 {
 	char tmp_str[81];
@@ -199,32 +250,22 @@ int check_slots(ui_context * uicontext,char * outputfile,int fix)
 
 	printf("Now checking and listing all slots...\n");
 
+	scan_tree_slot(uicontext,fout);
+
+	// Check that all slot have been found
 	for ( slotnumber = 1; slotnumber < uicontext->config_file_number_max_of_slot; slotnumber++ )
 	{
-		memset(tmp_str,0,sizeof(tmp_str));
-		drive_slots_ptr = &disks_slots[ (slotnumber*uicontext->number_of_drive) + drive];
-
 		if( (uicontext->slot_map[slotnumber>>3] & (0x80 >> (slotnumber&7))) )
 		{
-			memcpy(tmp_str,&drive_slots_ptr->name,MAX_SHORT_NAME_LENGHT);
-
-			#ifdef DEBUG
-			printf("%.4d : %s \tSize : %d Bytes \tCluster:0x%.8X\n",slotnumber,tmp_str,drive_slots_ptr->size,drive_slots_ptr->firstCluster);
-			#endif
-
-			scanfolderpath[0] = 0;
-			if(get_path_from_cluster(fullpath, drive_slots_ptr->firstCluster))
+			if( !(uicontext->change_map[slotnumber>>3] & (0x80 >> (slotnumber&7))) )
 			{
-				if(fout)
-					fprintf(fout,"%.5d:%s\r\n",slotnumber,fullpath);
-
-				printf("Slot %d:%s\n",slotnumber,fullpath);
-			}
-			else
-			{
-				errorcnt++;
+				// Bad Slot !
+				memset(tmp_str,0,sizeof(tmp_str));
+				drive_slots_ptr = &disks_slots[ (slotnumber*uicontext->number_of_drive) + drive];
+				memcpy(tmp_str,&drive_slots_ptr->name,MAX_SHORT_NAME_LENGHT);
 
 				printf("Slot %d:%s -> ERROR ! Not found ! Bad Slot Entry !\n",slotnumber,tmp_str);
+				errorcnt++;
 				if(fix)
 				{
 					printf("Clear Slot %d\n",slotnumber);
@@ -232,6 +273,10 @@ int check_slots(ui_context * uicontext,char * outputfile,int fix)
 					uicontext->slot_map[slotnumber>>3] &= ~(0x80 >> (slotnumber&7));
 					uicontext->change_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
 				}
+			}
+			else
+			{
+				uicontext->change_map[slotnumber>>3] &= ~(0x80 >> (slotnumber&7));
 			}
 		}
 	}

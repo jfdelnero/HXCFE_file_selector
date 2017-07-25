@@ -66,6 +66,12 @@
 #define GREEN 0x0f0
 #define BLUE  0x00f
 
+#ifdef WIN32
+HANDLE  hMassStorage;
+#else
+FILE   *hMassStorage;
+#endif
+
 // SDL Stuff
 SDL_Surface	*screen;
 SDL_Surface	*bBuffer;
@@ -95,6 +101,9 @@ unsigned char last_key;
 direct_access_status_sector virtual_hxcfe_status;
 
 char dev_path[512];
+
+static unsigned char datacache[512*16];
+static unsigned char valid_cache;
 
 void waitus(int centus)
 {
@@ -135,56 +144,65 @@ int get_start_unit(char * path)
 	return 0;
 }
 
+void close_disk_access()
+{
+#ifdef WIN32
+	if(hMassStorage != INVALID_HANDLE_VALUE)
+	{
+		CloseHandle (hMassStorage);
+		hMassStorage = INVALID_HANDLE_VALUE;
+	}
+#else
+	if(hMassStorage)
+	{
+		fclose (hMassStorage);
+		hMassStorage = 0;
+	}
+#endif
+}
+
 int write_mass_storage(unsigned long lba, unsigned char * data)
 {
 	#ifdef WIN32
 	int locked;
-	DWORD   dwNotUsed;
-	HANDLE  hMassStorage;
-	char drv_path[64];
+	DWORD dwNotUsed;
+	DWORD lDistLow,lDistHigh;
 
 	#define FSCTL_LOCK_VOLUME            0x00090018
 	#define FSCTL_UNLOCK_VOLUME          0x0009001C
 
-	strcpy(drv_path,"\\\\.\\");
-	strncat(drv_path,dev_path,sizeof(drv_path)-1);
-
 	locked = 0;
 
-	hMassStorage = CreateFile (drv_path, GENERIC_WRITE,
-					FILE_SHARE_READ|FILE_SHARE_WRITE,
-					NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
-					NULL);
 	if (hMassStorage != INVALID_HANDLE_VALUE)
 	{
 		if(DeviceIoControl(hMassStorage,(DWORD) FSCTL_LOCK_VOLUME, NULL, 0, NULL, 0, &dwNotUsed, NULL))
 			locked = 1;
 
-		SetFilePointer (hMassStorage, 512 * lba, NULL, FILE_BEGIN);
+		// * 512 (64bits)
+		lDistLow = lba << 1;
+		lDistHigh = (lDistLow >> 24) & 0xFF;
+		lDistLow <<= 8;
+		if(lba & 0x80000000)
+			lDistHigh += 0x00000100;
+
+		SetFilePointer (hMassStorage, lDistLow, &lDistHigh, FILE_BEGIN);
 		if (WriteFile (hMassStorage, data, 512, &dwNotUsed, NULL))
 		{
 			if(locked)
 				DeviceIoControl(hMassStorage,(DWORD) FSCTL_UNLOCK_VOLUME, NULL, 0, NULL, 0, &dwNotUsed, NULL);
 
-			CloseHandle (hMassStorage);
 			return 1;
 		}
 
 		if(locked)
 			DeviceIoControl(hMassStorage,(DWORD) FSCTL_UNLOCK_VOLUME, NULL, 0, NULL, 0, &dwNotUsed, NULL);
-
-		CloseHandle (hMassStorage);
 	}
 
 	#else
-	FILE *f;
-
-	f = fopen(dev_path,"rb+");
-	if(f)
+	if(hMassStorage)
 	{
-		fseeko(f,(off_t)lba*(off_t)512,SEEK_SET);
-		fwrite(data,512,1,f);
-		fclose(f);
+		fseeko(hMassStorage,(off_t)lba*(off_t)512,SEEK_SET);
+		fwrite(data,512,1,hMassStorage);
 		return 1;
 	}
 	#endif
@@ -192,43 +210,35 @@ int write_mass_storage(unsigned long lba, unsigned char * data)
 	return 0;
 }
 
-int read_mass_storage(unsigned long lba, unsigned char * data)
+int read_mass_storage(unsigned long lba, unsigned char * data, int nbsector)
 {
 	#ifdef WIN32
-	DWORD   dwNotUsed;
-	HANDLE  hMassStorage;
-	char drv_path[64];
-
-	strcpy(drv_path,"\\\\.\\");
-	strncat(drv_path,dev_path,sizeof(drv_path)-1);
-
-	hMassStorage = CreateFile (drv_path, GENERIC_READ,
-					FILE_SHARE_READ|FILE_SHARE_WRITE,
-					NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
-					NULL);
+	DWORD dwNotUsed;
+	DWORD lDistLow,lDistHigh;
 
 	if (hMassStorage != INVALID_HANDLE_VALUE)
 	{
-		SetFilePointer (hMassStorage, 512 * lba, NULL, FILE_BEGIN);
-		if (ReadFile (hMassStorage, data, 512, &dwNotUsed, NULL))
+		// * 512 (64bits)
+		lDistLow = lba << 1;
+		lDistHigh = (lDistLow >> 24) & 0xFF;
+		lDistLow <<= 8;
+		if(lba & 0x80000000)
+			lDistHigh += 0x00000100;
+
+		SetFilePointer (hMassStorage, lDistLow, &lDistHigh, FILE_BEGIN);
+		if (ReadFile (hMassStorage, data, nbsector*512, &dwNotUsed, NULL))
 		{
-			CloseHandle (hMassStorage);
 			return 1;
 		}
-		CloseHandle (hMassStorage);
 	}
 
 	#else
-
-	FILE *f;
 	int ret;
 
-	f = fopen(dev_path,"rb");
-	if(f)
+	if(hMassStorage)
 	{
-		fseeko(f,(off_t)lba*(off_t)512,SEEK_SET);
-		ret = fread(data,512,1,f);
-		fclose(f);
+		fseeko(hMassStorage,(off_t)lba*(off_t)512,SEEK_SET);
+		ret = fread(data,nbsector*512,1,hMassStorage);
 		return ret;
 	}
 	#endif
@@ -239,6 +249,8 @@ int read_mass_storage(unsigned long lba, unsigned char * data)
 unsigned char writesector(unsigned char sectornum,unsigned char * data)
 {
 	direct_access_cmd_sector  * da_cmd;
+
+	valid_cache=0;
 
 	if(track_number!=255)
 		return 0;
@@ -256,7 +268,7 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 
 			case 1:
 				virtual_hxcfe_status.lba_base = ( ((unsigned long)da_cmd->parameter_3<<24) |
-				                                  ((unsigned long)da_cmd->parameter_2<<16) |
+												  ((unsigned long)da_cmd->parameter_2<<16) |
 												  ((unsigned long)da_cmd->parameter_1<< 8) |
 												  ((unsigned long)da_cmd->parameter_0<< 0) );
 
@@ -295,6 +307,8 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 
 unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned char invalidate_cache)
 {
+	int ret;
+
 	if(track_number!=255)
 		return 0;
 
@@ -310,18 +324,45 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 			return 0;
 		}
 
-		return read_mass_storage(virtual_hxcfe_status.lba_base + (sectornum - 1), data);
+		ret = 1;
+
+		if(!valid_cache || invalidate_cache)
+		{
+			ret = read_mass_storage(virtual_hxcfe_status.lba_base + (sectornum - 1), datacache, number_of_sector);
+			if(ret)
+				valid_cache=0xFF;
+		}
+
+		if(ret)
+			memcpy((void*)data,&datacache[(sectornum-1)*512],512);
+
+		return ret;
 	}
 	return 1;
 }
 
 void init_fdc(int drive)
 {
+	#ifdef WIN32
+	char drv_path[64];
+
+	strcpy(drv_path,"\\\\.\\");
+	strncat(drv_path,dev_path,sizeof(drv_path)-1);
+
+	hMassStorage = CreateFile (drv_path, GENERIC_READ | GENERIC_WRITE,
+					FILE_SHARE_READ|FILE_SHARE_WRITE,
+					NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
+					NULL);
+	#else
+	hMassStorage = fopen(dev_path,"rb+");
+	#endif
+
 	memset(&virtual_hxcfe_status,0,sizeof(virtual_hxcfe_status));
 	memcpy((char*)&virtual_hxcfe_status.DAHEADERSIGNATURE,	(const char *)"HxCFEDA",	strlen("HxCFEDA"));
 	memcpy((char*)&virtual_hxcfe_status.FIRMWAREVERSION,	(const char *)VIRT_VERSIONCODE,	strlen(VIRT_VERSIONCODE));
 	virt_lba = 0;
-	number_of_sector = 0;
+	valid_cache = 0;
+	number_of_sector = 9;
 	jumptotrack(255);
 }
 
@@ -510,7 +551,9 @@ uint32_t sdl_timer(Uint32 interval, void *param)
 		switch(evt.type)
 		{
 			case SDL_QUIT:
+				close_disk_access();
 				SDL_Quit();
+
 				exit(0);
 			break;
 		}
@@ -526,6 +569,7 @@ void init_timer()
 	sdl_timer_id = SDL_AddTimer(30, sdl_timer, "a");
 	if(!sdl_timer_id)
 	{
+		close_disk_access();
 		SDL_Quit();
 		exit(-1);
 	}
@@ -774,6 +818,9 @@ void reboot()
 	if(sdl_timer_id)
 		SDL_RemoveTimer(sdl_timer_id);
 	SDL_Quit();
+
+	close_disk_access();
+
 	exit(0);
 	for(;;);
 }
@@ -825,6 +872,8 @@ void lockup()
 
 	if(sdl_timer_id)
 		SDL_RemoveTimer(sdl_timer_id);
+
+	close_disk_access();
 
 	SDL_Quit();
 
@@ -910,6 +959,12 @@ void printhelp(char* argv[])
 int process_command_line(int argc, char* argv[])
 {
 	char inoutfile[512];
+
+#ifdef WIN32
+	hMassStorage = INVALID_HANDLE_VALUE;
+#else
+	hMassStorage = 0;
+#endif
 
 	printf("HxC Floppy Emulator : HxC Floppy Emulator File selector\n");
 	printf("Copyright (C) 2006-2017 Jean-Francois DEL NERO\n");
