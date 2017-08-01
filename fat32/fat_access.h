@@ -98,6 +98,9 @@ struct fs_dir_ent
 {
     char                    filename[FATFS_MAX_LONG_FILENAME];
     uint8                   is_dir;
+    uint8                   is_readonly;
+    uint8                   is_hidden;
+    uint8                   is_system;
     uint32                  cluster;
     uint32                  size;
 

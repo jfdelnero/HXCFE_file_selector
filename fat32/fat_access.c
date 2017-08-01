@@ -817,6 +817,21 @@ int fatfs_list_directory_next(struct fatfs *fs, struct fs_dir_list_status *dirls
                     else
                         entry->is_dir = 0;
 
+                    if (fatfs_entry_is_readonly(directoryEntry))
+                        entry->is_readonly = 1;
+                    else
+                        entry->is_readonly = 0;
+
+                    if (fatfs_entry_is_hidden(directoryEntry))
+                        entry->is_hidden = 1;
+                    else
+                        entry->is_hidden = 0;
+
+                    if (fatfs_entry_is_system(directoryEntry))
+                        entry->is_system = 1;
+                    else
+                        entry->is_system = 0;
+
 #if FATFS_INC_TIME_DATE_SUPPORT
                     // Get time / dates
                     entry->create_time = ((uint16)directoryEntry->CrtTime[1] << 8) | directoryEntry->CrtTime[0];
@@ -874,6 +889,21 @@ int fatfs_list_directory_next(struct fatfs *fs, struct fs_dir_list_status *dirls
                         entry->is_dir = 1;
                     else
                         entry->is_dir = 0;
+
+                    if (fatfs_entry_is_readonly(directoryEntry))
+                        entry->is_readonly = 1;
+                    else
+                        entry->is_readonly = 0;
+
+                    if (fatfs_entry_is_hidden(directoryEntry))
+                        entry->is_hidden = 1;
+                    else
+                        entry->is_hidden = 0;
+
+                    if (fatfs_entry_is_system(directoryEntry))
+                        entry->is_system = 1;
+                    else
+                        entry->is_system = 0;
 
 #if FATFS_INC_TIME_DATE_SUPPORT
                     // Get time / dates

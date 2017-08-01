@@ -59,6 +59,9 @@ int     fatfs_entry_lfn_exists(struct lfn_cache *lfn, struct fat_dir_entry *entr
 int     fatfs_entry_sfn_only(struct fat_dir_entry *entry);
 int     fatfs_entry_is_dir(struct fat_dir_entry *entry);
 int     fatfs_entry_is_file(struct fat_dir_entry *entry);
+int     fatfs_entry_is_readonly(struct fat_dir_entry *entry);
+int     fatfs_entry_is_hidden(struct fat_dir_entry *entry);
+int     fatfs_entry_is_system(struct fat_dir_entry *entry);
 int     fatfs_lfn_entries_required(char *filename);
 void    fatfs_filename_to_lfn(char *filename, uint8 *buffer, int entry, uint8 sfnChk);
 void    fatfs_sfn_create_entry(char *shortfilename, uint32 size, uint32 startCluster, struct fat_dir_entry *entry, int dir);

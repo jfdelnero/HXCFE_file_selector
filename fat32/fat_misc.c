@@ -187,6 +187,36 @@ int fatfs_entry_is_file(struct fat_dir_entry *entry)
         return 0;
 }
 //-----------------------------------------------------------------------------
+// fatfs_entry_is_readonly: Returns 1 if write protected
+//-----------------------------------------------------------------------------
+int fatfs_entry_is_readonly(struct fat_dir_entry *entry)
+{
+    if (entry->Attr & FILE_ATTR_READ_ONLY)
+        return 1;
+    else
+        return 0;
+}
+//-----------------------------------------------------------------------------
+// fatfs_entry_is_readonly: Returns 1 if hidden
+//-----------------------------------------------------------------------------
+int fatfs_entry_is_hidden(struct fat_dir_entry *entry)
+{
+    if (entry->Attr & FILE_ATTR_HIDDEN)
+        return 1;
+    else
+        return 0;
+}
+//-----------------------------------------------------------------------------
+// fatfs_entry_is_system: Returns 1 if system
+//-----------------------------------------------------------------------------
+int fatfs_entry_is_system(struct fat_dir_entry *entry)
+{
+    if (entry->Attr & FILE_ATTR_SYSTEM)
+        return 1;
+    else
+        return 0;
+}
+//-----------------------------------------------------------------------------
 // fatfs_lfn_entries_required: Calculate number of 13 characters entries
 //-----------------------------------------------------------------------------
 #if FATFS_INC_LFN_SUPPORT
