@@ -31,6 +31,9 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <ctype.h>
+
+#include "hardware.h"
 
 #include "cfg_file.h"
 
@@ -395,7 +398,7 @@ int insert_slot_list(char * inputfile)
 						{
 							printf("Slot %d : Set to %s\n",slotnumber,filename);
 
-							DirectoryEntry.attributes=0x00;
+							DirectoryEntry.attributes = slotfile->attributes;
 
 							// Get the file name extension.
 							getext(slotfile->filename,(char*)&DirectoryEntry.type);
@@ -484,6 +487,24 @@ char * supportedformat[]=
 	0
 };
 
+int strcmpi(char* str1,char* str2)
+{
+	int i;
+
+	i = 0;
+	while( (tolower(str1[i]) == tolower(str2[i]))  && str1[i] && str2[i])
+	{
+		i++;
+	}
+
+	if( !str1[i] && !str2[i] )
+	{
+		return 0;
+	}
+
+	return 1;
+}
+
 int isSupported(char * ext)
 {
 	int i;
@@ -533,58 +554,70 @@ int scan_tree(ui_context * uicontext)
 			printf("File Entry : %s Size:%d Cluster 0x%.8X\n",dir_entry.filename,ENDIAN_32BIT(dir_entry.size),ENDIAN_32BIT(dir_entry.cluster));
 			#endif
 
-			slot = get_slot_from_cluster(uicontext,ENDIAN_32BIT(dir_entry.cluster));
-
-			if( slot < 0 )
+			if(strcmpi(dir_entry.filename,"autoboot.hfe"))
 			{
-				// If not found...
-				// Add it.
-				// Search a free slot...
-				drive = 0;
-				freeslotfound = 0;
-				slotnumber = 1;
-				// Get the file name extension.
-				getext(dir_entry.filename,(char*)&DirectoryEntry.type);
-				if(isSupported((char*)&DirectoryEntry.type))
+
+				slot = get_slot_from_cluster(uicontext,ENDIAN_32BIT(dir_entry.cluster));
+
+				if( slot < 0 )
 				{
-					printf("Adding %s... ",dir_entry.filename);
-					do
+					// If not found...
+					// Add it.
+					// Search a free slot...
+					drive = 0;
+					freeslotfound = 0;
+					slotnumber = 1;
+					// Get the file name extension.
+					getext(dir_entry.filename,(char*)&DirectoryEntry.type);
+					if(isSupported((char*)&DirectoryEntry.type))
 					{
-						if( !(uicontext->slot_map[slotnumber>>3] & (0x80 >> (slotnumber&7))) )
+						printf("Adding %s... ",dir_entry.filename);
+						do
 						{
-							// Free slot found...
-							uicontext->slot_map[slotnumber>>3]   |= (0x80 >> (slotnumber&7));
-							uicontext->change_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
-
-							DirectoryEntry.attributes=0x00;
-
-							j = 0;
-							while(j<MAX_LONG_NAME_LENGHT && dir_entry.filename[j])
+							if( !(uicontext->slot_map[slotnumber>>3] & (0x80 >> (slotnumber&7))) )
 							{
-								DirectoryEntry.name[j] = dir_entry.filename[j];
-								j++;
+								// Free slot found...
+								uicontext->slot_map[slotnumber>>3]   |= (0x80 >> (slotnumber&7));
+								uicontext->change_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
+
+								DirectoryEntry.attributes=0x00;
+								if(dir_entry.is_readonly)
+									DirectoryEntry.attributes |= FILE_ATTR_READ_ONLY;
+
+								if(dir_entry.is_system)
+									DirectoryEntry.attributes |= FILE_ATTR_SYSTEM;
+
+								if(dir_entry.is_hidden)
+									DirectoryEntry.attributes |= FILE_ATTR_HIDDEN;
+
+								j = 0;
+								while(j<MAX_LONG_NAME_LENGHT && dir_entry.filename[j])
+								{
+									DirectoryEntry.name[j] = dir_entry.filename[j];
+									j++;
+								}
+
+								DirectoryEntry.name[j] = 0x00;
+
+								DirectoryEntry.firstCluster = ENDIAN_32BIT(dir_entry.cluster) ;
+								DirectoryEntry.size = ENDIAN_32BIT(dir_entry.size);
+
+								memcpy( (void*)&disks_slots[ (slotnumber * uicontext->number_of_drive) + drive ],
+										(void*)&DirectoryEntry,
+										sizeof(disk_in_drive_v2)
+										);
+								freeslotfound = 1;
+
+								printf("to slot %d\n",slotnumber);
 							}
 
-							DirectoryEntry.name[j] = 0x00;
+							slotnumber++;
+						}while(slotnumber < uicontext->config_file_number_max_of_slot && !freeslotfound);
 
-							DirectoryEntry.firstCluster = ENDIAN_32BIT(dir_entry.cluster) ;
-							DirectoryEntry.size = ENDIAN_32BIT(dir_entry.size);
-
-							memcpy( (void*)&disks_slots[ (slotnumber * uicontext->number_of_drive) + drive ],
-									(void*)&DirectoryEntry,
-									sizeof(disk_in_drive_v2)
-									);
-							freeslotfound = 1;
-
-							printf("to slot %d\n",slotnumber);
+						if(!freeslotfound)
+						{
+							printf("\nError : Can't add %s ! No free space into this cfg file !\n",dir_entry.filename);
 						}
-
-						slotnumber++;
-					}while(slotnumber < uicontext->config_file_number_max_of_slot && !freeslotfound);
-
-					if(!freeslotfound)
-					{
-						printf("\nError : Can't add %s ! No free space into this cfg file !\n",dir_entry.filename);
 					}
 				}
 			}

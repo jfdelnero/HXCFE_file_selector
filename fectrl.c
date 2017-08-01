@@ -1452,16 +1452,23 @@ void ui_mainfileselector(ui_context * uicontext)
 
 				if(displayentry)
 				{
+					entrytype_icon = 12;
+					DirectoryEntry_tab[i].attributes=0x00;
+
 					if(dir_entry.is_dir)
 					{
 						entrytype_icon = 10;
-						DirectoryEntry_tab[i].attributes=0x10;
+						DirectoryEntry_tab[i].attributes = FILE_ATTR_DIRECTORY;
 					}
-					else
-					{
-						entrytype_icon = 12;
-						DirectoryEntry_tab[i].attributes=0x00;
-					}
+
+					if(dir_entry.is_readonly)
+						DirectoryEntry_tab[i].attributes |= FILE_ATTR_READ_ONLY;
+
+					if(dir_entry.is_system)
+						DirectoryEntry_tab[i].attributes |= FILE_ATTR_SYSTEM;
+
+					if(dir_entry.is_hidden)
+						DirectoryEntry_tab[i].attributes |= FILE_ATTR_HIDDEN;
 
 					hxc_printf(LEFT_ALIGNED | DONTPARSE,0,y_pos," %c%s",entrytype_icon,dir_entry.filename);
 
@@ -1597,7 +1604,7 @@ void ui_mainfileselector(ui_context * uicontext)
 				case FCT_SHOWSLOTS:
 					disk_ptr=(disk_in_drive_v2_long * )&DirectoryEntry_tab[uicontext->selectorpos];
 
-					if( disk_ptr->attributes & 0x10 )
+					if( disk_ptr->attributes & FILE_ATTR_DIRECTORY )
 					{
 						enter_sub_dir(uicontext,disk_ptr);
 					}
@@ -1628,7 +1635,7 @@ void ui_mainfileselector(ui_context * uicontext)
 				case FCT_SELECTSAVEREBOOT:
 					disk_ptr=(disk_in_drive_v2_long * )&DirectoryEntry_tab[uicontext->selectorpos];
 
-					if( disk_ptr->attributes & 0x10 )
+					if( disk_ptr->attributes & FILE_ATTR_DIRECTORY )
 					{
 						enter_sub_dir(uicontext,disk_ptr);
 					}
