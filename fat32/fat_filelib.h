@@ -45,6 +45,7 @@ typedef struct sFL_FILE
     char                    path[FATFS_MAX_LONG_FILENAME];
     char                    filename[FATFS_MAX_LONG_FILENAME];
     uint8                   shortfilename[11];
+    uint8                   attributes;
 
 #ifdef FAT_CLUSTER_CACHE_ENTRIES
     uint32                  cluster_cache_idx[FAT_CLUSTER_CACHE_ENTRIES];

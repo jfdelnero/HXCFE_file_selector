@@ -375,6 +375,7 @@ static FL_FILE* _open_file(const char *path)
             file->file_data_address = 0xFFFFFFFF;
             file->file_data_dirty = 0;
             file->filelength_changed = 0;
+            file->attributes = sfEntry.Attr;
 
             // Quick lookup for next link in the chain
             file->last_fat_lookup.ClusterIdx = 0xFFFFFFFF;
