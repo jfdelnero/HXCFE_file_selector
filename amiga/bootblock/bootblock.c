@@ -47,6 +47,14 @@
 #include "hunk.h"
 #include "params.h"
 
+#define BG_COLOR_ERROR_1     0xFF0 // Yellow
+#define BG_COLOR_ERROR_2     0xF80 // Orange
+#define BG_COLOR_ERROR_3     0xF00 // Red
+#define BG_COLOR_OK          0x070 // Green
+#define BG_COLOR_PROGRESS    0x005 // Blue
+
+#define COLOR00_ADDR 0xDFF180
+
 static uint32_t * cpy_hunk_buf(uint32_t * d,uint32_t * s,int size)
 {
 	while(size--)
@@ -212,12 +220,13 @@ int bootblock_main(params * paramszone)
 	uint32_t checksum;
 	int retry;
 	struct IOStdReq *ioreq;
-	uint32_t * entry_point;
+	uint32_t * entry_point,loopcnt;
 
 	retry = 3;
 	ioreq = (struct IOStdReq *)paramszone->ioreq;
 
-	// TODO : Splash/do something nice on the screen here.
+	// Blue background...
+	*((volatile unsigned short *)COLOR00_ADDR) = BG_COLOR_PROGRESS;
 
 	loading_mem = AllocMem(paramszone->total_blocks_size, MEMF_CHIP|MEMF_CLEAR|MEMF_PUBLIC);
 	if( loading_mem )
@@ -235,6 +244,7 @@ int bootblock_main(params * paramszone)
 				ioreq->io_Command = CMD_READ;
 				if(DoIO((struct IORequest *)ioreq))
 				{
+					*((volatile unsigned short *)COLOR00_ADDR) = BG_COLOR_ERROR_1;
 					retry--;
 					break;
 				}
@@ -260,6 +270,8 @@ int bootblock_main(params * paramszone)
 
 				if(entry_point)
 				{
+					*((volatile unsigned short *)COLOR00_ADDR) = BG_COLOR_OK;
+
 					// and start the program !
 					Jump_To_Exec(entry_point, (struct IOStdReq *)paramszone->ioreq);
 					// TODO -> Manage case of program exit.
@@ -267,11 +279,13 @@ int bootblock_main(params * paramszone)
 				}
 				else
 				{
+					*((volatile unsigned short *)COLOR00_ADDR) = BG_COLOR_ERROR_3;
 					return 1; // Hunk loading failure...
 				}
 			}
 			else
 			{
+				*((volatile unsigned short *)COLOR00_ADDR) = BG_COLOR_ERROR_2;
 				retry--;
 			}
 		}
@@ -280,6 +294,12 @@ int bootblock_main(params * paramszone)
 		FreeMem(loading_mem, paramszone->total_blocks_size);
 	}
 
-	// Something wrong happened... Return to kickstart...
+	// Something wrong happened... Red alert...
+	loopcnt = 0;
+	for(;;)
+	{
+		*((volatile unsigned short *)COLOR00_ADDR) = (loopcnt>>5) & 0xF00;
+		loopcnt++;
+	}
 	return 1;
 }
