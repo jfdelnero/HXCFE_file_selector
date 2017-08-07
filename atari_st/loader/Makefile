@@ -46,3 +46,4 @@ temp/stage1.bin: atari/stage1.s atari/equates.s atari/const.s atari/autoload.s t
 
 OUT.ST: temp/stage1.bin temp/stage2.bin temp/packed.n2b
 	perl link.pl
+	hxcfe  -conv:HXC_HFE -finput:$@ -foutput:AUTOBOOT.HFE
