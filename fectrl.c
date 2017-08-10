@@ -863,6 +863,7 @@ int getext(char * path,char * exttodest)
 		exttodest[0] = path[i];
 		exttodest[1] = path[i+1];
 		exttodest[2] = path[i+2];
+		exttodest[3] = 0;
 
 		// Remove trailing space
 		i = 2;
