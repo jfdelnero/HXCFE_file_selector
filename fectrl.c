@@ -863,7 +863,6 @@ int getext(char * path,char * exttodest)
 		exttodest[0] = path[i];
 		exttodest[1] = path[i+1];
 		exttodest[2] = path[i+2];
-		exttodest[3] = 0;
 
 		// Remove trailing space
 		i = 2;
@@ -873,7 +872,6 @@ int getext(char * path,char * exttodest)
 			i--;
 		}
 	}
-
 
 	return 0;
 }
@@ -1453,6 +1451,18 @@ void ui_mainfileselector(ui_context * uicontext)
 
 				if(displayentry)
 				{
+					// Get the file name extension.
+					getext(dir_entry.filename,(char*)&DirectoryEntry_tab[i].type);
+
+					// Get the file name
+					j = 0;
+					while(j<MAX_LONG_NAME_LENGHT && dir_entry.filename[j])
+					{
+						DirectoryEntry_tab[i].name[j] = dir_entry.filename[j];
+						j++;
+					}
+					DirectoryEntry_tab[i].name[j] = 0x00;
+
 					entrytype_icon = 12;
 					DirectoryEntry_tab[i].attributes=0x00;
 
@@ -1475,23 +1485,11 @@ void ui_mainfileselector(ui_context * uicontext)
 
 					y_pos=y_pos+8;
 
-					// Get the file name extension.
-					getext(dir_entry.filename,(char*)&DirectoryEntry_tab[i].type);
-
-					j = 0;
-					while(j<MAX_LONG_NAME_LENGHT && dir_entry.filename[j])
-					{
-						DirectoryEntry_tab[i].name[j] = dir_entry.filename[j];
-						j++;
-					}
-
-					DirectoryEntry_tab[i].name[j] = 0x00;
-
 					DirectoryEntry_tab[i].firstCluster = ENDIAN_32BIT(dir_entry.cluster) ;
 					DirectoryEntry_tab[i].size =  ENDIAN_32BIT(dir_entry.size);
 
 					#ifdef DEBUG
-					dbg_printf("Entry : %s Size:%d Cluster 0x%.8X\n",DirectoryEntry_tab[i].name,DirectoryEntry_tab[i].size,DirectoryEntry_tab[i].firstCluster);
+					dbg_printf("Entry : %s Size:%d Cluster 0x%.8X Flags 0x%.2X\n",DirectoryEntry_tab[i].name,DirectoryEntry_tab[i].size,DirectoryEntry_tab[i].firstCluster,DirectoryEntry_tab[i].attributes);
 					#endif
 
 					i++;
