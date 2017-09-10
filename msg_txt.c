@@ -122,6 +122,8 @@ const char command_menu_msg[]=
 	"Change display colors\n"
 	"HxC Drive Settings\n"
 	"\n"
+	"Select drive\n"
+	"\n"
 	"Help / About\n"
 };
 

@@ -39,6 +39,8 @@
 #include <clib/exec_protos.h>
 #include <clib/dos_protos.h>
 
+#include <exec/execbase.h>
+
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
@@ -447,7 +449,6 @@ int jumptotrack(unsigned char t)
 {
 	unsigned short j,k;
 
-	Forbid();
 	WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL ));
 
 	#ifdef DEBUG
@@ -491,8 +492,6 @@ int jumptotrack(unsigned char t)
 		dbg_printf("jumptotrack %d - jump done\n",t);
 		#endif
 
-		Permit();
-
 		return 0;
 	}
 
@@ -500,7 +499,6 @@ int jumptotrack(unsigned char t)
 	dbg_printf("jumptotrack %d - track 0 not found!!\n",t);
 	#endif
 
-	Permit();
 	return 1;
 };
 
@@ -1025,34 +1023,143 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 	return sectorfound;
 }
 
-#if 0
+void NewList(struct List *lh)
+{
+	lh->lh_Head = (struct Node *)(&lh->lh_Tail);
+	lh->lh_Tail = NULL;
+	lh->lh_TailPred = (struct Node *)(&lh->lh_Head);
+}
+
+struct MsgPort *CreatePort(UBYTE *name, LONG pri)
+{
+	LONG sigBit;
+	struct MsgPort *mp;
+
+	if ((sigBit = AllocSignal(-1L)) == -1)
+		return(NULL);
+
+	mp = (struct MsgPort *) AllocMem((ULONG)sizeof(struct MsgPort),
+			(ULONG)MEMF_PUBLIC | MEMF_CLEAR);
+
+	if (!mp) {
+			FreeSignal(sigBit);
+			return(NULL);
+	}
+
+	mp->mp_Node.ln_Name = (char*)name;
+	mp->mp_Node.ln_Pri  = pri;
+	mp->mp_Node.ln_Type = NT_MSGPORT;
+	mp->mp_Flags        = PA_SIGNAL;
+	mp->mp_SigBit       = sigBit;
+	mp->mp_SigTask      = (struct Task *)FindTask(0L);  /* Find THIS task.   */
+
+	if (name)
+		AddPort(mp);
+	else
+		NewList(&(mp->mp_MsgList));          /* init message list */
+
+	return(mp);
+}
+
+struct IOStdReq * LCreateIORequest(struct MsgPort * replyPort,long  size)
+{
+	struct IOStdReq *io = NULL;
+
+	if (replyPort)
+	{
+		io = AllocMem(size, MEMF_PUBLIC | MEMF_CLEAR);
+		if ( io )
+		{
+			io->io_Message.mn_ReplyPort = replyPort;
+			io->io_Message.mn_Length = size;
+			io->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+		}
+	}
+	return(io);
+}
+
 static void setnoclick(ULONG unitnum, ULONG onoff)
 {
+
 	struct MsgPort *port;
-	port = CreateMsgPort();
+
+	port = CreatePort(0,0);
 	if (port)
 	{
 		struct IOStdReq *ioreq;
-		ioreq = CreateIORequest(port, sizeof(*ioreq));
+		ioreq = LCreateIORequest(port, sizeof(*ioreq));
 		if (ioreq)
 		{
 			if (OpenDevice((CONST_STRPTR)TD_NAME, unitnum, (APTR) ioreq, 0) == 0)
 			{
 				struct TDU_PublicUnit *unit = (APTR) ioreq->io_Unit;
+
 				Forbid();
+
 				if (onoff)
 					unit->tdu_PubFlags |= TDPF_NOCLICK;
 				else
 					unit->tdu_PubFlags &= ~TDPF_NOCLICK;
+
+				// Hack to fully disable the click...
+				unit->tdu_SettleDelay = 0x7FFFFFFF;
+				unit->tdu_StepDelay = 0x7FFFFFFF;
+				unit->tdu_CalibrateDelay = 0x7FFFFFFF;
+
 				Permit();
 				CloseDevice((APTR) ioreq);
 			}
-			DeleteIORequest((APTR) ioreq);
+
+			FreeMem(ioreq,sizeof(*ioreq));
 		}
-		DeleteMsgPort(port);
+
+		FreeMem(port,sizeof(struct MsgPort));
 	}
 }
-#endif
+
+extern struct ExecBase *SysBase;
+
+int FlushDevice(unsigned char *name)
+{
+	struct Device *devpoint;
+
+	Forbid();
+
+	devpoint = (struct Device *)FindName(&SysBase->DeviceList,name);
+
+	if ( devpoint )
+	{
+		RemDevice(devpoint);
+
+		Permit();
+		return 1;
+	}
+
+	Permit();
+
+	return 0;
+}
+
+int FlushResource(unsigned char *name)
+{
+	APTR resource;
+
+	Forbid();
+
+	resource = (APTR)FindName(&SysBase->ResourceList,name);
+
+	if ( resource )
+	{
+		RemResource(resource);
+
+		Permit();
+		return 1;
+	}
+
+	Permit();
+
+	return 0;
+}
 
 void init_fdc(int drive)
 {
@@ -1062,14 +1169,17 @@ void init_fdc(int drive)
 	dbg_printf("init_fdc\n");
 	#endif
 
+	for(i=0;i<4;i++)
+		setnoclick(i,0);
+
 	CIABPRB_DSKSEL = CIABPRB_DSKSEL0 << (drive&3);
 
 	//	for(i=0;i<3;i++) setnoclick(i, 1);
 
 	validcache=0;
 
-	mfmtobinLUT_L=(unsigned char*)AllocMem(256,MEMF_CHIP);
-	mfmtobinLUT_H=(unsigned char*)AllocMem(256,MEMF_CHIP);
+	mfmtobinLUT_L = (unsigned char*)AllocMem(256,MEMF_CHIP);
+	mfmtobinLUT_H = (unsigned char*)AllocMem(256,MEMF_CHIP);
 	if(mfmtobinLUT_L && mfmtobinLUT_H)
 	{
 		for(i=0;i<256;i++)
@@ -1120,6 +1230,35 @@ void init_fdc(int drive)
 	Permit();
 }
 
+void deinit_fdc()
+{
+	jumptotrack(40);
+
+	if(mfmtobinLUT_L)
+	{
+		FreeMem(mfmtobinLUT_L,256);
+		mfmtobinLUT_L = 0;
+	}
+
+	if(mfmtobinLUT_H)
+	{
+		FreeMem(mfmtobinLUT_H,256);
+		mfmtobinLUT_H = 0;
+	}
+
+	if(track_buffer_rd)
+	{
+		FreeMem(track_buffer_rd,sizeof(unsigned short) * RD_TRACK_BUFFER_SIZE);
+		track_buffer_rd = 0;
+	}
+
+	if(track_buffer_wr)
+	{
+		FreeMem(track_buffer_wr, sizeof(unsigned short) * WR_TRACK_BUFFER_SIZE);
+		track_buffer_wr = 0;
+	}
+
+}
 /********************************************************************************
 *                          Joystick / Keyboard I/O
 *********************************************************************************/

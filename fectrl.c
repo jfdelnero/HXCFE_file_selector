@@ -48,6 +48,8 @@
 #include "conf.h"
 #include "ui_context.h"
 
+#include "fectrl.h"
+
 static uint32_t last_setlbabase;
 
 // Config file header sector
@@ -1091,6 +1093,91 @@ void ui_config_menu(ui_context * uicontext)
 	uicontext->read_entry=1;
 }
 
+void ui_drive_select_menu(ui_context * uicontext)
+{
+	int i,drive;
+	unsigned char c;
+	cfgfile * cfgfile_ptr;
+
+	clear_list(0);
+	cfgfile_ptr=(cfgfile * )cfgfile_header;
+
+	i=0;
+	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "Select Drive:");
+
+	i=2;
+	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "A: / DF0");
+
+	i += 2;
+	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "B: / DF1");
+
+	i += 2;
+	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "DF2");
+
+	i += 2;
+	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "DF3");
+
+	i += 2;
+	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "--- Exit ---");
+
+	i=2;
+	invert_line(0,HELP_Y_POS+(i*8));
+	do
+	{
+		drive = -1;
+
+		c=wait_function_key();
+		switch(c)
+		{
+			case FCT_UP_KEY:
+				invert_line(0,HELP_Y_POS+(i*8));
+				if(i>2) i--;
+				invert_line(0,HELP_Y_POS+(i*8));
+			break;
+			case FCT_DOWN_KEY:
+				invert_line(0,HELP_Y_POS+(i*8));
+				if(i<10) i++;
+				invert_line(0,HELP_Y_POS+(i*8));
+			break;
+
+			case FCT_SELECT_FILE_DRIVEA:
+				invert_line(0,HELP_Y_POS+(i*8));
+				switch(i)
+				{
+					case 2:
+						drive = 0;
+					break;
+					case 4:
+						drive = 1;
+					break;
+					case 6:
+						drive = 2;
+					break;
+					case 8:
+						drive = 3;
+					break;
+				}
+				invert_line(0,HELP_Y_POS+(i*8));
+
+				if(drive>=0)
+				{
+					hxc_printf_box("Init emulator I/O...");
+					deinit_fdc();
+					init_fdc(drive);
+					mount_drive(uicontext, drive);
+
+					i = 10;
+				}
+
+			break;
+		}
+	}while( (c!=FCT_SELECT_FILE_DRIVEA) || i != 10 );
+
+	clear_list(0);
+	uicontext->read_entry=1;
+}
+
+
 int ui_command_menu(ui_context * uicontext)
 {
 	unsigned char key;
@@ -1198,6 +1285,12 @@ int ui_command_menu(ui_context * uicontext)
 			break;
 
 			case 9:
+				//Change drive
+				ui_drive_select_menu(uicontext);
+				return 0;
+			break;
+
+			case 11:
 				print_help();
 				return 0;
 			break;
@@ -1825,5 +1918,84 @@ int main(int argc, char* argv[])
 		ui_mainfileselector(uicontext);
 	}
 	lockup();
+	return 0;
+}
+
+int mount_drive(ui_context * uicontext, int drive)
+{
+	unsigned short i;
+
+	cfg_file_handle = 0;
+	memset( uicontext,0,sizeof(ui_context));
+	strcpy( uicontext->currentPath, "/" );
+
+	strcpy(FIRMWAREVERSION,"-------");
+
+	io_floppy_timeout = 0;
+
+	init_fdc(drive);
+
+	#ifdef DEBUG
+	dbg_printf("init_fdc Done\n");
+	#endif
+
+	if(media_init())
+	{
+		#ifdef DEBUG
+		dbg_printf("media_init done\n");
+		#endif
+
+		// Initialise File IO Library
+		fl_init();
+
+		#ifdef DEBUG
+		dbg_printf("fl_init done\n");
+		#endif
+
+		/* Attach media access functions to library*/
+		if (fl_attach_media(media_read, media_write) != FAT_INIT_OK)
+		{
+			hxc_printf_box("ERROR: Media attach failed !");
+			lockup();
+		}
+
+		#ifdef DEBUG
+		dbg_printf("fl_attach_media done\n");
+		#endif
+
+		hxc_printf_box("Reading HXCSDFE.CFG ...");
+
+		cfg_file_handle = fl_fopen("/HXCSDFE.CFG", "r");
+		if (!cfg_file_handle)
+		{
+			hxc_printf_box("ERROR: Can't open HXCSDFE.CFG !");
+			lockup();
+		}
+
+		read_cfg_file(uicontext,cfgfile_header);
+
+		#ifdef DEBUG
+		dbg_printf("read_cfg_file done\n");
+		#endif
+
+		if(cfgfile_header[256+128]!=0xFF)
+			set_color_scheme(cfgfile_header[256+128]);
+
+		displayFolder(uicontext);
+
+		fl_opendir(uicontext->currentPath, &file_list_status);
+
+		for(i=0;i<MAX_PAGES_PER_DIRECTORY;i++)
+		{
+			memcpy(&file_list_status_tab[i],&file_list_status ,sizeof(FL_DIR));
+		}
+		
+		uicontext->selectorpos = 1;
+		clear_list(0);
+		uicontext->read_entry = 1;
+		uicontext->page_number = 0;
+		
+		uicontext->page_mode_index = ( 2 + uicontext->number_of_drive ) - 1;
+	}
 	return 0;
 }
