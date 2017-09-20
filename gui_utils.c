@@ -170,8 +170,6 @@ int hxc_printf_box(char * chaine, ...)
 	int i;
 	va_list marker;
 
-	save_box();
-
 	va_start( marker, chaine );
 
 #if ( _MSC_VER >= 1100 && _MSC_VER <= 1200 ) // VC 6 doesn't have vsnprintf.

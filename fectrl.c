@@ -60,9 +60,6 @@
 #include "menu_selectdrive.h"
 #include "menu_commands.h"
 
-// Config file header sector
-extern unsigned char cfgfile_header[512];
-
 // Slots buffer
 disk_in_drive_v2 disks_slots[MAX_NUMBER_OF_SLOT];
 
@@ -160,6 +157,7 @@ void enter_sub_dir(ui_context * uicontext,disk_in_drive_v2_long *disk_ptr)
 			for (i=0; i < 128; i++ )
 			{
 				c = disk_ptr->name[i];
+
 				if ( ( c >= (32+0) ) && (c <= 127) )
 				{
 					folder[i] = c;
@@ -174,7 +172,9 @@ void enter_sub_dir(ui_context * uicontext,disk_in_drive_v2_long *disk_ptr)
 			currentPathLength = strlen( uicontext->currentPath );
 
 			if( uicontext->currentPath[ currentPathLength-1] != '/')
-			strcat( uicontext->currentPath, "/" );
+			{
+				strcat( uicontext->currentPath, "/" );
+			}
 
 			strcat( uicontext->currentPath, folder );
 		}
@@ -307,13 +307,15 @@ void print_help()
 
 		i++;
 	}
+
+
 }
 
 void ui_savereboot(ui_context * uicontext,int preselected_slot)
 {
 	hxc_printf_box((char*)save_and_restart_msg);
 	save_cfg_file(uicontext,cfgfile_header,preselected_slot);
-	restore_box();
+
 	hxc_printf_box((char*)reboot_msg);
 	sleep(1);
 	jumptotrack(0);
@@ -324,7 +326,6 @@ void ui_save(ui_context * uicontext)
 {
 	hxc_printf_box((char*)save_msg);
 	save_cfg_file(uicontext,cfgfile_header,-1);
-	restore_box();
 }
 
 void ui_reboot(ui_context * uicontext)
@@ -335,12 +336,55 @@ void ui_reboot(ui_context * uicontext)
 	reboot();
 }
 
+int process_extra_functions(ui_context * uicontext, unsigned char key)
+{
+	int refresh;
+
+	refresh = 0;
+
+	switch(key)
+	{
+		case FCT_HELP:
+			print_help();
+			refresh = 1;
+		break;
+
+		case FCT_SAVEREBOOT:
+			ui_savereboot(uicontext,-1);
+		break;
+
+		case FCT_SAVE:
+			ui_save(uicontext);
+			refresh = 1;
+		break;
+
+		case FCT_REBOOT:
+			ui_reboot(uicontext);
+		break;
+
+		case FCT_EMUCFG:
+			enter_menu(uicontext,settings_menu);
+			refresh = 1;
+		break;
+
+		case FCT_CHGCOLOR:
+			uicontext->colormode++;
+			set_color_scheme(uicontext->colormode);
+			setcfg_backgroundcolor( uicontext->colormode);
+			waitms(100);
+		break;
+	}
+
+	return refresh;
+}
+
 int ui_slots_menu(ui_context * uicontext)
 {
 	unsigned char key;
 	int slot,i;
 
 	#ifdef DEBUG
+
 	dbg_printf("enter ui_slots_menu\n");
 	#endif
 
@@ -456,24 +500,12 @@ int ui_slots_menu(ui_context * uicontext)
 						uicontext->page_mode_index = 0;
 				}
 			break;
-
-			case FCT_HELP:
-				print_help();
-
-				show_all_slots(uicontext,uicontext->page_mode_index);
-				invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
-			break;
-
-			case FCT_SAVEREBOOT:
-				ui_savereboot(uicontext,-1);
-			break;
-
-			case FCT_SAVE:
-				ui_save(uicontext);
-			break;
-
-			case FCT_REBOOT:
-				ui_reboot(uicontext);
+			default:
+				if(process_extra_functions(uicontext, key))
+				{
+					show_all_slots(uicontext,uicontext->page_mode_index);
+					invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
+				}
 			break;
 		}
 	}while(key != FCT_SELECT_FILE_DRIVEA && key != FCT_ESCAPE );
@@ -771,42 +803,6 @@ void ui_mainfileselector(ui_context * uicontext)
 					}
 					break;
 
-				case FCT_SAVEREBOOT:
-					ui_savereboot(uicontext,-1);
-					break;
-
-				case FCT_SAVE:
-					ui_save(uicontext);
-					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(FL_DIR));
-					clear_list(0);
-					uicontext->read_entry=1;
-					break;
-
-				case FCT_REBOOT:
-					ui_reboot(uicontext);
-					break;
-
-				case FCT_HELP:
-					print_help();
-					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(FL_DIR));
-					clear_list(0);
-					uicontext->read_entry=1;
-					break;
-
-				case FCT_EMUCFG:
-					enter_menu(uicontext,settings_menu);
-					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(FL_DIR));
-					clear_list(0);
-					uicontext->read_entry=1;
-					break;
-
-				case FCT_CHGCOLOR:
-					uicontext->colormode++;
-					set_color_scheme(uicontext->colormode);
-					cfgfile_header[256+128]=uicontext->colormode;
-					waitms(100);
-					break;
-
 				case FCT_TOP:
 					uicontext->page_number=0;
 					memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(FL_DIR));
@@ -843,7 +839,12 @@ void ui_mainfileselector(ui_context * uicontext)
 					break;
 
 				default:
-					//printf("err %d!\n",key);
+					if(process_extra_functions(uicontext, key))
+					{
+						memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(FL_DIR));
+						clear_list(0);
+						uicontext->read_entry=1;
+					}
 					break;
 				}
 			}
@@ -870,8 +871,8 @@ int mount_drive(ui_context * uicontext, int drive)
 		dbg_printf("read_cfg_file done\n");
 		#endif
 
-		if(cfgfile_header[256+128]!=0xFF)
-			set_color_scheme(cfgfile_header[256+128]);
+		if( getcfg_backgroundcolor() != 0xFF )
+			set_color_scheme( getcfg_backgroundcolor() );
 
 		displayFolder(uicontext);
 

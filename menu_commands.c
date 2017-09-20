@@ -58,7 +58,6 @@ static int commnand_menu_savereboot_cb(ui_context * uicontext, int event, int xp
 			hxc_printf_box((char*)save_msg);
 			save_cfg_file(uicontext,cfgfile_header,-1);
 			sleep(1);
-			restore_box();
 		}
 
 		if(param_mask & 0x02) // Reboot ?

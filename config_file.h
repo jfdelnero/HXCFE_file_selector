@@ -25,5 +25,9 @@
 //
 */
 
+extern unsigned char cfgfile_header[512];
+
 char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header);
 char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_selected_slot);
+int getcfg_backgroundcolor();
+void setcfg_backgroundcolor(int color);

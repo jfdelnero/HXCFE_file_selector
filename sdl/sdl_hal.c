@@ -803,16 +803,6 @@ void invert_line(int x_pos,int y_pos)
 	}
 }
 
-void save_box()
-{
-	//memcpy(screen_buffer_backup,&screen_buffer[160*70], 8*1024);
-}
-
-void restore_box()
-{
-//	memcpy(&screen_buffer[160*70],screen_buffer_backup, 8*1024);
-}
-
 void reboot()
 {
 	if(sdl_timer_id)

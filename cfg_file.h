@@ -80,6 +80,15 @@ typedef struct cfgfile_
     uint32_t number_of_drive_per_slot;     // 2 by default.
     uint32_t cur_slot_number;              // Current position --- 0x50
     uint32_t ihm_mode;                     // user interface mode
+
+    uint8_t  padding_3[8];                 // --- 0x60
+
+    uint8_t  padding_4[160];               // --- 0x100
+
+    uint8_t  padding_5[128];               // --- 0x180   File selector Scratch pad area...	
+
+    uint8_t  background_color;
+
 #ifndef WIN32
 }__attribute__((__packed__)) cfgfile;
 #else

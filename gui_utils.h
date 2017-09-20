@@ -8,9 +8,6 @@ int hxc_print(unsigned char mode,int x_pos,int y_pos,char * chaine);
 int hxc_printf(unsigned char mode,int x_pos,int y_pos,char * chaine, ...);
 int hxc_printf_box(char * chaine, ...);
 
-void save_box();
-void restore_box();
-
 void h_line(int y_pos,unsigned short val);
 void invert_line(int x_pos,int y_pos);
 void invert_line_move(int x_pos,int y_pos_old,int y_pos_new);

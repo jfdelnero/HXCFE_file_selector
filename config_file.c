@@ -56,6 +56,24 @@ extern disk_in_drive_v2 disks_slots[MAX_NUMBER_OF_SLOT];
 unsigned char cfgfile_header[512];
 FL_FILE * cfg_file_handle;
 
+void setcfg_backgroundcolor(int color)
+{
+	cfgfile * cfgfile_ptr;
+
+	cfgfile_ptr=(cfgfile * )cfgfile_header;
+	
+	cfgfile_ptr->background_color = color;
+}
+
+int getcfg_backgroundcolor()
+{
+	cfgfile * cfgfile_ptr;
+
+	cfgfile_ptr=(cfgfile * )cfgfile_header;
+
+	return cfgfile_ptr->background_color;
+}
+
 char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 {
 	char ret;
