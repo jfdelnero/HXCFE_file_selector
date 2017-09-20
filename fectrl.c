@@ -54,6 +54,7 @@
 
 #include "menu_settings.h"
 #include "menu_selectdrive.h"
+#include "menu_commands.h"
 
 static uint32_t last_setlbabase;
 
@@ -987,122 +988,8 @@ int ui_command_menu(ui_context * uicontext)
 	// command menu
 
 	clear_list(0);
-	hxc_printf(CENTER_ALIGNED,0,FILELIST_Y_POS,(char*)command_menu_msg);
-	invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
 
-	do
-	{
-		key=wait_function_key();
-
-		switch(key)
-		{
-			case FCT_UP_KEY: // UP
-				//invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
-				if(uicontext->slotselectorpos)
-				{
-					uicontext->slotselectorpos--;
-					invert_line(0,FILELIST_Y_POS+((uicontext->slotselectorpos+1)*8));
-					invert_line(0,FILELIST_Y_POS+((uicontext->slotselectorpos)*8));
-				}
-			break;
-			case FCT_DOWN_KEY: // Down
-				if(uicontext->slotselectorpos<(NUMBER_OF_FILE_ON_DISPLAY-1))
-				{
-					uicontext->slotselectorpos++;
-					invert_line(0,FILELIST_Y_POS+((uicontext->slotselectorpos-1)*8));
-					invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
-				}
-			break;
-
-			case FCT_RIGHT_KEY: // Right
-
-			break;
-
-			case FCT_LEFT_KEY:
-
-			break;
-
-			case FCT_SELECT_FILE_DRIVEA:
-				if(!uicontext->slotselectorpos)
-				{
-					uicontext->page_mode_index++;
-
-					if(uicontext->page_mode_index >= (int)(2 + uicontext->number_of_drive))
-						uicontext->page_mode_index = 0;
-				}
-
-			break;
-			case FCT_HELP:
-				print_help();
-				clear_list(0);
-				hxc_printf(CENTER_ALIGNED,0,FILELIST_Y_POS,(char*)command_menu_msg);
-				invert_line(0,FILELIST_Y_POS+(uicontext->slotselectorpos*8));
-			break;
-
-			case FCT_SAVEREBOOT:
-				ui_savereboot(uicontext,-1);
-			break;
-
-			case FCT_SAVE:
-				ui_save(uicontext);
-			break;
-
-			case FCT_REBOOT:
-				ui_reboot(uicontext);
-			break;
-		}
-	}while(key != FCT_SELECT_FILE_DRIVEA && key != FCT_ESCAPE );
-
-	if( key == FCT_SELECT_FILE_DRIVEA )
-	{
-		switch(uicontext->slotselectorpos)
-		{
-			case 0:
-				clear_list(0);
-				return 0;
-			break;
-
-			case 2:
-				ui_savereboot(uicontext,-1);
-			break;
-
-			case 3:
-				ui_save(uicontext);
-			break;
-
-			case 4:
-				ui_reboot(uicontext);
-			break;
-
-			case 6:
-				uicontext->colormode++;
-				set_color_scheme(uicontext->colormode);
-				cfgfile_header[256+128] = uicontext->colormode;
-				waitms(100);
-				return 0;
-			break;
-			case 7:
-				ui_config_menu(uicontext);
-				return 0;
-			break;
-
-			case 9:
-				//Change drive
-				ui_drive_select_menu(uicontext);
-				return 0;
-			break;
-
-			case 11:
-				print_help();
-				return 0;
-			break;
-
-			default:
-				clear_list(0);
-				return 0;
-			break;
-		}
-	}
+	enter_menu(uicontext,commands_menu);
 
 	clear_list(0);
 

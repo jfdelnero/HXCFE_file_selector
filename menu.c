@@ -43,27 +43,29 @@
 
 extern uint16_t SCREEN_XRESOL;
 
-int enter_menu(ui_context * uicontext, const menu * submenu)
+int menu_draw(ui_context * uicontext, const menu * submenu, int *max_len)
 {
-	int i,item_count,max_len,t;
+	int i,item_count,t;
 	int cb_return;
 	unsigned char c;
 
-	max_len = 0;
+	clear_list(0);
+
+	*max_len = 0;
 	i = 0;
 	while( submenu[i].text )
 	{
 		t = strlen((char*)submenu[i].text);
 
-		if(max_len<t)
-			max_len = t;
+		if(*max_len<t)
+			*max_len = t;
 
 		i++;
 	}
 
 	// Center & align the parameters if possible...
-	if( max_len*8 < SCREEN_XRESOL/2 )
-		max_len = (SCREEN_XRESOL/8)/2;
+	if( *max_len*8 < SCREEN_XRESOL/2 )
+		*max_len = (SCREEN_XRESOL/8)/2;
 
 	i = 0;
 	while( submenu[i].text )
@@ -72,12 +74,21 @@ int enter_menu(ui_context * uicontext, const menu * submenu)
 
 		if(submenu[i].menu_cb)
 		{
-			submenu[i].menu_cb(uicontext,0,max_len*8,FILELIST_Y_POS+(i*8),submenu[i].cb_parameter);
+			submenu[i].menu_cb(uicontext,0,*max_len * 8,FILELIST_Y_POS+(i*8),submenu[i].cb_parameter);
 		}
 		i++;
 	}
 
-	item_count = i;
+	return i;
+}
+
+int enter_menu(ui_context * uicontext, const menu * submenu)
+{
+	int i,item_count,max_len;
+	int cb_return;
+	unsigned char c;
+
+	item_count = menu_draw(uicontext, submenu, &max_len);
 
 	i = 0;
 
@@ -111,8 +122,23 @@ int enter_menu(ui_context * uicontext, const menu * submenu)
 				if(submenu[i].menu_cb)
 				{
 					cb_return = submenu[i].menu_cb(uicontext,c,max_len*8,FILELIST_Y_POS+(i*8),submenu[i].cb_parameter);
+					if(cb_return == MENU_REDRAWMENU)
+					{
+						menu_draw(uicontext, submenu, &max_len);
+					}
 				}
+
+				if(c == FCT_SELECT_FILE_DRIVEA)
+				{
+					if(submenu[i].submenu && submenu[i].submenu != -1)
+					{
+						enter_menu(uicontext, submenu[i].submenu);
+						menu_draw(uicontext, submenu, &max_len);
+					}
+				}
+
 				invert_line(0,FILELIST_Y_POS+(i*8));
+
 			break;
 		}
 	}while( (( c != FCT_SELECT_FILE_DRIVEA ) || (submenu[i].submenu != (struct menu *)-1)) && (cb_return != MENU_LEAVEMENU) );

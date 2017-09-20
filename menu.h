@@ -13,5 +13,6 @@ int enter_menu(ui_context * uicontext, const menu * submenu);
 enum
 {
 	MENU_STAYINMENU = 0,
-	MENU_LEAVEMENU
+	MENU_LEAVEMENU,
+	MENU_REDRAWMENU
 };

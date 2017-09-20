@@ -66,7 +66,7 @@ const char help_scr2_msg[]=
 	"F8                : Reboot\n"
 	"F9                : Save\n"
 	"F10               : Save and Reboot\n"
-	"\n"	
+	"\n"
 	"The joystick can be used to browse all the interface and select the images.\n"
 	"The keyboard is not required.\n"
 	"The first line of each page allows to switch to the next one :\n"
@@ -80,7 +80,7 @@ const char help_scr2_msg[]=
 const char help_scr3_msg[]=
 {
 	"\n"
-	"\n"	
+	"\n"
 	"HxC Floppy Emulator file selector\n"
 	"V" VERSIONCODE " - " DATECODE "\n"
 	"\n"
@@ -111,25 +111,8 @@ const pagedesc help_pages[]=
 	{0,0}
 };
 
-const char command_menu_msg[]=
-{
-	"--- Save and Settings ---\n"
-	"\n"
-	"Save and Reboot\n"
-	"Save\n"
-	"Reboot\n"
-	"\n"
-	"Change display colors\n"
-	"HxC Drive Settings\n"
-	"\n"
-	"Select drive\n"
-	"\n"
-	"Help / About\n"
-};
-
 const char cur_folder_msg[] = "Current folder:";
 const char reboot_msg[] = ">>>>>Rebooting...<<<<<";
 const char save_msg[] = "Saving selection...";
 const char save_and_restart_msg[] = "Saving selection and restart...";
 const char title_msg[] = { "HxC Floppy Emulator file selector v" VERSIONCODE};
-

@@ -12,7 +12,7 @@ EXEC=HXCFEMNG
 all: $(EXEC)
 	strip -s $(EXEC)
 
-HXCFEMNG:      fectrl.o menu.o menu_settings.o menu_selectdrive.o gui_utils.o sdl_hal.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o msg_txt.o slot_list_gen.o
+HXCFEMNG:      fectrl.o menu.o menu_settings.o menu_selectdrive.o menu_commands.o gui_utils.o sdl_hal.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o msg_txt.o slot_list_gen.o
 	$(CC) -o $@    $^ $(LDFLAGS)
 
 fectrl.o: ../fectrl.c
@@ -25,6 +25,9 @@ menu_settings.o: ../menu_settings.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 menu_selectdrive.o: ../menu_selectdrive.c
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+menu_commands.o: ../menu_commands.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 gui_utils.o: ../gui_utils.c
