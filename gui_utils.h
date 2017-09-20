@@ -4,18 +4,16 @@
 #define RIGHT_ALIGNED 0x02
 #define DONTPARSE 0x10
 
-int hxc_print(unsigned char mode,int x_pos,int y_pos,char * chaine);
-int hxc_printf(unsigned char mode,int x_pos,int y_pos,char * chaine, ...);
-int hxc_printf_box(char * chaine, ...);
+int hxc_print(ui_context * ctx,unsigned char mode,int x_pos,int y_pos,char * chaine);
+int hxc_printf(ui_context * ctx,unsigned char mode,int x_pos,int y_pos,char * chaine, ...);
+int hxc_printf_box(ui_context * ctx,char * chaine, ...);
 
-void h_line(int y_pos,unsigned short val);
-void invert_line(int x_pos,int y_pos);
-void invert_line_move(int x_pos,int y_pos_old,int y_pos_new);
+void h_line(ui_context * ctx,int y_pos,unsigned short val);
+void invert_line(ui_context * ctx,int x_pos,int y_pos);
 
-void clear_line(int y_pos,unsigned short val);
-void box(int x_p1,int y_p1,int x_p2,int y_p2,unsigned short fillval,unsigned char fill);
-void init_display_buffer();
-
+void clear_line(ui_context * ctx,int y_pos,unsigned short val);
+void box(ui_context * ctx,int x_p1,int y_p1,int x_p2,int y_p2,unsigned short fillval,unsigned char fill);
+void init_display_buffer(ui_context * ctx);
 unsigned char set_color_scheme(unsigned char color);
 
 #ifdef DEBUG

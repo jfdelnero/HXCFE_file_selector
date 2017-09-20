@@ -30,9 +30,11 @@
 #include <stdint.h>
 
 #include "keysfunc_defs.h"
-#include "gui_utils.h"
+
 #include "cfg_file.h"
 #include "ui_context.h"
+#include "gui_utils.h"
+
 #include "menu.h"
 #include "hardware.h"
 
@@ -40,17 +42,17 @@
 
 extern unsigned char cfgfile_header[512];
 
-static int selectdrive_menu_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
+static int selectdrive_menu_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
 {
 	int drive;
 
 	if(event)
 	{
 		drive = (int)parameter;
-		hxc_printf_box("Init emulator I/O...");
+		hxc_printf_box(ctx,"Init emulator I/O...");
 		deinit_fdc();
 		init_fdc(drive);
-		mount_drive(uicontext, drive);
+		mount_drive(ctx, drive);
 	}
 
 	return MENU_LEAVEMENU;

@@ -30,8 +30,12 @@
 #include <stdint.h>
 #include "keysfunc_defs.h"
 
-#include "gui_utils.h"
 #include "cfg_file.h"
+
+#include "conf.h"
+#include "ui_context.h"
+
+#include "gui_utils.h"
 #include "hxcfeda.h"
 
 #include "hardware.h"
@@ -41,15 +45,8 @@
 #include "fat_defs.h"
 #include "fat_filelib.h"
 
-#include "msg_txt.h"
-
-#include "version.h"
-
-#include "conf.h"
-#include "ui_context.h"
-
 #include "fectrl.h"
-#include "config_file.h"
+
 #include "media_access.h"
 
 extern disk_in_drive_v2 disks_slots[MAX_NUMBER_OF_SLOT];
@@ -74,7 +71,7 @@ int getcfg_backgroundcolor()
 	return cfgfile_ptr->background_color;
 }
 
-char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
+char read_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 {
 	char ret;
 	unsigned short number_of_slots;
@@ -94,7 +91,7 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 	cfg_file_handle = fl_fopen("/HXCSDFE.CFG", "r");
 	if (!cfg_file_handle)
 	{
-		hxc_printf_box("ERROR: Can't open HXCSDFE.CFG !");
+		hxc_printf_box(ctx,"ERROR: Can't open HXCSDFE.CFG !");
 		lockup();
 	}
 
@@ -123,25 +120,25 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 					dbg_printf("V1 config file format\n");
 					#endif
 
-					uicontext->cfg_file_format_version = 1;
-					uicontext->number_of_drive = 2;
-					uicontext->config_file_number_max_of_slot = ( ( file_cfg_size - 0x400 ) / (64 * 2) ) - 1;
+					ctx->cfg_file_format_version = 1;
+					ctx->number_of_drive = 2;
+					ctx->config_file_number_max_of_slot = ( ( file_cfg_size - 0x400 ) / (64 * 2) ) - 1;
 
-					if( uicontext->config_file_number_max_of_slot > ( MAX_NUMBER_OF_SLOT / 2 ) )
-						uicontext->config_file_number_max_of_slot = ( MAX_NUMBER_OF_SLOT / 2 );
+					if( ctx->config_file_number_max_of_slot > ( MAX_NUMBER_OF_SLOT / 2 ) )
+						ctx->config_file_number_max_of_slot = ( MAX_NUMBER_OF_SLOT / 2 );
 
 					number_of_slots = cfgfile_ptr->number_of_slot;
 					if( number_of_slots > ( MAX_NUMBER_OF_SLOT / 2 ) )
 						number_of_slots = ( MAX_NUMBER_OF_SLOT / 2 ) - 1;
 
-					if( number_of_slots > uicontext->config_file_number_max_of_slot )
-						number_of_slots = (unsigned short) (uicontext->config_file_number_max_of_slot - 1);
+					if( number_of_slots > ctx->config_file_number_max_of_slot )
+						number_of_slots = (unsigned short) (ctx->config_file_number_max_of_slot - 1);
 
-					uicontext->number_of_slots = number_of_slots;
+					ctx->number_of_slots = number_of_slots;
 					fl_fseek(cfg_file_handle , 1024 , SEEK_SET);
 
-					memset(uicontext->change_map,0,512);
-					memset(uicontext->slot_map,0,512);
+					memset(ctx->change_map,0,512);
+					memset(ctx->slot_map,0,512);
 					fl_fread(temp_sector, 1, 512 , cfg_file_handle);
 
 					i=1;
@@ -168,8 +165,8 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 						disks_slots[(i*2)+1].name[17]     = 0;
 						memcpy(&disks_slots[(i*2)+1].type,&disk->DirEnt.name[8],3);
 
-						uicontext->slot_map[i>>3] |= (0x80 >> (i&7));
-						uicontext->change_map[i>>3] |= (0x80 >> (i&7));
+						ctx->slot_map[i>>3] |= (0x80 >> (i&7));
+						ctx->change_map[i>>3] |= (0x80 >> (i&7));
 						i++;
 					};
 				break;
@@ -179,28 +176,28 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 					dbg_printf("V2 config file format\n");
 					#endif
 
-					uicontext->cfg_file_format_version = 2;
+					ctx->cfg_file_format_version = 2;
 
-					uicontext->number_of_drive = ENDIAN_32BIT( cfgfile_ptr->number_of_drive_per_slot );
-					uicontext->slots_position = ENDIAN_32BIT( cfgfile_ptr->slots_position );
-					uicontext->config_file_number_max_of_slot = ENDIAN_32BIT( cfgfile_ptr->max_slot_number );
+					ctx->number_of_drive = ENDIAN_32BIT( cfgfile_ptr->number_of_drive_per_slot );
+					ctx->slots_position = ENDIAN_32BIT( cfgfile_ptr->slots_position );
+					ctx->config_file_number_max_of_slot = ENDIAN_32BIT( cfgfile_ptr->max_slot_number );
 
-					if( uicontext->config_file_number_max_of_slot > (MAX_NUMBER_OF_SLOT / uicontext->number_of_drive) )
-						uicontext->config_file_number_max_of_slot = (MAX_NUMBER_OF_SLOT / uicontext->number_of_drive);
+					if( ctx->config_file_number_max_of_slot > (MAX_NUMBER_OF_SLOT / ctx->number_of_drive) )
+						ctx->config_file_number_max_of_slot = (MAX_NUMBER_OF_SLOT / ctx->number_of_drive);
 
-					memset(uicontext->change_map,0,512);
+					memset(ctx->change_map,0,512);
 
 					number_of_slots = (unsigned short) ENDIAN_32BIT( cfgfile_ptr->max_slot_number );
 					fl_fseek(cfg_file_handle , 512 * ENDIAN_32BIT(cfgfile_ptr->slots_map_position) , SEEK_SET);
-					fl_fread(uicontext->slot_map, 1, 512 , cfg_file_handle);
+					fl_fread(ctx->slot_map, 1, 512 , cfg_file_handle);
 
 					last_sector_offset = -1;
 					i = 0;
 					do
 					{
-						if( uicontext->slot_map[i>>3] & (0x80 >> (i&7)) )
+						if( ctx->slot_map[i>>3] & (0x80 >> (i&7)) )
 						{
-							sector_offset = (short) ( ( i * 64 * uicontext->number_of_drive ) / 512 );
+							sector_offset = (short) ( ( i * 64 * ctx->number_of_drive ) / 512 );
 							if(last_sector_offset != sector_offset )
 							{
 								if( sector_offset - last_sector_offset != 1 )
@@ -212,12 +209,12 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 							}
 
 							d = 0;
-							while( d < uicontext->number_of_drive )
+							while( d < ctx->number_of_drive )
 							{
-								slot_offset = (unsigned short) ( ( i * 64 * uicontext->number_of_drive ) + ( 64 * d ) ) % 512;
-								if( ( (i*uicontext->number_of_drive) + d ) < MAX_NUMBER_OF_SLOT )
+								slot_offset = (unsigned short) ( ( i * 64 * ctx->number_of_drive ) + ( 64 * d ) ) % 512;
+								if( ( (i*ctx->number_of_drive) + d ) < MAX_NUMBER_OF_SLOT )
 								{
-									memcpy( &disks_slots[ (i*uicontext->number_of_drive) + d ],
+									memcpy( &disks_slots[ (i*ctx->number_of_drive) + d ],
 											&temp_sector[slot_offset],
 											sizeof(disk_in_drive_v2));
 								}
@@ -234,7 +231,7 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 					dbg_printf("Unknown config file version !\n");
 					#endif
 
-					uicontext->cfg_file_format_version = 0;
+					ctx->cfg_file_format_version = 0;
 
 					ret=3;
 				break;
@@ -253,7 +250,7 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 
 	if(ret)
 	{
-		hxc_printf_box("ERROR: Access HXCSDFE.CFG file failed! [%d]",ret);
+		hxc_printf_box(ctx,"ERROR: Access HXCSDFE.CFG file failed! [%d]",ret);
 		lockup();
 	}
 
@@ -264,7 +261,7 @@ char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header)
 	return ret;
 }
 
-char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_selected_slot)
+char save_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_selected_slot)
 {
 	unsigned char number_of_slot,slot_index;
 	unsigned char ret;
@@ -281,7 +278,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_
 	ret=0;
 	if (cfg_file_handle)
 	{
-		switch(uicontext->cfg_file_format_version)
+		switch(ctx->cfg_file_format_version)
 		{
 			case 1:
 				#ifdef DEBUG
@@ -304,7 +301,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_
 				i = 1;
 				do
 				{
-					if( uicontext->slot_map[i>>3] & (0x80 >> (i&7)) )            // Valid slot found
+					if( ctx->slot_map[i>>3] & (0x80 >> (i&7)) )            // Valid slot found
 					{
 						// Drive A
 						disk = (disk_in_drive *)&temp_buf[floppyselectorindex];
@@ -367,7 +364,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_
 							// Save the sector
 							if (fl_fswrite((unsigned char*)temp_buf, 1,sect_nb, cfg_file_handle) != 1)
 							{
-								hxc_printf_box("ERROR: Write file failed!");
+								hxc_printf_box(ctx,"ERROR: Write file failed!");
 								ret=1;
 							}
 							// Next sector
@@ -377,13 +374,13 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_
 					}
 
 					i++;
-				}while(i<uicontext->config_file_number_max_of_slot);
+				}while(i<ctx->config_file_number_max_of_slot);
 
 				if(number_of_slot&0x3)
 				{
 					if (fl_fswrite((unsigned char*)temp_buf, 1,sect_nb, cfg_file_handle) != 1)
 					{
-						hxc_printf_box("ERROR: Write file failed!");
+						hxc_printf_box(ctx,"ERROR: Write file failed!");
 						ret=1;
 					}
 				}
@@ -406,7 +403,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_
 					dbg_printf("fl_fswrite error : header %d !\n",0);
 					#endif
 
-					hxc_printf_box("ERROR: Write file failed!");
+					hxc_printf_box(ctx,"ERROR: Write file failed!");
 					ret=1;
 				}
 
@@ -427,10 +424,10 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_
 				i = 1;
 				do
 				{
-					if( (uicontext->change_map[i>>3] & (0x80 >> (i&7))) && ( (i*uicontext->number_of_drive) < MAX_NUMBER_OF_SLOT ) )   // Is the slot modified ?
+					if( (ctx->change_map[i>>3] & (0x80 >> (i&7))) && ( (i*ctx->number_of_drive) < MAX_NUMBER_OF_SLOT ) )   // Is the slot modified ?
 					{
 						// Yes, save the modified sector
-						floppyselectorindex=(64*uicontext->number_of_drive)*i;
+						floppyselectorindex=(64*ctx->number_of_drive)*i;
 
 						sect_nb = (unsigned short) ENDIAN_32BIT(cfgfile_ptr->slots_position) + (floppyselectorindex >> 9);
 						if (fl_fswrite( ((unsigned char*)&disks_slots) + (floppyselectorindex & ~0x1FF) , 1, sect_nb, cfg_file_handle) != 1)
@@ -439,7 +436,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_
 							dbg_printf("fl_fswrite error : slot sect %d !\n",sect_nb);
 							#endif
 
-							hxc_printf_box("ERROR: Write file failed!");
+							hxc_printf_box(ctx,"ERROR: Write file failed!");
 							ret=1;
 						}
 
@@ -447,22 +444,22 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_
 						j = 0;
 						do
 						{
-							uicontext->change_map[(i+j)>>3] &= ~(0x80 >> ((i+j)&7));
+							ctx->change_map[(i+j)>>3] &= ~(0x80 >> ((i+j)&7));
 							j++;
-						}while( ((64*uicontext->number_of_drive)*(i+j)) & 0x1FF );
+						}while( ((64*ctx->number_of_drive)*(i+j)) & 0x1FF );
 					}
 
 					i++;
-				}while( i < uicontext->config_file_number_max_of_slot );
+				}while( i < ctx->config_file_number_max_of_slot );
 
 				// Update the map
-				if (fl_fswrite((unsigned char*)&uicontext->slot_map, 1, ENDIAN_32BIT(cfgfile_ptr->slots_map_position), cfg_file_handle) != 1)
+				if (fl_fswrite((unsigned char*)&ctx->slot_map, 1, ENDIAN_32BIT(cfgfile_ptr->slots_map_position), cfg_file_handle) != 1)
 				{
 					#ifdef DEBUG
 					dbg_printf("fl_fswrite error : map sect %d !\n",ENDIAN_32BIT(cfgfile_ptr->slots_map_position));
 					#endif
 
-					hxc_printf_box("ERROR: Write file failed!");
+					hxc_printf_box(ctx,"ERROR: Write file failed!");
 					ret=1;
 				}
 
@@ -483,7 +480,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_
 					dbg_printf("fl_fswrite error : header %d !\n",0);
 					#endif
 
-					hxc_printf_box("ERROR: Write file failed!");
+					hxc_printf_box(ctx,"ERROR: Write file failed!");
 					ret=1;
 				}
 			break;
@@ -491,7 +488,7 @@ char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_
 	}
 	else
 	{
-		hxc_printf_box("ERROR: Create file failed!");
+		hxc_printf_box(ctx,"ERROR: Create file failed!");
 		ret=1;
 	}
 

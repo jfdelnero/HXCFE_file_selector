@@ -49,6 +49,8 @@
 
 #include "color_table.h"
 
+#include "cfg_file.h"
+#include "ui_context.h"
 #include "gui_utils.h"
 
 #include "slot_list_gen.h"
@@ -82,9 +84,6 @@ SDL_Color   *colors;
 SDL_TimerID sdl_timer_id;
 
 unsigned char * screen_buffer;
-unsigned char * screen_buffer_backup;
-uint16_t SCREEN_XRESOL;
-uint16_t SCREEN_YRESOL;
 
 uint16_t sector_pos[16];
 
@@ -104,6 +103,8 @@ char dev_path[512];
 
 static unsigned char datacache[512*16];
 static unsigned char valid_cache;
+
+extern ui_context g_ui_ctx;
 
 void waitus(int centus)
 {
@@ -526,14 +527,14 @@ unsigned char wait_function_key()
 *                              Display Output
 *********************************************************************************/
 
-int update_screen()
+int update_screen(ui_context * ctx)
 {
 	unsigned char *buffer_dat;
 
 	buffer_dat = (unsigned char *)bBuffer->pixels;
 
 	SDL_LockSurface(bBuffer);
-	memcpy(buffer_dat,screen_buffer,(SCREEN_XRESOL*SCREEN_YRESOL));
+	memcpy(buffer_dat,screen_buffer,(ctx->SCREEN_XRESOL*ctx->SCREEN_YRESOL));
 	SDL_UnlockSurface(bBuffer);
 
 	SDL_BlitSurface( bBuffer, NULL, screen, &rBuffer );
@@ -559,7 +560,7 @@ uint32_t sdl_timer(Uint32 interval, void *param)
 		}
 	}
 
-	update_screen();
+	update_screen(&g_ui_ctx);
 
 	return interval;
 }
@@ -575,28 +576,28 @@ void init_timer()
 	}
 }
 
-int init_display()
+int init_display(ui_context * ctx)
 {
-	int i;
+	int i,buffer_size;
 
 	track_number = 0;
 
-	SCREEN_XRESOL = 640;
-	SCREEN_YRESOL = 256;
+	ctx->SCREEN_XRESOL = 640;
+	ctx->SCREEN_YRESOL = 256;
+	
+	buffer_size = ctx->SCREEN_XRESOL * ctx->SCREEN_YRESOL;
 
-	screen_buffer = malloc(SCREEN_XRESOL*SCREEN_YRESOL);
+	screen_buffer = malloc(buffer_size);
 	if(!screen_buffer)
 		return 1;
 
-	memset(screen_buffer,0,SCREEN_XRESOL*SCREEN_YRESOL);
-
-	screen_buffer_backup=(unsigned char*)malloc(8*1024*2);
+	memset(screen_buffer,0,buffer_size);
 
 	sdl_timer_id = 0;
 
 	SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER );
 
-	screen = SDL_SetVideoMode( SCREEN_XRESOL, SCREEN_YRESOL, 8, SDL_SWSURFACE);
+	screen = SDL_SetVideoMode( ctx->SCREEN_XRESOL, ctx->SCREEN_YRESOL, 8, SDL_SWSURFACE);
 
 	last_key = 0x00;
 	keys_stat = SDL_GetKeyState(NULL);
@@ -625,9 +626,10 @@ int init_display()
 	}
 	SDL_SetColors(bBuffer, colors, 0, 256);
 
-	update_screen();
+	update_screen(ctx);
 
 	init_timer();
+	
 	return 0;
 }
 
@@ -686,7 +688,7 @@ unsigned char set_color_scheme(unsigned char color)
 	return color;
 }
 
-void print_char8x8(unsigned char * membuffer, bmaptype * font,int x, int y,unsigned char c)
+void print_char8x8(ui_context * ctx, unsigned char * membuffer, bmaptype * font,int x, int y,unsigned char c)
 {
 	int i,j;
 	unsigned char *ptr_src;
@@ -695,9 +697,9 @@ void print_char8x8(unsigned char * membuffer, bmaptype * font,int x, int y,unsig
 	ptr_dst = (unsigned char*)membuffer;
 	ptr_src = (unsigned char*)&font->data[0];
 
-	if( y < SCREEN_YRESOL && x < SCREEN_XRESOL)
+	if( y < ctx->SCREEN_YRESOL && x < ctx->SCREEN_XRESOL)
 	{
-		ptr_dst=ptr_dst + ((y*SCREEN_XRESOL)+ x);
+		ptr_dst=ptr_dst + ((y*ctx->SCREEN_XRESOL)+ x);
 		ptr_src=ptr_src + (((c>>4)*(8*8*2))+(c&0xF));
 		for(j=0;j<8;j++)
 		{
@@ -709,13 +711,13 @@ void print_char8x8(unsigned char * membuffer, bmaptype * font,int x, int y,unsig
 					ptr_dst[i]= 0x00;
 			}
 			ptr_src=ptr_src+16;
-			ptr_dst=ptr_dst + SCREEN_XRESOL;
+			ptr_dst=ptr_dst + ctx->SCREEN_XRESOL;
 		}
 	}
 
 }
 
-void display_sprite(unsigned char * membuffer, bmaptype * sprite,int x, int y)
+void display_sprite(ui_context * ctx, unsigned char * membuffer, bmaptype * sprite,int x, int y)
 {
 	int i,j,k,l,base_offset;
 	unsigned char *ptr_src;
@@ -724,14 +726,14 @@ void display_sprite(unsigned char * membuffer, bmaptype * sprite,int x, int y)
 	ptr_dst = (unsigned char*)membuffer;
 	ptr_src = (unsigned char*)&sprite->data[0];
 
-	if( y < SCREEN_YRESOL && x < SCREEN_XRESOL)
+	if( y < ctx->SCREEN_YRESOL && x < ctx->SCREEN_XRESOL)
 	{
 		k=0;
 		l=0;
-		base_offset=(( y * SCREEN_XRESOL)+ x);
+		base_offset=(( y * ctx->SCREEN_XRESOL)+ x);
 		for(j=0;j<(sprite->Ysize);j++)
 		{
-			l = base_offset + (SCREEN_XRESOL * j);
+			l = base_offset + (ctx->SCREEN_XRESOL * j);
 			k = (j * sprite->Xsize) / 8;
 			for(i=0;i<(sprite->Xsize);i++)
 			{
@@ -744,22 +746,22 @@ void display_sprite(unsigned char * membuffer, bmaptype * sprite,int x, int y)
 	}
 }
 
-void h_line(int y_pos,unsigned short val)
+void h_line(ui_context * ctx, int y_pos,unsigned short val)
 {
 	unsigned char *ptr_dst;
 	int i,ptroffset;
 
 	ptr_dst = screen_buffer;
-	ptroffset = SCREEN_XRESOL * y_pos;
+	ptroffset = ctx->SCREEN_XRESOL * y_pos;
 
-	for(i=0;i< (SCREEN_XRESOL/2);i++)
+	for(i=0;i< (ctx->SCREEN_XRESOL/2);i++)
 	{
 		ptr_dst[ptroffset + (i*2)]=(val>>8)&0xFF;
 		ptr_dst[ptroffset + (i*2) + 1]=(val)&0xFF;
 	}
 }
 
-void box(int x_p1,int y_p1,int x_p2,int y_p2,unsigned short fillval,unsigned char fill)
+void box(ui_context * ctx,int x_p1,int y_p1,int x_p2,int y_p2,unsigned short fillval,unsigned char fill)
 {
 	unsigned short *ptr_dst;
 	int i,j,ptroffset,x_size;
@@ -768,7 +770,7 @@ void box(int x_p1,int y_p1,int x_p2,int y_p2,unsigned short fillval,unsigned cha
 
 	x_size=(x_p2-x_p1);
 
-	ptroffset = SCREEN_XRESOL * y_p1;
+	ptroffset = ctx->SCREEN_XRESOL * y_p1;
 	for(j=0;j<(y_p2-y_p1);j++)
 	{
 		for(i=0;i<x_size/2;i++)
@@ -776,26 +778,26 @@ void box(int x_p1,int y_p1,int x_p2,int y_p2,unsigned short fillval,unsigned cha
 			ptr_dst[ptroffset+(i*2)]  =(fillval>>8);
 			ptr_dst[ptroffset+(i*2)+1]=(fillval)&0xFF;
 		}
-		ptroffset = SCREEN_XRESOL * (y_p1+j);
+		ptroffset = ctx->SCREEN_XRESOL * (y_p1+j);
 	}
 
 }
 
-void invert_line(int x_pos,int y_pos)
+void invert_line(ui_context * ctx,int x_pos,int y_pos)
 {
 	int i,j;
 	unsigned char *ptr_dst;
 	int ptroffset;
 
-	if( y_pos < SCREEN_YRESOL && x_pos < SCREEN_XRESOL )
+	if( y_pos < ctx->SCREEN_YRESOL && x_pos < ctx->SCREEN_XRESOL )
 	{
 
 		for(j=0;j<8;j++)
 		{
 			ptr_dst=(unsigned char*)screen_buffer;
-			ptroffset=(SCREEN_XRESOL* (y_pos + j))+x_pos;
+			ptroffset=(ctx->SCREEN_XRESOL* (y_pos + j))+x_pos;
 
-			for(i=0;i<SCREEN_XRESOL;i++)
+			for(i=0;i<ctx->SCREEN_XRESOL;i++)
 			{
 				ptr_dst[ptroffset+i]=ptr_dst[ptroffset+i]^0xFF;
 			}
@@ -1021,7 +1023,7 @@ int process_command_line(int argc, char* argv[])
 
 		if(!strlen(dev_path))
 		{
-			printf("\nDisk path not specify !\n");
+			printf("\nMissing SD/USB Disk path !\n");
 			printf("Please use the -disk:[path] option to mount your SD/USB\n\n");
 			return 1;
 		}

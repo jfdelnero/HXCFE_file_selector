@@ -16,12 +16,11 @@ char *strlwr(char *s);
 
 void reboot();
 
-int init_display();
-unsigned short get_vid_mode();
+int init_display(ui_context * ctx);
 void disablemousepointer();
 
-void display_sprite(unsigned char * membuffer, bmaptype * sprite,int x, int y);
-void print_char8x8(unsigned char * membuffer, bmaptype * font,int x, int y,unsigned char c);
+void display_sprite(ui_context * ctx,unsigned char * membuffer, bmaptype * sprite,int x, int y);
+void print_char8x8(ui_context * ctx,unsigned char * membuffer, bmaptype * font,int x, int y,unsigned char c);
 
 void init_timer();
 

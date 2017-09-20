@@ -22,4 +22,11 @@ typedef struct ui_context_
 	int cfg_file_format_version;
 	unsigned char slot_map[512];
 	unsigned char change_map[512];
+
+	char FIRMWAREVERSION[16];
+
+	unsigned int SCREEN_XRESOL;
+	unsigned int SCREEN_YRESOL;
+	unsigned char NUMBER_OF_FILE_ON_DISPLAY;
+
 }ui_context;

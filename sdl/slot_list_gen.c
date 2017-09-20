@@ -33,8 +33,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "hardware.h"
-
 #include "cfg_file.h"
 
 #include "conf.h"
@@ -45,14 +43,16 @@
 #include "fat_defs.h"
 #include "fat_filelib.h"
 
+#include "hardware.h"
+
 extern int media_init();
 extern int media_read(uint32 sector, uint8 *buffer, uint32 sector_count);
 extern int media_write(uint32 sector, uint8 *buffer, uint32 sector_count);
 extern FL_FILE * cfg_file_handle;
 extern void init_fdc(int drive);
 extern int getext(char * path,char * exttodest);
-extern char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header);
-extern char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_selected_slot);
+extern char read_cfg_file(ui_context * ctx,unsigned char * cfgfile_header);
+extern char save_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_selected_slot);
 
 
 extern ui_context g_ui_ctx;
@@ -124,7 +124,7 @@ int get_path_from_cluster(char * path, unsigned long cluster)
 	return 0;
 }
 
-int clear_slots(ui_context * uicontext)
+int clear_slots(ui_context * ctx)
 {
 	disk_in_drive_v2 * drive_slots_ptr;
 	int slotnumber;
@@ -134,22 +134,22 @@ int clear_slots(ui_context * uicontext)
 
 	printf("Clear all slots...\n");
 
-	for ( slotnumber = 1; slotnumber < uicontext->config_file_number_max_of_slot; slotnumber++ )
+	for ( slotnumber = 1; slotnumber < ctx->config_file_number_max_of_slot; slotnumber++ )
 	{
-		for(drive = 0;drive < uicontext->number_of_drive;drive++)
+		for(drive = 0;drive < ctx->number_of_drive;drive++)
 		{
-			drive_slots_ptr = &disks_slots[ (slotnumber*uicontext->number_of_drive) + drive];
+			drive_slots_ptr = &disks_slots[ (slotnumber*ctx->number_of_drive) + drive];
 
 			memset(drive_slots_ptr,0,sizeof(disk_in_drive_v2));
-			uicontext->slot_map[slotnumber>>3] &= ~(0x80 >> (slotnumber&7));
-			uicontext->change_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
+			ctx->slot_map[slotnumber>>3] &= ~(0x80 >> (slotnumber&7));
+			ctx->change_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
 		}
 	}
 
 	return 0;
 }
 
-int get_slot_from_cluster(ui_context * uicontext,unsigned long cluster)
+int get_slot_from_cluster(ui_context * ctx,unsigned long cluster)
 {
 	disk_in_drive_v2 * drive_slots_ptr;
 	int slotnumber;
@@ -157,13 +157,13 @@ int get_slot_from_cluster(ui_context * uicontext,unsigned long cluster)
 
 	drive = 0;
 
-	for ( slotnumber = 1; slotnumber < uicontext->config_file_number_max_of_slot; slotnumber++ )
+	for ( slotnumber = 1; slotnumber < ctx->config_file_number_max_of_slot; slotnumber++ )
 	{
-		for(drive = 0; drive < uicontext->number_of_drive; drive++)
+		for(drive = 0; drive < ctx->number_of_drive; drive++)
 		{
-			drive_slots_ptr = &disks_slots[ (slotnumber*uicontext->number_of_drive) + drive];
+			drive_slots_ptr = &disks_slots[ (slotnumber*ctx->number_of_drive) + drive];
 
-			if( (uicontext->slot_map[slotnumber>>3] & (0x80 >> (slotnumber&7))) )
+			if( (ctx->slot_map[slotnumber>>3] & (0x80 >> (slotnumber&7))) )
 			{
 				if( cluster == drive_slots_ptr->firstCluster )
 				{
@@ -176,7 +176,7 @@ int get_slot_from_cluster(ui_context * uicontext,unsigned long cluster)
 	return -1;
 }
 
-int scan_tree_slot(ui_context * uicontext,FILE * fout)
+int scan_tree_slot(ui_context * ctx,FILE * fout)
 {
 	struct fs_dir_ent dir_entry;
 	FL_DIR file_list_status;
@@ -196,7 +196,7 @@ int scan_tree_slot(ui_context * uicontext,FILE * fout)
 				pathlen = strlen(scanfolderpath);
 				strcat(scanfolderpath,"/");
 				strcat(scanfolderpath,dir_entry.filename);
-				if( scan_tree_slot( uicontext, fout ) )
+				if( scan_tree_slot( ctx, fout ) )
 					return 1;
 				scanfolderpath[pathlen] = 0;
 			}
@@ -207,12 +207,12 @@ int scan_tree_slot(ui_context * uicontext,FILE * fout)
 			printf("File Entry : %s Size:%d Cluster 0x%.8X\n",dir_entry.filename,ENDIAN_32BIT(dir_entry.size),ENDIAN_32BIT(dir_entry.cluster));
 			#endif
 
-			slot = get_slot_from_cluster(uicontext,ENDIAN_32BIT(dir_entry.cluster));
+			slot = get_slot_from_cluster(ctx,ENDIAN_32BIT(dir_entry.cluster));
 
 			if( slot >= 0 )
 			{
 				// Mark it as found... (good)
-				uicontext->change_map[slot>>3] |= (0x80 >> (slot&7));
+				ctx->change_map[slot>>3] |= (0x80 >> (slot&7));
 
 				// If found...
 				if(fout)
@@ -225,7 +225,7 @@ int scan_tree_slot(ui_context * uicontext,FILE * fout)
 	return 0;
 }
 
-int check_slots(ui_context * uicontext,char * outputfile,int fix)
+int check_slots(ui_context * ctx,char * outputfile,int fix)
 {
 	char tmp_str[81];
 	disk_in_drive_v2 * drive_slots_ptr;
@@ -250,18 +250,18 @@ int check_slots(ui_context * uicontext,char * outputfile,int fix)
 
 	printf("Now checking and listing all slots...\n");
 
-	scan_tree_slot(uicontext,fout);
+	scan_tree_slot(ctx,fout);
 
 	// Check that all slot have been found
-	for ( slotnumber = 1; slotnumber < uicontext->config_file_number_max_of_slot; slotnumber++ )
+	for ( slotnumber = 1; slotnumber < ctx->config_file_number_max_of_slot; slotnumber++ )
 	{
-		if( (uicontext->slot_map[slotnumber>>3] & (0x80 >> (slotnumber&7))) )
+		if( (ctx->slot_map[slotnumber>>3] & (0x80 >> (slotnumber&7))) )
 		{
-			if( !(uicontext->change_map[slotnumber>>3] & (0x80 >> (slotnumber&7))) )
+			if( !(ctx->change_map[slotnumber>>3] & (0x80 >> (slotnumber&7))) )
 			{
 				// Bad Slot !
 				memset(tmp_str,0,sizeof(tmp_str));
-				drive_slots_ptr = &disks_slots[ (slotnumber*uicontext->number_of_drive) + drive];
+				drive_slots_ptr = &disks_slots[ (slotnumber*ctx->number_of_drive) + drive];
 				memcpy(tmp_str,&drive_slots_ptr->name,MAX_SHORT_NAME_LENGHT);
 
 				printf("Slot %d:%s -> ERROR ! Not found ! Bad Slot Entry !\n",slotnumber,tmp_str);
@@ -270,13 +270,13 @@ int check_slots(ui_context * uicontext,char * outputfile,int fix)
 				{
 					printf("Clear Slot %d\n",slotnumber);
 					memset(drive_slots_ptr,0,sizeof(disk_in_drive_v2));
-					uicontext->slot_map[slotnumber>>3] &= ~(0x80 >> (slotnumber&7));
-					uicontext->change_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
+					ctx->slot_map[slotnumber>>3] &= ~(0x80 >> (slotnumber&7));
+					ctx->change_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
 				}
 			}
 			else
 			{
-				uicontext->change_map[slotnumber>>3] &= ~(0x80 >> (slotnumber&7));
+				ctx->change_map[slotnumber>>3] &= ~(0x80 >> (slotnumber&7));
 			}
 		}
 	}
@@ -289,14 +289,14 @@ int check_slots(ui_context * uicontext,char * outputfile,int fix)
 
 int generate_slot_list(char * outputfile,int fix)
 {
-	ui_context * uicontext;
+	ui_context * ctx;
 	unsigned char cfgfile_header[512];
 	int errorcnt;
 
-	uicontext = &g_ui_ctx;
+	ctx = &g_ui_ctx;
 
-	memset( uicontext,0,sizeof(ui_context));
-	strcpy( uicontext->currentPath, "/" );
+	memset( ctx,0,sizeof(ui_context));
+	strcpy( ctx->currentPath, "/" );
 
 	init_fdc(0);
 
@@ -311,16 +311,16 @@ int generate_slot_list(char * outputfile,int fix)
 		return 0;
 	}
 
-	read_cfg_file(uicontext,(unsigned char*)&cfgfile_header);
+	read_cfg_file(ctx,(unsigned char*)&cfgfile_header);
 
-	errorcnt = check_slots(uicontext,outputfile,fix);
+	errorcnt = check_slots(ctx,outputfile,fix);
 
 	printf("%d Bad slot(s) found...\n",errorcnt);
 
 	if(errorcnt && fix)
 	{
 		printf("Saving...\n");
-		save_cfg_file(uicontext,(unsigned char*)&cfgfile_header, -1);
+		save_cfg_file(ctx,(unsigned char*)&cfgfile_header, -1);
 	}
 
 	scanfolderpath[0] = 0;
@@ -330,7 +330,7 @@ int generate_slot_list(char * outputfile,int fix)
 
 int insert_slot_list(char * inputfile)
 {
-	ui_context * uicontext;
+	ui_context * ctx;
 	unsigned char cfgfile_header[512];
 	char linebuffer[1024];
 	char * filename;
@@ -343,10 +343,10 @@ int insert_slot_list(char * inputfile)
 
 	drive = 0;
 
-	uicontext = &g_ui_ctx;
+	ctx = &g_ui_ctx;
 
-	memset( uicontext,0,sizeof(ui_context));
-	strcpy( uicontext->currentPath, "/" );
+	memset( ctx,0,sizeof(ui_context));
+	strcpy( ctx->currentPath, "/" );
 
 	init_fdc(0);
 
@@ -361,7 +361,7 @@ int insert_slot_list(char * inputfile)
 		return 0;
 	}
 
-	read_cfg_file(uicontext,(unsigned char*)&cfgfile_header);
+	read_cfg_file(ctx,(unsigned char*)&cfgfile_header);
 
 	printf("Opening %s...\n",inputfile);
 	fin = fopen(inputfile,"r");
@@ -394,7 +394,7 @@ int insert_slot_list(char * inputfile)
 					else
 					{
 						slotnumber = atoi(linebuffer);
-						if(slotnumber < uicontext->config_file_number_max_of_slot )
+						if(slotnumber < ctx->config_file_number_max_of_slot )
 						{
 							printf("Slot %d : Set to %s\n",slotnumber,filename);
 
@@ -419,13 +419,13 @@ int insert_slot_list(char * inputfile)
 							printf("Entry : %s Size:%d Cluster 0x%.8X\n",DirectoryEntry.name,DirectoryEntry.size,DirectoryEntry.firstCluster);
 							#endif
 
-							memcpy( (void*)&disks_slots[ (slotnumber * uicontext->number_of_drive) + drive ],
+							memcpy( (void*)&disks_slots[ (slotnumber * ctx->number_of_drive) + drive ],
 								(void*)&DirectoryEntry,
 								sizeof(disk_in_drive_v2)
 								);
 
-							uicontext->slot_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
-							uicontext->change_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
+							ctx->slot_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
+							ctx->change_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
 						}
 						else
 						{
@@ -440,7 +440,7 @@ int insert_slot_list(char * inputfile)
 
 		fclose(fin);
 
-		save_cfg_file(uicontext,(unsigned char*)&cfgfile_header, -1);
+		save_cfg_file(ctx,(unsigned char*)&cfgfile_header, -1);
 	}
 
 	return 0;
@@ -448,12 +448,12 @@ int insert_slot_list(char * inputfile)
 
 int clear_all_slots()
 {
-	ui_context * uicontext;
+	ui_context * ctx;
 	unsigned char cfgfile_header[512];
-	uicontext = &g_ui_ctx;
+	ctx = &g_ui_ctx;
 
-	memset( uicontext,0,sizeof(ui_context));
-	strcpy( uicontext->currentPath, "/" );
+	memset( ctx,0,sizeof(ui_context));
+	strcpy( ctx->currentPath, "/" );
 
 	init_fdc(0);
 
@@ -468,11 +468,11 @@ int clear_all_slots()
 		return 0;
 	}
 
-	read_cfg_file(uicontext,(unsigned char*)&cfgfile_header);
+	read_cfg_file(ctx,(unsigned char*)&cfgfile_header);
 
-	clear_slots(uicontext);
+	clear_slots(ctx);
 
-	save_cfg_file(uicontext,(unsigned char*)&cfgfile_header, -1);
+	save_cfg_file(ctx,(unsigned char*)&cfgfile_header, -1);
 
 	return 0;
 }
@@ -521,7 +521,7 @@ int isSupported(char * ext)
 	return 0;
 }
 
-int scan_tree(ui_context * uicontext)
+int scan_tree(ui_context * ctx)
 {
 	struct fs_dir_ent dir_entry;
 	FL_DIR file_list_status;
@@ -543,7 +543,7 @@ int scan_tree(ui_context * uicontext)
 				pathlen = strlen(scanfolderpath);
 				strcat(scanfolderpath,"/");
 				strcat(scanfolderpath,dir_entry.filename);
-				if( scan_tree( uicontext ) )
+				if( scan_tree( ctx ) )
 					return 1;
 				scanfolderpath[pathlen] = 0;
 			}
@@ -557,7 +557,7 @@ int scan_tree(ui_context * uicontext)
 			if(strcmpi(dir_entry.filename,"autoboot.hfe"))
 			{
 
-				slot = get_slot_from_cluster(uicontext,ENDIAN_32BIT(dir_entry.cluster));
+				slot = get_slot_from_cluster(ctx,ENDIAN_32BIT(dir_entry.cluster));
 
 				if( slot < 0 )
 				{
@@ -574,11 +574,11 @@ int scan_tree(ui_context * uicontext)
 						printf("Adding %s... ",dir_entry.filename);
 						do
 						{
-							if( !(uicontext->slot_map[slotnumber>>3] & (0x80 >> (slotnumber&7))) )
+							if( !(ctx->slot_map[slotnumber>>3] & (0x80 >> (slotnumber&7))) )
 							{
 								// Free slot found...
-								uicontext->slot_map[slotnumber>>3]   |= (0x80 >> (slotnumber&7));
-								uicontext->change_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
+								ctx->slot_map[slotnumber>>3]   |= (0x80 >> (slotnumber&7));
+								ctx->change_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
 
 								DirectoryEntry.attributes=0x00;
 								if(dir_entry.is_readonly)
@@ -602,7 +602,7 @@ int scan_tree(ui_context * uicontext)
 								DirectoryEntry.firstCluster = ENDIAN_32BIT(dir_entry.cluster) ;
 								DirectoryEntry.size = ENDIAN_32BIT(dir_entry.size);
 
-								memcpy( (void*)&disks_slots[ (slotnumber * uicontext->number_of_drive) + drive ],
+								memcpy( (void*)&disks_slots[ (slotnumber * ctx->number_of_drive) + drive ],
 										(void*)&DirectoryEntry,
 										sizeof(disk_in_drive_v2)
 										);
@@ -612,7 +612,7 @@ int scan_tree(ui_context * uicontext)
 							}
 
 							slotnumber++;
-						}while(slotnumber < uicontext->config_file_number_max_of_slot && !freeslotfound);
+						}while(slotnumber < ctx->config_file_number_max_of_slot && !freeslotfound);
 
 						if(!freeslotfound)
 						{
@@ -628,12 +628,12 @@ int scan_tree(ui_context * uicontext)
 
 int auto_populate_slots()
 {
-	ui_context * uicontext;
+	ui_context * ctx;
 	unsigned char cfgfile_header[512];
-	uicontext = &g_ui_ctx;
+	ctx = &g_ui_ctx;
 
-	memset( uicontext,0,sizeof(ui_context));
-	strcpy( uicontext->currentPath, "/" );
+	memset( ctx,0,sizeof(ui_context));
+	strcpy( ctx->currentPath, "/" );
 
 	init_fdc(0);
 
@@ -648,13 +648,13 @@ int auto_populate_slots()
 		return 0;
 	}
 
-	read_cfg_file(uicontext,(unsigned char*)&cfgfile_header);
+	read_cfg_file(ctx,(unsigned char*)&cfgfile_header);
 
 	scanfolderpath[0] = 0;
 	scanfolderpath[1] = 0;
-	scan_tree(uicontext);
+	scan_tree(ctx);
 
-	save_cfg_file(uicontext,(unsigned char*)&cfgfile_header, -1);
+	save_cfg_file(ctx,(unsigned char*)&cfgfile_header, -1);
 
 	return 0;
 }

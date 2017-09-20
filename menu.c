@@ -28,26 +28,29 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+
 #include "keysfunc_defs.h"
 
-#include "gui_utils.h"
-
 #include "cfg_file.h"
-
-#include "hardware.h"
 
 #include "conf.h"
 #include "ui_context.h"
 
+#include "gui_utils.h"
+#include "hxcfeda.h"
+
+#include "hardware.h"
+
+
+#include "fectrl.h"
+
 #include "menu.h"
 
-extern uint16_t SCREEN_XRESOL;
-
-int menu_draw(ui_context * uicontext, const menu * submenu, int *max_len)
+int menu_draw(ui_context * ctx, const menu * submenu, int *max_len)
 {
 	int i,t;
 
-	clear_list(0);
+	clear_list(ctx,0);
 
 	*max_len = 0;
 	i = 0;
@@ -62,17 +65,17 @@ int menu_draw(ui_context * uicontext, const menu * submenu, int *max_len)
 	}
 
 	// Center & align the parameters if possible...
-	if( *max_len*8 < SCREEN_XRESOL/2 )
-		*max_len = (SCREEN_XRESOL/8)/2;
+	if( *max_len*8 < ctx->SCREEN_XRESOL/2 )
+		*max_len = (ctx->SCREEN_XRESOL/8)/2;
 
 	i = 0;
 	while( submenu[i].text )
 	{
-		hxc_print(submenu[i].align,0,FILELIST_Y_POS+(i*8), (char*)submenu[i].text);
+		hxc_print(ctx,submenu[i].align,0,FILELIST_Y_POS+(i*8), (char*)submenu[i].text);
 
 		if(submenu[i].menu_cb)
 		{
-			submenu[i].menu_cb(uicontext,0,*max_len * 8,FILELIST_Y_POS+(i*8),submenu[i].cb_parameter);
+			submenu[i].menu_cb(ctx,0,*max_len * 8,FILELIST_Y_POS+(i*8),submenu[i].cb_parameter);
 		}
 		i++;
 	}
@@ -80,17 +83,17 @@ int menu_draw(ui_context * uicontext, const menu * submenu, int *max_len)
 	return i;
 }
 
-int enter_menu(ui_context * uicontext, const menu * submenu)
+int enter_menu(ui_context * ctx, const menu * submenu)
 {
 	int i,item_count,max_len;
 	int cb_return;
 	unsigned char c;
 
-	item_count = menu_draw(uicontext, submenu, &max_len);
+	item_count = menu_draw(ctx, submenu, &max_len);
 
 	i = 0;
 
-	invert_line(0,FILELIST_Y_POS+(i*8));
+	invert_line(ctx,0,FILELIST_Y_POS+(i*8));
 
 	do
 	{
@@ -100,29 +103,29 @@ int enter_menu(ui_context * uicontext, const menu * submenu)
 		switch(c)
 		{
 			case FCT_UP_KEY:
-				invert_line(0,FILELIST_Y_POS+(i*8));
+				invert_line(ctx,0,FILELIST_Y_POS+(i*8));
 				if(i)
 					i--;
-				invert_line(0,FILELIST_Y_POS+(i*8));
+				invert_line(ctx,0,FILELIST_Y_POS+(i*8));
 			break;
 			case FCT_DOWN_KEY:
-				invert_line(0,FILELIST_Y_POS+(i*8));
+				invert_line(ctx,0,FILELIST_Y_POS+(i*8));
 				if( i < item_count - 1 )
 					i++;
-				invert_line(0,FILELIST_Y_POS+(i*8));
+				invert_line(ctx,0,FILELIST_Y_POS+(i*8));
 			break;
 
 			case FCT_SELECT_FILE_DRIVEA:
 			case FCT_LEFT_KEY:
 			case FCT_RIGHT_KEY:
 				// call callback.
-				invert_line(0,FILELIST_Y_POS+(i*8));
+				invert_line(ctx,0,FILELIST_Y_POS+(i*8));
 				if(submenu[i].menu_cb)
 				{
-					cb_return = submenu[i].menu_cb(uicontext,c,max_len*8,FILELIST_Y_POS+(i*8),submenu[i].cb_parameter);
+					cb_return = submenu[i].menu_cb(ctx,c,max_len*8,FILELIST_Y_POS+(i*8),submenu[i].cb_parameter);
 					if(cb_return == MENU_REDRAWMENU)
 					{
-						menu_draw(uicontext, submenu, &max_len);
+						menu_draw(ctx, submenu, &max_len);
 					}
 				}
 
@@ -130,12 +133,12 @@ int enter_menu(ui_context * uicontext, const menu * submenu)
 				{
 					if(submenu[i].submenu && submenu[i].submenu != (struct menu *)-1)
 					{
-						enter_menu(uicontext, (menu *)submenu[i].submenu);
-						menu_draw(uicontext, submenu, &max_len);
+						enter_menu(ctx, (menu *)submenu[i].submenu);
+						menu_draw(ctx, submenu, &max_len);
 					}
 				}
 
-				invert_line(0,FILELIST_Y_POS+(i*8));
+				invert_line(ctx,0,FILELIST_Y_POS+(i*8));
 
 			break;
 		}

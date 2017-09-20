@@ -1,5 +1,11 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
+
 #include "version.h"
 
+#include "cfg_file.h"
+#include "ui_context.h"
 #include "gui_utils.h"
 #include "msg_txt.h"
 

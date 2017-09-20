@@ -30,14 +30,21 @@
 #include <stdint.h>
 
 #include "keysfunc_defs.h"
-#include "gui_utils.h"
 #include "cfg_file.h"
+
+#include "conf.h"
 #include "ui_context.h"
+
+#include "gui_utils.h"
+
+#include "hardware.h"
+#include "fectrl.h"
+
 #include "menu.h"
 
 extern unsigned char cfgfile_header[512];
 
-static int settings_menu_stepsound_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
+static int settings_menu_stepsound_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -48,12 +55,12 @@ static int settings_menu_stepsound_cb(ui_context * uicontext, int event, int xpo
 		cfgfile_ptr->step_sound =~ cfgfile_ptr->step_sound;
 	}
 
-	hxc_printf(LEFT_ALIGNED,xpos,ypos, "%s ",cfgfile_ptr->step_sound?"on":"off");
+	hxc_printf(ctx,LEFT_ALIGNED,xpos,ypos, "%s ",cfgfile_ptr->step_sound?"on":"off");
 
 	return MENU_STAYINMENU;
 }
 
-static int settings_menu_usersound_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
+static int settings_menu_usersound_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -76,12 +83,12 @@ static int settings_menu_usersound_cb(ui_context * uicontext, int event, int xpo
 	if(!cfgfile_ptr->buzzer_duty_cycle)
 		cfgfile_ptr->ihm_sound=0x00;
 
-	hxc_printf(LEFT_ALIGNED,xpos,ypos, "%d  ",cfgfile_ptr->buzzer_duty_cycle);
+	hxc_printf(ctx,LEFT_ALIGNED,xpos,ypos, "%d  ",cfgfile_ptr->buzzer_duty_cycle);
 
 	return MENU_STAYINMENU;
 }
 
-static int settings_menu_lcdstandby_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
+static int settings_menu_lcdstandby_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -101,12 +108,12 @@ static int settings_menu_lcdstandby_cb(ui_context * uicontext, int event, int xp
 		}
 	}
 
-	hxc_printf(LEFT_ALIGNED,xpos,ypos,"%d s ",cfgfile_ptr->back_light_tmr);
+	hxc_printf(ctx,LEFT_ALIGNED,xpos,ypos,"%d s ",cfgfile_ptr->back_light_tmr);
 
 	return MENU_STAYINMENU;
 }
 
-static int settings_menu_sdstandby_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
+static int settings_menu_sdstandby_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -126,12 +133,12 @@ static int settings_menu_sdstandby_cb(ui_context * uicontext, int event, int xpo
 		}
 	}
 
-	hxc_printf(LEFT_ALIGNED,xpos,ypos, "%d s ",cfgfile_ptr->standby_tmr);
+	hxc_printf(ctx,LEFT_ALIGNED,xpos,ypos, "%d s ",cfgfile_ptr->standby_tmr);
 
 	return MENU_STAYINMENU;
 }
 
-static int settings_menu_driveb_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
+static int settings_menu_driveb_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -142,12 +149,12 @@ static int settings_menu_driveb_cb(ui_context * uicontext, int event, int xpos, 
 		cfgfile_ptr->enable_drive_b=~cfgfile_ptr->enable_drive_b;
 	}
 
-	hxc_printf(LEFT_ALIGNED,xpos,ypos, "%s ",cfgfile_ptr->enable_drive_b?"off":"on");
+	hxc_printf(ctx,LEFT_ALIGNED,xpos,ypos, "%s ",cfgfile_ptr->enable_drive_b?"off":"on");
 
 	return MENU_STAYINMENU;
 }
 
-static int settings_menu_autobootpowerup_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
+static int settings_menu_autobootpowerup_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -158,12 +165,12 @@ static int settings_menu_autobootpowerup_cb(ui_context * uicontext, int event, i
 		cfgfile_ptr->startup_mode ^= START_MODE_SLOT_0;
 	}
 
-	hxc_printf(LEFT_ALIGNED,xpos,ypos, "%s ",(cfgfile_ptr->startup_mode & START_MODE_SLOT_0)?"on":"off");
+	hxc_printf(ctx,LEFT_ALIGNED,xpos,ypos, "%s ",(cfgfile_ptr->startup_mode & START_MODE_SLOT_0)?"on":"off");
 
 	return MENU_STAYINMENU;
 }
 
-static int settings_menu_ejectpowerup_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
+static int settings_menu_ejectpowerup_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -174,7 +181,7 @@ static int settings_menu_ejectpowerup_cb(ui_context * uicontext, int event, int 
 		cfgfile_ptr->startup_mode ^= START_MODE_DSKEJECTED;
 	}
 
-	hxc_printf(LEFT_ALIGNED,xpos,ypos, "%s ",(cfgfile_ptr->startup_mode & START_MODE_DSKEJECTED)?"on":"off");
+	hxc_printf(ctx,LEFT_ALIGNED,xpos,ypos, "%s ",(cfgfile_ptr->startup_mode & START_MODE_DSKEJECTED)?"on":"off");
 
 	return MENU_STAYINMENU;
 }

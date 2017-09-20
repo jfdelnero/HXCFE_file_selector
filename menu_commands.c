@@ -29,12 +29,12 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "hardware.h"
-
 #include "keysfunc_defs.h"
-#include "gui_utils.h"
+
 #include "cfg_file.h"
 #include "ui_context.h"
+#include "gui_utils.h"
+
 #include "menu.h"
 #include "menu_settings.h"
 #include "menu_selectdrive.h"
@@ -44,9 +44,11 @@
 
 #include "config_file.h"
 
+#include "hardware.h"
+
 extern unsigned char cfgfile_header[512];
 
-static int commnand_menu_savereboot_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
+static int commnand_menu_savereboot_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
 {
 	unsigned char param_mask;
 	if(event)
@@ -55,41 +57,35 @@ static int commnand_menu_savereboot_cb(ui_context * uicontext, int event, int xp
 
 		if(param_mask & 0x01) // Save ?
 		{
-			hxc_printf_box((char*)save_msg);
-			save_cfg_file(uicontext,cfgfile_header,-1);
+			hxc_printf_box(ctx,(char*)save_msg);
+			save_cfg_file(ctx,cfgfile_header,-1);
 			sleep(1);
 		}
 
 		if(param_mask & 0x02) // Reboot ?
 		{
-			hxc_printf_box((char*)reboot_msg);
-			sleep(1);
-			jumptotrack(0);
-			reboot();
+			ui_reboot(ctx);
 		}
 	}
 
 	return MENU_REDRAWMENU;
 }
 
-static int commnand_menu_chgcolor_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
+static int commnand_menu_chgcolor_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
 {
 	if(event)
 	{
-		uicontext->colormode++;
-		set_color_scheme(uicontext->colormode);
-		cfgfile_header[256+128] = uicontext->colormode;
-		waitms(100);
+		ui_chgcolor(ctx,ctx->colormode+1);
 	}
 
 	return MENU_STAYINMENU;
 }
 
-static int commnand_menu_help_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
+static int commnand_menu_help_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
 {
 	if(event)
 	{
-		print_help();
+		print_help(ctx);
 	}
 	return MENU_REDRAWMENU;
 }
