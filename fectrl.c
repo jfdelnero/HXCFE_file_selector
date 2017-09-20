@@ -50,10 +50,14 @@
 
 #include "fectrl.h"
 
+#include "menu.h"
+
+#include "menu_settings.h"
+
 static uint32_t last_setlbabase;
 
 // Config file header sector
-static unsigned char cfgfile_header[512];
+unsigned char cfgfile_header[512];
 
 // Slots buffer
 disk_in_drive_v2 disks_slots[MAX_NUMBER_OF_SLOT];
@@ -141,6 +145,32 @@ int test_floppy_if()
 
 		last_setlbabase--;
 	}while(last_setlbabase);
+
+	return 0;
+}
+
+int check_version(direct_access_status_sector * dass)
+{
+	int i,count;
+
+	i = 0;
+	count = 0;
+
+	if(dass->FIRMWAREVERSION[0] != 'v' && dass->FIRMWAREVERSION[0] != 'V')
+	{
+		return 0;
+	}
+
+	while(dass->FIRMWAREVERSION[i] && i < sizeof(FIRMWAREVERSION))
+	{
+		if(dass->FIRMWAREVERSION[i] == '.')
+			count++;
+
+		i++;
+	}
+
+	if(count == 3)
+		return 1;
 
 	return 0;
 }
@@ -930,163 +960,9 @@ void ui_reboot(ui_context * uicontext)
 
 void ui_config_menu(ui_context * uicontext)
 {
-	int i;
-	unsigned char c;
-	cfgfile * cfgfile_ptr;
-
 	clear_list(0);
-	cfgfile_ptr=(cfgfile * )cfgfile_header;
 
-	i=0;
-	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS+(i*8), "HxC Floppy Emulator settings:");
-
-	i=2;
-	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS+(i*8), "Track step sound :");
-	hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->step_sound?"on":"off");
-
-	i++;
-	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS+(i*8), "User interface sound:");
-	hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d   ",cfgfile_ptr->buzzer_duty_cycle);
-
-	i++;
-	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS+(i*8), "LCD Backlight standby:");
-	hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s",cfgfile_ptr->back_light_tmr);
-
-	i++;
-	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS+(i*8), "SD/USB Standby:");
-	hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s",cfgfile_ptr->standby_tmr);
-
-	i++;
-	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS+(i*8), "DF1 drive :");
-	hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"off":"on");
-
-	i++;
-	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS+(i*8), "Load AUTOBOOT.HFE at power up :");
-	hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->startup_mode & START_MODE_SLOT_0?"on":"off");
-
-	i++;
-	hxc_print(LEFT_ALIGNED,0,HELP_Y_POS+(i*8), "Eject disk at power up :");
-	hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->startup_mode & START_MODE_DSKEJECTED?"on":"off");
-
-	i=i+2;
-	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "--- Exit ---");
-
-	i=2;
-	invert_line(0,HELP_Y_POS+(i*8));
-	do
-	{
-		c=wait_function_key();
-		switch(c)
-		{
-			case FCT_UP_KEY:
-				invert_line(0,HELP_Y_POS+(i*8));
-				if(i>2) i--;
-				invert_line(0,HELP_Y_POS+(i*8));
-			break;
-			case FCT_DOWN_KEY:
-				invert_line(0,HELP_Y_POS+(i*8));
-				if(i<10) i++;
-				invert_line(0,HELP_Y_POS+(i*8));
-			break;
-
-			case FCT_LEFT_KEY:
-			case FCT_RIGHT_KEY:
-				invert_line(0,HELP_Y_POS+(i*8));
-				switch(i)
-				{
-					case 2:
-						cfgfile_ptr->step_sound =~ cfgfile_ptr->step_sound;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->step_sound?"on":"off");
-					break;
-					case 3:
-						if(	c == FCT_LEFT_KEY )
-						{
-							if(cfgfile_ptr->buzzer_duty_cycle)
-								cfgfile_ptr->buzzer_duty_cycle--;
-						}
-						else
-						{
-							if(cfgfile_ptr->buzzer_duty_cycle<0x80)
-								cfgfile_ptr->buzzer_duty_cycle++;
-							cfgfile_ptr->ihm_sound = 0xFF;
-						}
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d  ",cfgfile_ptr->buzzer_duty_cycle);
-						if(!cfgfile_ptr->buzzer_duty_cycle) cfgfile_ptr->ihm_sound=0x00;
-					break;
-					case 4:
-						if(	c == FCT_LEFT_KEY )
-						{
-							if(cfgfile_ptr->back_light_tmr)
-								cfgfile_ptr->back_light_tmr--;
-						}
-						else
-						{
-							if(cfgfile_ptr->back_light_tmr<0xFF)
-								cfgfile_ptr->back_light_tmr++;
-						}
-
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->back_light_tmr);
-					break;
-
-					case 5:
-						if(	c == FCT_LEFT_KEY )
-						{
-							if(cfgfile_ptr->standby_tmr)
-								cfgfile_ptr->standby_tmr--;
-						}
-						else
-						{
-							if(cfgfile_ptr->standby_tmr<0xFF)
-								cfgfile_ptr->standby_tmr++;
-						}
-
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%d s ",cfgfile_ptr->standby_tmr);
-					break;
-
-					case 6:
-						cfgfile_ptr->enable_drive_b=~cfgfile_ptr->enable_drive_b;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"off":"on");
-					break;
-
-					case 7:
-						cfgfile_ptr->startup_mode ^= START_MODE_SLOT_0;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",(cfgfile_ptr->startup_mode & START_MODE_SLOT_0)?"on":"off");
-					break;
-
-					case 8:
-						cfgfile_ptr->startup_mode ^= START_MODE_DSKEJECTED;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",(cfgfile_ptr->startup_mode & START_MODE_DSKEJECTED)?"on":"off");
-					break;
-				}
-				invert_line(0,HELP_Y_POS+(i*8));
-			break;
-
-			case FCT_SELECT_FILE_DRIVEA:
-				invert_line(0,HELP_Y_POS+(i*8));
-				switch(i)
-				{
-					case 2:
-						cfgfile_ptr->step_sound=~cfgfile_ptr->step_sound;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->step_sound?"on":"off");
-					break;
-					case 6:
-						cfgfile_ptr->enable_drive_b=~cfgfile_ptr->enable_drive_b;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",cfgfile_ptr->enable_drive_b?"off":"on");
-					break;
-					case 7:
-						cfgfile_ptr->startup_mode ^= START_MODE_SLOT_0;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",(cfgfile_ptr->startup_mode & START_MODE_SLOT_0)?"on":"off");
-					break;
-					case 8:
-						cfgfile_ptr->startup_mode ^= START_MODE_DSKEJECTED;
-						hxc_printf(LEFT_ALIGNED,SCREEN_XRESOL/2,HELP_Y_POS+(i*8), "%s ",(cfgfile_ptr->startup_mode & START_MODE_DSKEJECTED)?"on":"off");
-					break;
-				}
-
-				invert_line(0,HELP_Y_POS+(i*8));
-			break;
-		}
-	}while( (c!=FCT_SELECT_FILE_DRIVEA) || i != 10 );
+	enter_menu(uicontext,settings_menu);
 
 	memcpy(&file_list_status ,&file_list_status_tab[uicontext->page_number],sizeof(FL_DIR));
 	clear_list(0);
@@ -1097,10 +973,8 @@ void ui_drive_select_menu(ui_context * uicontext)
 {
 	int i,drive;
 	unsigned char c;
-	cfgfile * cfgfile_ptr;
 
 	clear_list(0);
-	cfgfile_ptr=(cfgfile * )cfgfile_header;
 
 	i=0;
 	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "Select Drive:");
