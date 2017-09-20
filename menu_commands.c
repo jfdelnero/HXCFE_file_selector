@@ -42,6 +42,8 @@
 #include "msg_txt.h"
 #include "fectrl.h"
 
+#include "config_file.h"
+
 extern unsigned char cfgfile_header[512];
 
 static int commnand_menu_savereboot_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)

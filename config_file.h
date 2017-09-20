@@ -25,30 +25,5 @@
 //
 */
 
-enum {
-	FCT_NO_FUNCTION=0,
-	FCT_UP_KEY,
-	FCT_DOWN_KEY,
-	FCT_LEFT_KEY,
-	FCT_RIGHT_KEY,
-	FCT_SELECT_FILE_DRIVEA,
-	FCT_SELECT_FILE_DRIVEB,
-	FCT_SELECT_FILE_DRIVEA_AND_NEXTSLOT,
-	FCT_NEXTSLOT,
-	FCT_PREVSLOT,
-	FCT_SAVE,
-	FCT_REBOOT,
-	FCT_SAVEREBOOT,
-	FCT_CLEARSLOT,
-	FCT_CLEARSLOT_AND_NEXTSLOT,
-	FCT_SELECTSAVEREBOOT,
-	FCT_HELP,
-	FCT_SHOWSLOTS,
-	FCT_OK,
-	FCT_SEARCH,
-	FCT_TOP,
-	FCT_CHGCOLOR,
-	FCT_EMUCFG,
-	FCT_ESCAPE,
-	FCT_QUIT
-};
+char read_cfg_file(ui_context * uicontext,unsigned char * cfgfile_header);
+char save_cfg_file(ui_context * uicontext,unsigned char * sdfecfg_file, int pre_selected_slot);

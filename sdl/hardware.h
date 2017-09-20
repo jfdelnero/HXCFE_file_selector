@@ -18,7 +18,6 @@ void reboot();
 
 int init_display();
 unsigned short get_vid_mode();
-void setvideomode(int mode);
 void disablemousepointer();
 
 void display_sprite(unsigned char * membuffer, bmaptype * sprite,int x, int y);

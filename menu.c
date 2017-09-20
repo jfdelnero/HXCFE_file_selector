@@ -45,9 +45,7 @@ extern uint16_t SCREEN_XRESOL;
 
 int menu_draw(ui_context * uicontext, const menu * submenu, int *max_len)
 {
-	int i,item_count,t;
-	int cb_return;
-	unsigned char c;
+	int i,t;
 
 	clear_list(0);
 
@@ -130,9 +128,9 @@ int enter_menu(ui_context * uicontext, const menu * submenu)
 
 				if(c == FCT_SELECT_FILE_DRIVEA)
 				{
-					if(submenu[i].submenu && submenu[i].submenu != -1)
+					if(submenu[i].submenu && submenu[i].submenu != (struct menu *)-1)
 					{
-						enter_menu(uicontext, submenu[i].submenu);
+						enter_menu(uicontext, (menu *)submenu[i].submenu);
 						menu_draw(uicontext, submenu, &max_len);
 					}
 				}

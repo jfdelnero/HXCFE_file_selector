@@ -36,6 +36,8 @@
 #include "menu.h"
 #include "hardware.h"
 
+#include "fectrl.h"
+
 extern unsigned char cfgfile_header[512];
 
 static int selectdrive_menu_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)

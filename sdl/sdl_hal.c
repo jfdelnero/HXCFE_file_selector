@@ -526,10 +526,6 @@ unsigned char wait_function_key()
 *                              Display Output
 *********************************************************************************/
 
-void setvideomode(int mode)
-{
-}
-
 int update_screen()
 {
 	unsigned char *buffer_dat;
