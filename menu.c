@@ -46,6 +46,7 @@ extern uint16_t SCREEN_XRESOL;
 int enter_menu(ui_context * uicontext, const menu * submenu)
 {
 	int i,item_count,max_len,t;
+	int cb_return;
 	unsigned char c;
 
 	max_len = 0;
@@ -71,7 +72,7 @@ int enter_menu(ui_context * uicontext, const menu * submenu)
 
 		if(submenu[i].menu_cb)
 		{
-			submenu[i].menu_cb(uicontext,0,max_len*8,FILELIST_Y_POS+(i*8));
+			submenu[i].menu_cb(uicontext,0,max_len*8,FILELIST_Y_POS+(i*8),submenu[i].cb_parameter);
 		}
 		i++;
 	}
@@ -84,6 +85,8 @@ int enter_menu(ui_context * uicontext, const menu * submenu)
 
 	do
 	{
+		cb_return = MENU_STAYINMENU;
+
 		c=wait_function_key();
 		switch(c)
 		{
@@ -107,12 +110,12 @@ int enter_menu(ui_context * uicontext, const menu * submenu)
 				invert_line(0,FILELIST_Y_POS+(i*8));
 				if(submenu[i].menu_cb)
 				{
-					submenu[i].menu_cb(uicontext,c,max_len*8,FILELIST_Y_POS+(i*8));
+					cb_return = submenu[i].menu_cb(uicontext,c,max_len*8,FILELIST_Y_POS+(i*8),submenu[i].cb_parameter);
 				}
 				invert_line(0,FILELIST_Y_POS+(i*8));
 			break;
 		}
-	}while( ( c != FCT_SELECT_FILE_DRIVEA ) || (submenu[i].submenu != (struct menu *)-1) );
+	}while( (( c != FCT_SELECT_FILE_DRIVEA ) || (submenu[i].submenu != (struct menu *)-1)) && (cb_return != MENU_LEAVEMENU) );
 
 	return 0;
 }

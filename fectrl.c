@@ -53,6 +53,7 @@
 #include "menu.h"
 
 #include "menu_settings.h"
+#include "menu_selectdrive.h"
 
 static uint32_t last_setlbabase;
 
@@ -971,86 +972,13 @@ void ui_config_menu(ui_context * uicontext)
 
 void ui_drive_select_menu(ui_context * uicontext)
 {
-	int i,drive;
-	unsigned char c;
-
 	clear_list(0);
 
-	i=0;
-	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "Select Drive:");
-
-	i=2;
-	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "A: / DF0");
-
-	i += 2;
-	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "B: / DF1");
-
-	i += 2;
-	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "DF2");
-
-	i += 2;
-	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "DF3");
-
-	i += 2;
-	hxc_print(CENTER_ALIGNED,0,HELP_Y_POS+(i*8), "--- Exit ---");
-
-	i=2;
-	invert_line(0,HELP_Y_POS+(i*8));
-	do
-	{
-		drive = -1;
-
-		c=wait_function_key();
-		switch(c)
-		{
-			case FCT_UP_KEY:
-				invert_line(0,HELP_Y_POS+(i*8));
-				if(i>2) i--;
-				invert_line(0,HELP_Y_POS+(i*8));
-			break;
-			case FCT_DOWN_KEY:
-				invert_line(0,HELP_Y_POS+(i*8));
-				if(i<10) i++;
-				invert_line(0,HELP_Y_POS+(i*8));
-			break;
-
-			case FCT_SELECT_FILE_DRIVEA:
-				invert_line(0,HELP_Y_POS+(i*8));
-				switch(i)
-				{
-					case 2:
-						drive = 0;
-					break;
-					case 4:
-						drive = 1;
-					break;
-					case 6:
-						drive = 2;
-					break;
-					case 8:
-						drive = 3;
-					break;
-				}
-				invert_line(0,HELP_Y_POS+(i*8));
-
-				if(drive>=0)
-				{
-					hxc_printf_box("Init emulator I/O...");
-					deinit_fdc();
-					init_fdc(drive);
-					mount_drive(uicontext, drive);
-
-					i = 10;
-				}
-
-			break;
-		}
-	}while( (c!=FCT_SELECT_FILE_DRIVEA) || i != 10 );
+	enter_menu(uicontext,selectdrive_menu);
 
 	clear_list(0);
 	uicontext->read_entry=1;
 }
-
 
 int ui_command_menu(ui_context * uicontext)
 {

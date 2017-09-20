@@ -33,7 +33,7 @@ all: $(EXEC)
 clean:
 	rm -rf $(EXEC) *.o *.asm fat32/*.o fat32/*.asm libc/*.o libc/*.asm libc/snprintf/*.o symbols.map
 	cd loader && make clean
-	
+
 push-mina: $(EXEC)
 	rsync --perms $< Gilles@mina.openvpn:/cygdrive/c/data/dropbox/emul/atari/hd/c/tmp/
 
@@ -43,7 +43,7 @@ push-gbo-dsi: $(EXEC)
 push-gbo-pc: $(EXEC)
 	rsync --perms $< gbouthenot@gbo-pc.openvpn:/cygdrive/c/data/dropbox/emul/atari/hd/c/tmp/
 
-$(EXEC):        libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o  fectrl.o menu.o menu_settings.o gui_utils.o atari_st.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o msg_txt.o
+$(EXEC):        libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o  fectrl.o menu.o menu_settings.o menu_selectdrive.o gui_utils.o atari_st.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o msg_txt.o
 	$(C)          $(LFLAGS)           $^ -o $@
 	cd loader   && make all
 
@@ -61,7 +61,10 @@ menu.o: ../menu.c
 
 menu_settings.o: ../menu_settings.c
 	$(C)          $(CFLAGS)        -c $< -o $@
-	
+
+menu_selectdrive.o: ../menu_selectdrive.c
+	$(C)          $(CFLAGS)        -c $< -o $@
+
 msg_txt.o: ../msg_txt.c
 	$(C)          $(CFLAGS)        -c $< -o $@
 

@@ -37,7 +37,7 @@
 
 extern unsigned char cfgfile_header[512];
 
-static void settings_menu_stepsound_cb(ui_context * uicontext, int event, int xpos, int ypos)
+static int settings_menu_stepsound_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -49,9 +49,11 @@ static void settings_menu_stepsound_cb(ui_context * uicontext, int event, int xp
 	}
 
 	hxc_printf(LEFT_ALIGNED,xpos,ypos, "%s ",cfgfile_ptr->step_sound?"on":"off");
+
+	return MENU_STAYINMENU;
 }
 
-static void settings_menu_usersound_cb(ui_context * uicontext, int event, int xpos, int ypos)
+static int settings_menu_usersound_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -75,9 +77,11 @@ static void settings_menu_usersound_cb(ui_context * uicontext, int event, int xp
 		cfgfile_ptr->ihm_sound=0x00;
 
 	hxc_printf(LEFT_ALIGNED,xpos,ypos, "%d  ",cfgfile_ptr->buzzer_duty_cycle);
+
+	return MENU_STAYINMENU;
 }
 
-static void settings_menu_lcdstandby_cb(ui_context * uicontext, int event, int xpos, int ypos)
+static int settings_menu_lcdstandby_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -98,9 +102,11 @@ static void settings_menu_lcdstandby_cb(ui_context * uicontext, int event, int x
 	}
 
 	hxc_printf(LEFT_ALIGNED,xpos,ypos,"%d s ",cfgfile_ptr->back_light_tmr);
+
+	return MENU_STAYINMENU;
 }
 
-static void settings_menu_sdstandby_cb(ui_context * uicontext, int event, int xpos, int ypos)
+static int settings_menu_sdstandby_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -121,9 +127,11 @@ static void settings_menu_sdstandby_cb(ui_context * uicontext, int event, int xp
 	}
 
 	hxc_printf(LEFT_ALIGNED,xpos,ypos, "%d s ",cfgfile_ptr->standby_tmr);
+
+	return MENU_STAYINMENU;
 }
 
-static void settings_menu_driveb_cb(ui_context * uicontext, int event, int xpos, int ypos)
+static int settings_menu_driveb_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -135,9 +143,11 @@ static void settings_menu_driveb_cb(ui_context * uicontext, int event, int xpos,
 	}
 
 	hxc_printf(LEFT_ALIGNED,xpos,ypos, "%s ",cfgfile_ptr->enable_drive_b?"off":"on");
+
+	return MENU_STAYINMENU;
 }
 
-static void settings_menu_autobootpowerup_cb(ui_context * uicontext, int event, int xpos, int ypos)
+static int settings_menu_autobootpowerup_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -149,9 +159,11 @@ static void settings_menu_autobootpowerup_cb(ui_context * uicontext, int event, 
 	}
 
 	hxc_printf(LEFT_ALIGNED,xpos,ypos, "%s ",(cfgfile_ptr->startup_mode & START_MODE_SLOT_0)?"on":"off");
+
+	return MENU_STAYINMENU;
 }
 
-static void settings_menu_ejectpowerup_cb(ui_context * uicontext, int event, int xpos, int ypos)
+static int settings_menu_ejectpowerup_cb(ui_context * uicontext, int event, int xpos, int ypos, void * parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -163,20 +175,22 @@ static void settings_menu_ejectpowerup_cb(ui_context * uicontext, int event, int
 	}
 
 	hxc_printf(LEFT_ALIGNED,xpos,ypos, "%s ",(cfgfile_ptr->startup_mode & START_MODE_DSKEJECTED)?"on":"off");
+
+	return MENU_STAYINMENU;
 }
 
 const menu settings_menu[]=
 {
-	{"HxC Floppy Emulator settings:",   0,                                0, LEFT_ALIGNED},
-	{"",                                0,                                0, LEFT_ALIGNED},
-	{"Track step sound :",              settings_menu_stepsound_cb,       0, LEFT_ALIGNED},
-	{"User interface sound:",           settings_menu_usersound_cb,       0, LEFT_ALIGNED},
-	{"LCD Backlight standby:",          settings_menu_lcdstandby_cb,      0, LEFT_ALIGNED},
-	{"SD/USB Standby:",                 settings_menu_sdstandby_cb,       0, LEFT_ALIGNED},
-	{"DF1 drive :",                     settings_menu_driveb_cb,          0, LEFT_ALIGNED},
-	{"Load AUTOBOOT.HFE at power up :", settings_menu_autobootpowerup_cb, 0, LEFT_ALIGNED},
-	{"Eject disk at power up :",        settings_menu_ejectpowerup_cb,    0, LEFT_ALIGNED},
-	{"",                                0,                                0, LEFT_ALIGNED},
-	{"--- Exit ---",                    0,               (struct menu * )-1, CENTER_ALIGNED},
+	{"HxC Floppy Emulator settings:",   0,                                0, 0, LEFT_ALIGNED},
+	{"",                                0,                                0, 0, LEFT_ALIGNED},
+	{"Track step sound :",              settings_menu_stepsound_cb,       0, 0, LEFT_ALIGNED},
+	{"User interface sound:",           settings_menu_usersound_cb,       0, 0, LEFT_ALIGNED},
+	{"LCD Backlight standby:",          settings_menu_lcdstandby_cb,      0, 0, LEFT_ALIGNED},
+	{"SD/USB Standby:",                 settings_menu_sdstandby_cb,       0, 0, LEFT_ALIGNED},
+	{"DF1 drive :",                     settings_menu_driveb_cb,          0, 0, LEFT_ALIGNED},
+	{"Load AUTOBOOT.HFE at power up :", settings_menu_autobootpowerup_cb, 0, 0, LEFT_ALIGNED},
+	{"Eject disk at power up :",        settings_menu_ejectpowerup_cb,    0, 0, LEFT_ALIGNED},
+	{"",                                0,                                0, 0, LEFT_ALIGNED},
+	{"--- Exit ---",                    0,                                0, (struct menu * )-1, CENTER_ALIGNED},
 	{0, 0 , 0 ,0}
 };
