@@ -1,5 +1,5 @@
 void ui_savereboot(ui_context * ctx,int preselected_slot);
-void ui_save(ui_context * ctx);
+void ui_save(ui_context * ctx,int preselected_slot);
 void ui_reboot(ui_context * ctx);
 void ui_config_menu(ui_context * ctx);
 void ui_chgcolor(ui_context * ctx,int color);

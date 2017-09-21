@@ -29,8 +29,6 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "keysfunc_defs.h"
-
 #include "cfg_file.h"
 #include "ui_context.h"
 #include "gui_utils.h"
@@ -39,10 +37,7 @@
 #include "menu_settings.h"
 #include "menu_selectdrive.h"
 
-#include "msg_txt.h"
 #include "fectrl.h"
-
-#include "config_file.h"
 
 #include "hardware.h"
 
@@ -57,14 +52,16 @@ static int commnand_menu_savereboot_cb(ui_context * ctx, int event, int xpos, in
 
 		if(param_mask & 0x01) // Save ?
 		{
-			hxc_printf_box(ctx,(char*)save_msg);
-			save_cfg_file(ctx,cfgfile_header,-1);
-			sleep(1);
+			ui_save(ctx,-1);
 		}
 
 		if(param_mask & 0x02) // Reboot ?
 		{
 			ui_reboot(ctx);
+		}
+		else
+		{
+			sleep(1);
 		}
 	}
 

@@ -220,6 +220,7 @@ void show_all_slots(ui_context * ctx,int drive)
 		if( slotnumber < ctx->config_file_number_max_of_slot)
 		{
 			memset(tmp_str,0,sizeof(tmp_str));
+
 			drive_slots_ptr = &disks_slots[ (slotnumber*ctx->number_of_drive) + drive];
 			if( drive_slots_ptr->size )
 			{
@@ -303,25 +304,12 @@ void print_help(ui_context * ctx)
 
 		i++;
 	}
-
-
 }
 
-void ui_savereboot(ui_context * ctx,int preselected_slot)
-{
-	hxc_printf_box(ctx,(char*)save_and_restart_msg);
-	save_cfg_file(ctx,cfgfile_header,preselected_slot);
-
-	hxc_printf_box(ctx,(char*)reboot_msg);
-	sleep(1);
-	jumptotrack(0);
-	reboot();
-}
-
-void ui_save(ui_context * ctx)
+void ui_save(ui_context * ctx,int preselected_slot)
 {
 	hxc_printf_box(ctx,(char*)save_msg);
-	save_cfg_file(ctx,cfgfile_header,-1);
+	save_cfg_file(ctx,cfgfile_header,preselected_slot);
 }
 
 void ui_reboot(ui_context * ctx)
@@ -330,6 +318,12 @@ void ui_reboot(ui_context * ctx)
 	sleep(1);
 	jumptotrack(0);
 	reboot();
+}
+
+void ui_savereboot(ui_context * ctx,int preselected_slot)
+{
+	ui_save(ctx,preselected_slot);
+	ui_reboot(ctx);
 }
 
 void ui_chgcolor(ui_context * ctx,int color)
@@ -358,7 +352,7 @@ int process_extra_functions(ui_context * ctx, unsigned char key)
 		break;
 
 		case FCT_SAVE:
-			ui_save(ctx);
+			ui_save(ctx,-1);
 			refresh = 1;
 		break;
 
