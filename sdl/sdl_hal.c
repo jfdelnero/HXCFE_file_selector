@@ -45,8 +45,6 @@
 #include "keys_defs.h"
 #include "keymap.h"
 
-#include "graphx/bmaptype.h"
-
 #include "color_table.h"
 
 #include "cfg_file.h"
@@ -396,6 +394,7 @@ unsigned char Keyboard()
 			//printf("k:%x f:%x\n",keysmap[i].keyboard_code,keysmap[i].function_code);
 			return last_key;
 		}
+
 		i++;
 	}
 
@@ -408,54 +407,32 @@ void flush_char()
 
 unsigned char get_char()
 {
-	unsigned char key,i,c;
-	unsigned char function_code,key_code;
-
-	function_code=FCT_NO_FUNCTION;
-	while(!(Keyboard()&0x80))
-	{
-		waitms(1);
-	}
+	int i;
 
 	do
-	{
-		c=1;
-		do
+	{		
+		SDL_PumpEvents();
+
+		i = 0;
+		while( char_keysmap[i].function_code != 0xFF )
 		{
-			do
+			if(keys_stat[char_keysmap[i].keyboard_code])
 			{
-				key=Keyboard();
-				if(key&0x80)
-				{
-					c=1;
-					waitms(1);
-				}
-			}while(key&0x80);
-			waitms(55);
-			c--;
+				waitms(100);
+				return char_keysmap[i].function_code;
+			}
 
-		}while(c);
-
-		i=0;
-		do
-		{
-			function_code=char_keysmap[i].function_code;
-			key_code=char_keysmap[i].keyboard_code;
 			i++;
-		}while((key_code!=key) && (function_code!=FCT_NO_FUNCTION) );
-
-	}while(function_code==FCT_NO_FUNCTION);
-
-	return function_code;
+		}
+	}while(1);
 }
-
 
 unsigned char wait_function_key()
 {
 	unsigned char key,joy,i,c;
 	unsigned char function_code,key_code;
 
-	function_code=FCT_NO_FUNCTION;
+	function_code = FCT_NO_FUNCTION;
 
 	if( keyup == 1 )
 	{
@@ -691,15 +668,13 @@ unsigned char set_color_scheme(unsigned char color)
 	return color;
 }
 
-void print_char8x8(ui_context * ctx, unsigned char * membuffer, bmaptype * font, int col, int line, unsigned char c, int mode)
+void print_char8x8(ui_context * ctx, unsigned char * membuffer, unsigned char * font, int col, int line, unsigned char c, int mode)
 {
 	int i,j;
-	unsigned char *ptr_src;
 	unsigned char *ptr_dst;
 	unsigned char set_byte;
 
 	ptr_dst = (unsigned char*)membuffer;
-	ptr_src = (unsigned char*)&font->data[0];
 
 	if(mode & INVERTED)
 		set_byte = 0x00;
@@ -708,18 +683,19 @@ void print_char8x8(ui_context * ctx, unsigned char * membuffer, bmaptype * font,
 
 	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
 	{
-		ptr_dst=ptr_dst + (((line<<3)*ctx->SCREEN_XRESOL)+ (col<<3));
-		ptr_src=ptr_src + (((c>>4)*(8*8*2))+(c&0xF));
+		ptr_dst += (((line<<3)*ctx->SCREEN_XRESOL)+ (col<<3));
+		font    += (c * ((FONT_SIZE_X*FONT_SIZE_Y)/8));
+
 		for(j=0;j<8;j++)
 		{
 			for(i=0;i<8;i++)
 			{
-				if( *ptr_src & (0x80>>i) )
+				if( *font & (0x80>>i) )
 					ptr_dst[i]= set_byte;
 				else
 					ptr_dst[i]= set_byte ^ 0xFF;
 			}
-			ptr_src=ptr_src+16;
+			font++;
 			ptr_dst=ptr_dst + ctx->SCREEN_XRESOL;
 		}
 	}
