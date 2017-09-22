@@ -9,3 +9,8 @@
 
 #define FONT_SIZE_X 8
 #define FONT_SIZE_Y 8
+
+#define MAX_X_RESOLUTION 1024
+#define MAX_Y_RESOLUTION 768
+
+#define MAX_FILES_PER_SCREEN ( ( MAX_Y_RESOLUTION / FONT_SIZE_Y ) )

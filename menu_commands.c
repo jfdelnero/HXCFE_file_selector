@@ -89,11 +89,13 @@ static int commnand_menu_help_cb(ui_context * ctx, int event, int xpos, int ypos
 
 const menu commands_menu[]=
 {
-	{"--- Save and Settings ---",       0,                                     0, (struct menu * )-1, CENTER_ALIGNED},
+	{"--- Save and Settings ---",       0,              (void *)PAGE_FILEBROWSER, (struct menu * )-1, CENTER_ALIGNED},
 	{"",                                0,                                     0, 0, CENTER_ALIGNED},
 	{"Save and Reboot",                 commnand_menu_savereboot_cb,(void *) 0x3, 0, CENTER_ALIGNED},
 	{"Save",                            commnand_menu_savereboot_cb,(void *) 0x1, 0, CENTER_ALIGNED},
 	{"Reboot",                          commnand_menu_savereboot_cb,(void *) 0x2, 0, CENTER_ALIGNED},
+	{"",                                0,                                     0, 0, CENTER_ALIGNED},
+	{"Quit the File selector",          0,                          (void *)  -1, (struct menu * )-1, CENTER_ALIGNED},
 	{"",                                0,                                     0, 0, CENTER_ALIGNED},
 	{"Change display colors",           commnand_menu_chgcolor_cb,             0, 0, CENTER_ALIGNED},
 	{"HxC Drive Settings",              0,                                     0, (struct menu * )&settings_menu, CENTER_ALIGNED},

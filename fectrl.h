@@ -6,3 +6,11 @@ void ui_chgcolor(ui_context * ctx,int color);
 void print_help(ui_context * ctx);
 int  mount_drive(ui_context * ctx, int drive);
 void clear_list(ui_context * ctx);
+
+enum
+{
+	PAGE_QUITAPP = -1,
+	PAGE_FILEBROWSER = 0,
+	PAGE_SLOTSLIST,
+	PAGE_SETTINGS
+};

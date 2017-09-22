@@ -140,5 +140,5 @@ int enter_menu(ui_context * ctx, const menu * submenu)
 		}
 	}while( (( c != FCT_SELECT_FILE_DRIVEA ) || (submenu[i].submenu != (struct menu *)-1)) && (cb_return != MENU_LEAVEMENU) );
 
-	return 0;
+	return (int)submenu[i].cb_parameter;
 }

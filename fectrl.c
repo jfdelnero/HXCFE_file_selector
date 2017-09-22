@@ -64,7 +64,7 @@
 // Slots buffer
 disk_in_drive_v2 disks_slots[MAX_NUMBER_OF_SLOT];
 
-static disk_in_drive_v2_long DirectoryEntry_tab[40];
+static disk_in_drive_v2_long DirectoryEntry_tab[MAX_FILES_PER_SCREEN];
 
 // File listing pages directory offset buffer
 FL_DIR file_list_status;
@@ -371,7 +371,7 @@ int process_extra_functions(ui_context * ctx, unsigned char key)
 	return refresh;
 }
 
-int ui_slots_menu(ui_context * ctx)
+int ui_slots_menu(ui_context * ctx, int drive)
 {
 	unsigned char key;
 	int slot,i;
@@ -380,10 +380,13 @@ int ui_slots_menu(ui_context * ctx)
 	dbg_printf("enter ui_slots_menu\n");
 	#endif
 
+	if( !(drive < ctx->number_of_drive) )
+		return 0;
+
 	////////////////////
 	// Slots list menu
 
-	show_all_slots(ctx,ctx->page_mode_index);
+	show_all_slots(ctx,drive);
 
 	invert_line(ctx,FILELIST_Y_POS + ctx->slotselectorpos);
 
@@ -408,7 +411,7 @@ int ui_slots_menu(ui_context * ctx)
 						ctx->slotselectorpage--;
 					}
 
-					show_all_slots(ctx,ctx->page_mode_index);
+					show_all_slots(ctx,drive);
 					invert_line(ctx, FILELIST_Y_POS + ctx->slotselectorpos);
 				}
 			break;
@@ -422,7 +425,7 @@ int ui_slots_menu(ui_context * ctx)
 						ctx->slotselectorpos = 1;
 						ctx->slotselectorpage++;
 
-						show_all_slots(ctx,ctx->page_mode_index);
+						show_all_slots(ctx,drive);
 						invert_line(ctx, FILELIST_Y_POS + ctx->slotselectorpos);
 					}
 					else
@@ -439,7 +442,7 @@ int ui_slots_menu(ui_context * ctx)
 					ctx->slotselectorpage++;
 				}
 
-				show_all_slots(ctx,ctx->page_mode_index);
+				show_all_slots(ctx, drive);
 				invert_line(ctx, FILELIST_Y_POS + ctx->slotselectorpos);
 			break;
 
@@ -447,14 +450,14 @@ int ui_slots_menu(ui_context * ctx)
 				if(ctx->slotselectorpage)
 					ctx->slotselectorpage--;
 
-				show_all_slots(ctx,ctx->page_mode_index);
+				show_all_slots(ctx,drive);
 				invert_line(ctx, FILELIST_Y_POS + ctx->slotselectorpos);
 			break;
 
 			case FCT_CLEARSLOT:
 				slot = (ctx->slotselectorpos + (ctx->slotselectorpage * (ctx->NUMBER_OF_FILE_ON_DISPLAY-1)));
 
-				memset((void*)&disks_slots[(slot*ctx->number_of_drive) + ctx->page_mode_index ],0,sizeof(disk_in_drive_v2));
+				memset((void*)&disks_slots[(slot*ctx->number_of_drive) + drive ],0,sizeof(disk_in_drive_v2));
 
 				i = 0;
 				while( i < ctx->number_of_drive && !disks_slots[(slot*ctx->number_of_drive)+i].type[0] )
@@ -470,7 +473,7 @@ int ui_slots_menu(ui_context * ctx)
 					ctx->slot_map[slot>>3] &= ~(0x80 >> (slot&7));
 				}
 
-				show_all_slots(ctx,ctx->page_mode_index);
+				show_all_slots(ctx, drive);
 				invert_line(ctx, FILELIST_Y_POS + ctx->slotselectorpos);
 			break;
 
@@ -486,33 +489,26 @@ int ui_slots_menu(ui_context * ctx)
 			case FCT_SELECT_FILE_DRIVEA:
 				if(!ctx->slotselectorpos)
 				{
-					ctx->page_mode_index++;
+					clear_list(ctx);
 
-					if(ctx->page_mode_index >= 2 + ctx->number_of_drive)
-						ctx->page_mode_index = 0;
+					#ifdef DEBUG
+					dbg_printf("leave ui_slots_menu\n");
+					#endif
+
+					return PAGE_SETTINGS;
 				}
 			break;
 			default:
 				if(process_extra_functions(ctx, key))
 				{
-					show_all_slots(ctx,ctx->page_mode_index);
+					show_all_slots(ctx, drive);
 					invert_line(ctx, FILELIST_Y_POS + ctx->slotselectorpos);
 				}
 			break;
 		}
 	}while(key != FCT_SELECT_FILE_DRIVEA && key != FCT_ESCAPE );
 
-	if( key == FCT_SELECT_FILE_DRIVEA && !ctx->slotselectorpos )
-	{
-		clear_list(ctx);
-
-		#ifdef DEBUG
-		dbg_printf("leave ui_slots_menu\n");
-		#endif
-		return 0;
-	}
-
-	if( ( key != FCT_ESCAPE ) && ( ctx->page_mode_index < ctx->number_of_drive ) )
+	if( ( key != FCT_ESCAPE ) && ( drive < ctx->number_of_drive ) )
 	{
 		slot = (ctx->slotselectorpos + (ctx->slotselectorpage * (ctx->NUMBER_OF_FILE_ON_DISPLAY-1)));
 
@@ -520,7 +516,7 @@ int ui_slots_menu(ui_context * ctx)
 		dbg_printf("set slot %d (page %d, pos %d)\n",slot,ctx->slotselectorpage,ctx->slotselectorpos);
 		#endif
 
-		memcpy( (void*)&disks_slots[ (slot*ctx->number_of_drive) + ( ctx->page_mode_index ) ],
+		memcpy( (void*)&disks_slots[ (slot*ctx->number_of_drive) + drive ],
 				(void*)&DirectoryEntry_tab[ ctx->selectorpos ],
 				sizeof(disk_in_drive_v2)
 				);
@@ -534,12 +530,11 @@ int ui_slots_menu(ui_context * ctx)
 	#ifdef DEBUG
 	dbg_printf("leave ui_slots_menu\n");
 	#endif
-	return 1;
+	return PAGE_FILEBROWSER;
 }
 
-void ui_mainfileselector(ui_context * ctx)
+int ui_mainfileselector(ui_context * ctx)
 {
-	int ret;
 	short i,j,y_pos;
 	unsigned char displayentry;
 	unsigned char entrytype_icon;
@@ -552,8 +547,6 @@ void ui_mainfileselector(ui_context * ctx)
 	#ifdef DEBUG
 	dbg_printf("enter ui_mainfileselector\n");
 	#endif
-
-	ctx->page_mode_index = ( 2 + ctx->number_of_drive ) - 1;
 
 	#ifdef DEBUG
 	dbg_printf("page_mode_index : %d\n",ctx->page_mode_index);
@@ -581,7 +574,6 @@ void ui_mainfileselector(ui_context * ctx)
 		i = 1;
 		do
 		{
-
 			displayentry=0xFF;
 
 			if(!fl_readdir(&file_list_status, &dir_entry))
@@ -661,10 +653,8 @@ void ui_mainfileselector(ui_context * ctx)
 		do
 		{
 			key=wait_function_key();
-			if(1)
+			switch(key)
 			{
-				switch(key)
-				{
 				case FCT_UP_KEY: // UP
 					invert_line(ctx, FILELIST_Y_POS + ctx->selectorpos );
 					hxc_print(ctx,LEFT_ALIGNED,0,FILELIST_Y_POS + ctx->selectorpos," ");
@@ -754,27 +744,19 @@ void ui_mainfileselector(ui_context * ctx)
 					}
 					else
 					{
-						if(!ctx->selectorpos || ctx->page_mode_index>= 1 + ctx->number_of_drive)
-							ctx->page_mode_index = 0;
 
 						if(!ctx->selectorpos)
-							ctx->slotselectorpos = 0;
-						do
 						{
-							if(ctx->page_mode_index < ctx->number_of_drive )
-							{
-								ret = ui_slots_menu(ctx);
-							}
-							else
-							{
-								enter_menu(ctx,commands_menu);
-								clear_list(ctx);
-								ret = 1;
-							}
-						}while(!ret && ctx->page_mode_index <  ctx->number_of_drive + 1 );
 
-						memcpy(&file_list_status ,&file_list_status_tab[ctx->page_number],sizeof(FL_DIR));
-						ctx->read_entry = 1;
+							ctx->slotselectorpos = 0;
+							return PAGE_SLOTSLIST;
+						}
+						else
+						{
+							memcpy(&file_list_status ,&file_list_status_tab[ctx->page_number],sizeof(FL_DIR));
+							ctx->read_entry = 1;
+							return PAGE_SLOTSLIST;
+						}
 					}
 					break;
 
@@ -849,10 +831,12 @@ void ui_mainfileselector(ui_context * ctx)
 						ctx->read_entry=1;
 					}
 					break;
-				}
 			}
+
 		}while(!ctx->read_entry);
 	}
+
+	return PAGE_QUITAPP;
 }
 
 int mount_drive(ui_context * ctx, int drive)
@@ -889,7 +873,7 @@ int mount_drive(ui_context * ctx, int drive)
 		ctx->read_entry = 1;
 		ctx->page_number = 0;
 
-		ctx->page_mode_index = ( 2 + ctx->number_of_drive ) - 1;
+		ctx->page_mode_index = 0;
 
 		clear_list(ctx);
 
@@ -938,7 +922,26 @@ int main(int argc, char* argv[])
 		dbg_printf("mount_drive done\n");
 		#endif
 
-		ui_mainfileselector(ctx);
+		do
+		{
+			switch(ctx->page_mode_index)
+			{
+				case PAGE_FILEBROWSER:
+					ctx->page_mode_index = ui_mainfileselector(ctx);
+				break;
+				case PAGE_SLOTSLIST:
+					ctx->page_mode_index = ui_slots_menu(ctx,0);
+				break;
+				case PAGE_SETTINGS:
+					ctx->page_mode_index = enter_menu(ctx,commands_menu);
+					clear_list(ctx);
+				break;
+				default:
+					ctx->page_mode_index = PAGE_FILEBROWSER;
+				break;
+			}
+
+		}while(ctx->page_mode_index != PAGE_QUITAPP);
 	}
 
 	lockup();
