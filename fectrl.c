@@ -804,23 +804,35 @@ void ui_mainfileselector(ui_context * ctx)
 
 				case FCT_SEARCH:
 					ctx->filtermode=0xFF;
-					hxc_print(ctx,LEFT_ALIGNED | INVERTED,(ctx->SCREEN_XRESOL/(2*8))+8,CURDIR_Y_POS,"Search:                     ");
+					hxc_print(ctx,LEFT_ALIGNED | INVERTED,(ctx->screen_txt_xsize/2)+8,CURDIR_Y_POS,"Filter:                     ");
 					flush_char();
 					i=0;
 					do
 					{
-						ctx->filter[i]=0;
-						c=get_char();
-						if(c!='\n')
+						ctx->filter[i] = 0;
+						c = get_char();
+						if(c!='\n' && c != 127)
 						{
 							ctx->filter[i]=c;
-							hxc_printf(ctx,LEFT_ALIGNED | INVERTED,(ctx->SCREEN_XRESOL/(2*8))+8+8+i,CURDIR_Y_POS,"%c",c);
+							hxc_printf(ctx,LEFT_ALIGNED | INVERTED,(ctx->screen_txt_xsize/2)+8+8+i,CURDIR_Y_POS,"%c",c);
+							i++;
 						}
-						i++;
+						else
+						{
+							if(c==127)
+							{
+								if(i)
+								{
+									i--;
+									ctx->filter[i] = 0;
+									hxc_printf(ctx,LEFT_ALIGNED | INVERTED,(ctx->screen_txt_xsize/2)+8+8+i,CURDIR_Y_POS," ");
+								}
+							}
+						}
 					}while(c!='\n' && i<16);
 					ctx->filter[i]=0;
 
-					hxc_printf(ctx,LEFT_ALIGNED | INVERTED,ctx->SCREEN_XRESOL/(2*8)+8+8,CURDIR_Y_POS,"[%s]",ctx->filter);
+					hxc_printf(ctx,LEFT_ALIGNED | INVERTED,(ctx->screen_txt_xsize/2)+8+8,CURDIR_Y_POS,"[%s]",ctx->filter);
 					ctx->selectorpos=0;
 					ctx->page_number=0;
 					memcpy(&file_list_status ,&file_list_status_tab[0],sizeof(FL_DIR));
