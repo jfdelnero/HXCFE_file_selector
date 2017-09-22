@@ -187,12 +187,15 @@ static int settings_menu_ejectpowerup_cb(ui_context * ctx, int event, int xpos, 
 
 const menu settings_menu[]=
 {
+	{"",                                0,                                0, 0, LEFT_ALIGNED},
 	{"HxC Floppy Emulator settings:",   0,                                0, 0, LEFT_ALIGNED},
 	{"",                                0,                                0, 0, LEFT_ALIGNED},
 	{"Track step sound :",              settings_menu_stepsound_cb,       0, 0, LEFT_ALIGNED},
 	{"User interface sound:",           settings_menu_usersound_cb,       0, 0, LEFT_ALIGNED},
+	{"",                                0,                                0, 0, LEFT_ALIGNED},	
 	{"LCD Backlight standby:",          settings_menu_lcdstandby_cb,      0, 0, LEFT_ALIGNED},
 	{"SD/USB Standby:",                 settings_menu_sdstandby_cb,       0, 0, LEFT_ALIGNED},
+	{"",                                0,                                0, 0, LEFT_ALIGNED},	
 	{"DF1 drive :",                     settings_menu_driveb_cb,          0, 0, LEFT_ALIGNED},
 	{"Load AUTOBOOT.HFE at power up :", settings_menu_autobootpowerup_cb, 0, 0, LEFT_ALIGNED},
 	{"Eject disk at power up :",        settings_menu_ejectpowerup_cb,    0, 0, LEFT_ALIGNED},

@@ -60,6 +60,7 @@ static int selectdrive_menu_cb(ui_context * ctx, int event, int xpos, int ypos, 
 
 const menu selectdrive_menu[]=
 {
+	{"",                                0,                                0, 0, CENTER_ALIGNED},	
 	{"Select Drive:",   0,                                                0, 0, CENTER_ALIGNED},
 	{"",                                0,                                0, 0, CENTER_ALIGNED},
 	{"A: / DF0",                        selectdrive_menu_cb,     (void *) 0, 0, CENTER_ALIGNED},
