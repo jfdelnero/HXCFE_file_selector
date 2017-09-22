@@ -1592,31 +1592,37 @@ unsigned char set_color_scheme(unsigned char color)
 	return color;
 }
 
-void print_char8x8(ui_context * ctx, unsigned char * membuffer, bmaptype * font, int col, int line, unsigned char c, int mode)
+void print_char8x8(ui_context * ctx, unsigned char * membuffer, unsigned char * font, int col, int line, unsigned char c, int mode)
 {
 	int j;
-	unsigned char *ptr_src;
 	unsigned char *ptr_dst;
-	unsigned char invert_byte;
 
 	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
 	{
-		ptr_dst = (unsigned char*)membuffer;
-		ptr_src = (unsigned char*)&font->data[0];
+		ptr_dst  = membuffer + (( line * (80*8) ) + col);
+		font    += (c * ((FONT_SIZE_X*FONT_SIZE_Y)/8));
 
 		if(mode & INVERTED)
-			invert_byte = 0xFF;
-		else
-			invert_byte = 0x00;
-
-		ptr_dst += (( line * (80*8) ) + col);
-		ptr_src += (((c>>4)*(8*8*2))+(c&0xF));
-
-		for(j=0;j<8;j++)
 		{
-			*ptr_dst = (*ptr_src ^ invert_byte);
-			ptr_src += 16;
-			ptr_dst += 80;
+			for(j=0;j<4;j++)
+			{
+				*ptr_dst = (*font++ ^ 0xFF);
+				ptr_dst += 80;
+
+				*ptr_dst = (*font++ ^ 0xFF);
+				ptr_dst += 80;
+			}
+		}
+		else
+		{
+			for(j=0;j<4;j++)
+			{
+				*ptr_dst = *font++;
+				ptr_dst += 80;
+
+				*ptr_dst = *font++;
+				ptr_dst += 80;
+			}			
 		}
 	}
 }

@@ -54,8 +54,6 @@
 
 #include "../hal.h"
 
-#include "graphx/bmaptype.h"
-
 #include "atari_hw.h"
 
 # define _hz_200  ((unsigned long *) 0x4baL)
@@ -831,37 +829,42 @@ void disablemousepointer()
 
 }
 
-void print_char8x8(ui_context * ctx, unsigned char * membuffer, bmaptype * font, int col, int line, unsigned char c, int mode)
+void print_char8x8(ui_context * ctx, unsigned char * membuffer, unsigned char * font, int col, int line, unsigned char c, int mode)
 {
-	int j,k;
-	unsigned char *ptr_src;
+	int j;
 	unsigned char *ptr_dst;
-	unsigned long base_offset;
-	unsigned char invert_byte;
 
 	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
 	{
-		ptr_dst = membuffer;
-		ptr_src = (unsigned char*)&font->data[0];
-
 		col <<= 3;
 		line <<= 3;
 
-		if(mode & INVERTED)
-			invert_byte = 0xFF;
-		else
-			invert_byte = 0x00;
+		font    += (c * ((FONT_SIZE_X*FONT_SIZE_Y)/8));
+		ptr_dst  = membuffer + ((unsigned long) line * LINE_BYTES) + ((col>>4)<<PLANES_ALIGNDEC) + ((col&8)==8);
 
-		k=((c>>4)*(8*8*2))+(c&0xF);
-
-		base_offset = ((unsigned long) line * LINE_BYTES) + ((col>>4)<<PLANES_ALIGNDEC) + ((col&8)==8);
 		// in a 16-pixel chunk, there are 2 8-pixel chars, hence the x&8==8
-
-		for(j=0;j<8;j++)
+		if(mode & INVERTED)
 		{
-			ptr_dst[base_offset] = ptr_src[k] ^ invert_byte;
-			k=k+(16);
-			base_offset += LINE_BYTES;
+			for(j=0;j<4;j++)
+			{
+				*ptr_dst = (*font++) ^ 0xFF;
+				ptr_dst += LINE_BYTES;
+
+				*ptr_dst = (*font++) ^ 0xFF;
+				ptr_dst += LINE_BYTES;
+				
+			}
+		}
+		else
+		{
+			for(j=0;j<4;j++)
+			{
+				*ptr_dst = *font++;
+				ptr_dst += LINE_BYTES;
+
+				*ptr_dst = *font++;
+				ptr_dst += LINE_BYTES;
+			}
 		}
 	}
 }

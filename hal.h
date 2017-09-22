@@ -1,5 +1,3 @@
-#include "graphx/bmaptype.h"
-
 ////////////////////////////////////
 // FDC I/O                        //
 ////////////////////////////////////
@@ -24,7 +22,7 @@ void disablemousepointer();
 // Screen
 ////////////////////////////////////
 int  init_display(ui_context * ctx);
-void print_char8x8(ui_context * ctx, unsigned char * membuffer, bmaptype * font, int col, int line, unsigned char c, int mode);
+void print_char8x8(ui_context * ctx, unsigned char * membuffer, unsigned char * font, int col, int line, unsigned char c, int mode);
 int  restore_display(ui_context * ctx);
 
 ////////////////////////////////////
