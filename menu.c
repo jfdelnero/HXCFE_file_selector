@@ -61,8 +61,8 @@ int menu_draw(ui_context * ctx, const menu * submenu, int *max_len)
 	}
 
 	// Center & align the parameters if possible...
-	if( *max_len*8 < ctx->SCREEN_XRESOL/2 )
-		*max_len = (ctx->SCREEN_XRESOL/8)/2;
+	if( *max_len < ctx->screen_txt_xsize / 2 )
+		*max_len = ctx->screen_txt_xsize / 2;
 
 	i = 0;
 	while( submenu[i].text )
