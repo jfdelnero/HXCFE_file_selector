@@ -140,7 +140,7 @@ int media_init()
 		if(!strcmp(dass->DAHEADERSIGNATURE,"HxCFEDA"))
 		{
 			strncpy(g_ui_ctx.FIRMWAREVERSION,dass->FIRMWAREVERSION,sizeof(g_ui_ctx.FIRMWAREVERSION));
-			hxc_printf(&g_ui_ctx,LEFT_ALIGNED|INVERTED,0, g_ui_ctx.screen_txt_ysize - 1,"FW Ver %s",g_ui_ctx.FIRMWAREVERSION);
+			hxc_printf(&g_ui_ctx,LEFT_ALIGNED|INVERTED,0, g_ui_ctx.screen_txt_ysize - 1,"FW %s",g_ui_ctx.FIRMWAREVERSION);
 
 			test_floppy_if();
 

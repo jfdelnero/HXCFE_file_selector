@@ -235,7 +235,7 @@ void init_display_buffer(ui_context * ctx)
 
 	// Footprint : Current software / firmware version and title
 	clear_line(ctx, ctx->screen_txt_ysize - 1, INVERTED);
-	hxc_printf(ctx,LEFT_ALIGNED | INVERTED,0, ctx->screen_txt_ysize - 1,"FW Ver %s",ctx->FIRMWAREVERSION);
+	hxc_printf(ctx,LEFT_ALIGNED | INVERTED,0, ctx->screen_txt_ysize - 1,"FW %s",ctx->FIRMWAREVERSION);
 	hxc_print(ctx,CENTER_ALIGNED | INVERTED,0,ctx->screen_txt_ysize - 1,(char*)title_msg);
 	hxc_print(ctx,RIGHT_ALIGNED | INVERTED,0,ctx->screen_txt_ysize - 1,(char*)copyright_msg);
 
