@@ -122,3 +122,4 @@ const char reboot_msg[] = ">>>>>Rebooting...<<<<<";
 const char save_msg[] = "Saving selection...";
 const char save_and_restart_msg[] = "Saving selection and restart...";
 const char title_msg[] = { "HxC Floppy Emulator file selector v" VERSIONCODE};
+const char copyright_msg[] = "(c)HxC2001";

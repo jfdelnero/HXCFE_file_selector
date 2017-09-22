@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <mint/osbind.h>
 #include <time.h>
 #include <vt52.h>
@@ -46,11 +47,14 @@
 #include "keysfunc_defs.h"
 #include "keys_defs.h"
 #include "keymap.h"
-#include "hardware.h"
+
+#include "cfg_file.h"
+#include "ui_context.h"
+#include "gui_utils.h"
+
+#include "../hal.h"
 
 #include "graphx/bmaptype.h"
-
-#include "gui_utils.h"
 
 #include "atari_hw.h"
 
@@ -70,15 +74,11 @@ unsigned long old_physical_adr;
 volatile unsigned short io_floppy_timeout;
 
 unsigned char * screen_buffer;
-unsigned char screen_buffer_backup[8*1024];
 
 static short  _oldrez = 0xffff;
 
-unsigned short SCREEN_XRESOL;
-unsigned short SCREEN_YRESOL;
 unsigned short LINE_BYTES;					/* number of bytes per line     */
 unsigned short LINE_WORDS;					/* number of words per line     */
-unsigned short LINE_CHARS;					/* number of 8x8 chars per line */
 unsigned short NB_PLANES;					/* number of planes (1:2 colors */
 											/*  4:16 colors, 8: 256 colors) */
 unsigned short CHUNK_WORDS;					/* number of words for a 16-    */
@@ -94,6 +94,8 @@ unsigned char keyup;
 unsigned long timercnt;
 
 WORD fdcDmaMode = 0;
+
+extern ui_context g_ui_ctx;
 
 #ifdef DEBUG
 
@@ -206,7 +208,7 @@ void waitms(int  ms)
 	}
 }
 
-void sleep(int secs)
+void waitsec(int secs)
 {
 	int i;
 
@@ -218,7 +220,7 @@ void sleep(int secs)
 
 void alloc_error()
 {
-	hxc_printf_box("ERROR: Memory Allocation Error -> No more free mem ?");
+	hxc_printf_box(&g_ui_ctx,"ERROR: Memory Allocation Error -> No more free mem ?");
 	for(;;);
 }
 
@@ -230,7 +232,7 @@ void lockup()
 
 	for(;;)
 	{
-		sleep(100);
+		waitsec(100);
 	}
 }
 
@@ -464,6 +466,11 @@ void init_fdc(int drive)
 	valid_cache = 0;
 	floppydrive = drive;
 	Supexec((LONG *) su_headinit);
+}
+
+void deinit_fdc()
+{
+	jumptotrack(0);
 }
 
 #else
@@ -774,7 +781,7 @@ int install_joy_vector()
 	return 0;
 }
 
-int init_display()
+int  init_display(ui_context * ctx)
 {
 	unsigned long k,i;
 
@@ -790,12 +797,14 @@ int init_display()
 		Setscreen((unsigned char *) -1, (unsigned char *) -1, 1 );
 	}
 
-	SCREEN_XRESOL = V_X_MAX;
-	SCREEN_YRESOL = V_Y_MAX;
+	ctx->SCREEN_XRESOL = V_X_MAX;
+	ctx->SCREEN_YRESOL = V_Y_MAX;
+
+	ctx->screen_txt_xsize = ctx->SCREEN_XRESOL / FONT_SIZE_X;
+	ctx->screen_txt_ysize = ctx->SCREEN_YRESOL / FONT_SIZE_Y;
 
 	LINE_BYTES    = V_BYTES_LIN;
 	LINE_WORDS    = V_BYTES_LIN/2;
-	LINE_CHARS    = SCREEN_XRESOL/8;
 	NB_PLANES     = __aline->_VPLANES;
 	CHUNK_WORDS   = NB_PLANES<<1;
 
@@ -804,7 +813,7 @@ int init_display()
 	PLANES_ALIGNDEC = k;
 
 	screen_buffer = (unsigned char*)Physbase();
-	memset(screen_buffer, 0, SCREEN_YRESOL * LINE_BYTES);
+	memset(screen_buffer, 0, ctx->SCREEN_YRESOL * LINE_BYTES);
 
 	set_color_scheme(0);
 
@@ -817,100 +826,54 @@ int init_display()
 	return 0;
 }
 
-unsigned short get_vid_mode()
-{
-	return 0;
-}
-
 void disablemousepointer()
 {
 
 }
 
-void print_char8x8(unsigned char * membuffer, bmaptype * font,int x, int y,unsigned char c)
+void print_char8x8(ui_context * ctx, unsigned char * membuffer, bmaptype * font, int col, int line, unsigned char c, int mode)
 {
 	int j,k;
 	unsigned char *ptr_src;
 	unsigned char *ptr_dst;
 	unsigned long base_offset;
+	unsigned char invert_byte;
 
-	ptr_dst = membuffer;
-	ptr_src = (unsigned char*)&font->data[0];
-
-	k=((c>>4)*(8*8*2))+(c&0xF);
-
-	base_offset=((unsigned long) y*LINE_BYTES) + ((x>>4)<<PLANES_ALIGNDEC) + ((x&8)==8);
-	// in a 16-pixel chunk, there are 2 8-pixel chars, hence the x&8==8
-
-	for(j=0;j<8;j++)
+	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
 	{
-		ptr_dst[base_offset] = ptr_src[k];
-		k=k+(16);
-		base_offset += LINE_BYTES;
-	}
-}
+		ptr_dst = membuffer;
+		ptr_src = (unsigned char*)&font->data[0];
 
-void display_sprite(unsigned char * membuffer, bmaptype * sprite,int x, int y)
-{
-	int i,j,k;
-	unsigned short *ptr_src;
-	unsigned short *ptr_dst;
-	unsigned long  base_offset, l;
+		col <<= 3;
+		line <<= 3;
 
-	ptr_dst=(unsigned short*)membuffer;
-	ptr_src=(unsigned short*)&sprite->data[0];
+		if(mode & INVERTED)
+			invert_byte = 0xFF;
+		else
+			invert_byte = 0x00;
 
-	k=0;
+		k=((c>>4)*(8*8*2))+(c&0xF);
 
-	base_offset=( ((unsigned long) y*LINE_BYTES) + ((x>>4)<<PLANES_ALIGNDEC) )/2;
-	for(j=0;j<(sprite->Ysize);j++)
-	{
-		l = base_offset;
-		for (i=0; i<(sprite->Xsize>>4); i++)
+		base_offset = ((unsigned long) line * LINE_BYTES) + ((col>>4)<<PLANES_ALIGNDEC) + ((col&8)==8);
+		// in a 16-pixel chunk, there are 2 8-pixel chars, hence the x&8==8
+
+		for(j=0;j<8;j++)
 		{
-			ptr_dst[l]=ptr_src[k];
-			l += NB_PLANES;
-			k++;
-		}
-		base_offset += LINE_WORDS;
-	}
-
-}
-
-void h_line(int y_pos,unsigned short val)
-{
-	unsigned short * ptr_dst;
-	int i;
-
-	ptr_dst=(unsigned short *) screen_buffer;
-	ptr_dst += (unsigned long) LINE_WORDS * y_pos;
-
-	if(val)
-	{
-		for(i=0; i<LINE_WORDS; i+=NB_PLANES)
-		{
-			*(ptr_dst) = val;
-			ptr_dst += NB_PLANES;
-		}
-	}
-	else
-	{
-		for(i=0; i<LINE_WORDS; i++)
-		{
-			*(ptr_dst) = val;
-			ptr_dst ++;
+			ptr_dst[base_offset] = ptr_src[k] ^ invert_byte;
+			k=k+(16);
+			base_offset += LINE_BYTES;
 		}
 	}
 }
 
-void invert_line(int x_pos,int y_pos)
+void invert_line(ui_context * ctx,int line)
 {
 	int i,j;
 	unsigned char  *ptr_dst;
 	unsigned short *ptr_dst2;
 
 	ptr_dst   = screen_buffer;
-	ptr_dst  += (unsigned long) LINE_BYTES* (y_pos);
+	ptr_dst  += (unsigned long) LINE_BYTES * line;
 
 	ptr_dst2 = (unsigned short *)ptr_dst;
 
@@ -918,21 +881,10 @@ void invert_line(int x_pos,int y_pos)
 	{
 		for(i=0; i<LINE_WORDS; i+=1)
 		{
-			//*ptr_dst = (*ptr_dst ^ 0xFFFF);
 			*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
 			ptr_dst2++;
 		}
 	}
-}
-
-void save_box()
-{
-	memcpy(screen_buffer_backup,&screen_buffer[160*70], 8*1024);
-}
-
-void restore_box()
-{
-	memcpy(&screen_buffer[160*70],screen_buffer_backup, 8*1024);
 }
 
 void su_reboot()

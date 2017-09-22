@@ -43,8 +43,6 @@
 #include "fat_defs.h"
 #include "fat_filelib.h"
 
-#include "hardware.h"
-
 extern int media_init();
 extern int media_read(uint32 sector, uint8 *buffer, uint32 sector_count);
 extern int media_write(uint32 sector, uint8 *buffer, uint32 sector_count);
@@ -510,11 +508,10 @@ int isSupported(char * ext)
 	int i;
 
 	i = 0;
-	strlwr(ext);
 
 	while(supportedformat[i])
 	{
-		if(!strcmp(supportedformat[i],ext))
+		if(!strcmpi(supportedformat[i],ext))
 			return 1;
 		i++;
 	}
@@ -538,7 +535,7 @@ int scan_tree(ui_context * ctx)
 			printf("Folder Entry : %s Cluster 0x%.8X\n",dir_entry.filename,ENDIAN_32BIT(dir_entry.cluster));
 			#endif
 
-			if(strcmp(dir_entry.filename,".") && strcmp(dir_entry.filename,".."))
+			if(strcmpi(dir_entry.filename,".") && strcmpi(dir_entry.filename,".."))
 			{
 				pathlen = strlen(scanfolderpath);
 				strcat(scanfolderpath,"/");

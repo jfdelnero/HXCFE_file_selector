@@ -74,3 +74,46 @@ void CRC16_Update(unsigned char *CRC16_High, unsigned char *CRC16_Low, unsigned 
 	CRC16_Update4Bits(CRC16_High,CRC16_Low, (unsigned char)(val & 0x0F) );	// Low nibble
 }
 
+void CRC16_Buf_Update(unsigned char *CRC16_High, unsigned char *CRC16_Low, unsigned char * in_buf, int size )
+{
+	unsigned char t;
+	int i;
+	
+	for(i=0;i<size;i++)
+	{
+		CRC16_Update4Bits(CRC16_High,CRC16_Low, (unsigned char)(in_buf[i] >> 4) );		// High nibble first
+		CRC16_Update4Bits(CRC16_High,CRC16_Low, (unsigned char)(in_buf[i] & 0x0F) );	// Low nibble	
+
+		// High nibble first
+
+		// Step one, extract the Most significant 4 bits of the CRC register
+		t = *CRC16_High >> 4;
+
+		// XOR in the Message Data into the extracted bits
+		t = t ^ (in_buf[i] >> 4);
+
+		// Shift the CRC Register left 4 bits
+		*CRC16_High = (*CRC16_High << 4) | (*CRC16_Low >> 4);
+		*CRC16_Low = *CRC16_Low << 4;
+
+		// Do the table lookups and XOR the result into the CRC Tables
+		*CRC16_High = *CRC16_High ^ CRC16_LookupHigh[t];
+		*CRC16_Low = *CRC16_Low ^ CRC16_LookupLow[t];
+
+		// Low nibble
+
+		// Step one, extract the Most significant 4 bits of the CRC register
+		t = *CRC16_High >> 4;
+
+		// XOR in the Message Data into the extracted bits
+		t = t ^ ( (in_buf[i] & 0x0F) >> 4);
+
+		// Shift the CRC Register left 4 bits
+		*CRC16_High = (*CRC16_High << 4) | (*CRC16_Low >> 4);
+		*CRC16_Low = *CRC16_Low << 4;
+
+		// Do the table lookups and XOR the result into the CRC Tables
+		*CRC16_High = *CRC16_High ^ CRC16_LookupHigh[t];
+		*CRC16_Low = *CRC16_Low ^ CRC16_LookupLow[t];
+	}
+}

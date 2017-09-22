@@ -265,19 +265,6 @@ void *memchr(const void *s, int c, size_t n)
 	return 0;
 }
 
-/* from http://code.google.com/p/embox/source/browse/trunk/embox/src/lib/string/strlwr.c?spec=svn3211&r=3211 */
-char *strlwr (char * string ) {
-	char * cp;
-
-	for (cp=string; *cp; ++cp) {
-		if ('A' <= *cp && *cp <= 'Z') {
-			*cp += 'a' - 'A';
-		}
-	}
-
-	return(string);
-}
-
 int toupper (int c) {
 	if ('a' <= c && c <= 'z') {
 		c -= 'a' - 'A';

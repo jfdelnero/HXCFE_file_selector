@@ -85,7 +85,7 @@ typedef struct cfgfile_
 
     uint8_t  padding_4[160];               // --- 0x100
 
-    uint8_t  padding_5[128];               // --- 0x180   File selector Scratch pad area...	
+    uint8_t  padding_5[128];               // --- 0x180   File selector Scratch pad area...
 
     uint8_t  background_color;
 
@@ -126,7 +126,7 @@ typedef struct disk_in_drive_
 #define MAX_SHORT_NAME_LENGHT ( 64 - ( 3 + 1 + 4 + 4 ) )
 
 typedef struct disk_in_drive_v2_
-{ 
+{
     char     type[3];
     uint8_t  attributes;
     uint32_t firstCluster;
@@ -141,7 +141,7 @@ typedef struct disk_in_drive_v2_
 #define MAX_LONG_NAME_LENGHT ( 256 - ( 3 + 1 + 4 + 4 ) )
 
 typedef struct disk_in_drive_v2_long_
-{ 
+{
     char     type[3];
     uint8_t  attributes;
     uint32_t firstCluster;

@@ -45,6 +45,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 #include "conf.h"
 
@@ -52,10 +53,13 @@
 #include "keys_defs.h"
 #include "keymap.h"
 
-#include "hardware.h"
-#include "amiga_regs.h"
-
+#include "cfg_file.h"
+#include "ui_context.h"
 #include "gui_utils.h"
+
+#include "../hal.h"
+
+#include "amiga_regs.h"
 
 #include "reboot.h"
 
@@ -63,7 +67,6 @@
 
 #include "color_table.h"
 #include "mfm_table.h"
-
 
 #define DEPTH    2 /* 1 BitPlanes should be used, gives eight colours. */
 #define COLOURS  2 /* 2^1 = 2                                          */
@@ -73,13 +76,9 @@
 #define GREEN 0x0f0
 #define BLUE  0x00f
 
-
 volatile unsigned short io_floppy_timeout;
 
 unsigned char * screen_buffer;
-unsigned char * screen_buffer_backup;
-unsigned short SCREEN_XRESOL;
-unsigned short SCREEN_YRESOL;
 
 static unsigned char CIABPRB_DSKSEL;
 
@@ -123,6 +122,8 @@ struct Screen *screen;
 UWORD  *pointer;
 struct ColorMap *cm=NULL;
 
+extern ui_context g_ui_ctx;
+
 struct TextAttr MyFont =
 {
 		(STRPTR)"topaz.font", // Font Name
@@ -154,6 +155,108 @@ struct TagItem vcTags[] =
 	{VTAG_NORMAL_DISP_SET, (ULONG)NULL },
 	{VTAG_END_CM, (ULONG)NULL }
 };
+
+/********************************************************************************
+*                     amiga.lib missing functions
+*********************************************************************************/
+extern struct ExecBase *SysBase;
+
+void NewList(struct List *lh)
+{
+	lh->lh_Head = (struct Node *)(&lh->lh_Tail);
+	lh->lh_Tail = NULL;
+	lh->lh_TailPred = (struct Node *)(&lh->lh_Head);
+}
+
+struct MsgPort *CreatePort(UBYTE *name, LONG pri)
+{
+	LONG sigBit;
+	struct MsgPort *mp;
+
+	if ((sigBit = AllocSignal(-1L)) == -1)
+		return(NULL);
+
+	mp = (struct MsgPort *) AllocMem((ULONG)sizeof(struct MsgPort),
+			(ULONG)MEMF_PUBLIC | MEMF_CLEAR);
+
+	if (!mp) {
+			FreeSignal(sigBit);
+			return(NULL);
+	}
+
+	mp->mp_Node.ln_Name = (char*)name;
+	mp->mp_Node.ln_Pri  = pri;
+	mp->mp_Node.ln_Type = NT_MSGPORT;
+	mp->mp_Flags        = PA_SIGNAL;
+	mp->mp_SigBit       = sigBit;
+	mp->mp_SigTask      = (struct Task *)FindTask(0L);  /* Find THIS task.   */
+
+	if (name)
+		AddPort(mp);
+	else
+		NewList(&(mp->mp_MsgList));                     /* init message list */
+
+	return(mp);
+}
+
+struct IOStdReq * LCreateIORequest(struct MsgPort * replyPort,long  size)
+{
+	struct IOStdReq *io = NULL;
+
+	if (replyPort)
+	{
+		io = AllocMem(size, MEMF_PUBLIC | MEMF_CLEAR);
+		if ( io )
+		{
+			io->io_Message.mn_ReplyPort = replyPort;
+			io->io_Message.mn_Length = size;
+			io->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+		}
+	}
+	return(io);
+}
+
+int FlushDevice(unsigned char *name)
+{
+	struct Device *devpoint;
+
+	Forbid();
+
+	devpoint = (struct Device *)FindName(&SysBase->DeviceList,name);
+
+	if ( devpoint )
+	{
+		RemDevice(devpoint);
+
+		Permit();
+		return 1;
+	}
+
+	Permit();
+
+	return 0;
+}
+
+int FlushResource(unsigned char *name)
+{
+	APTR resource;
+
+	Forbid();
+
+	resource = (APTR)FindName(&SysBase->ResourceList,name);
+
+	if ( resource )
+	{
+		RemResource(resource);
+
+		Permit();
+		return 1;
+	}
+
+	Permit();
+
+	return 0;
+}
 
 #ifdef DEBUG
 
@@ -246,7 +349,7 @@ void testblink()
 
 void alloc_error()
 {
-	hxc_printf_box("ERROR: Memory Allocation Error -> No more free mem ?");
+	hxc_printf_box(&g_ui_ctx,"ERROR: Memory Allocation Error -> No more free mem ?");
 	lockup();
 }
 
@@ -258,9 +361,10 @@ void lockup()
 
 	for(;;)
 	{
-		sleep(100);
+		waitsec(100);
 	}
 }
+
 /********************************************************************************
 *                              FDC I/O
 *********************************************************************************/
@@ -531,7 +635,7 @@ int waitindex()
 	return timeout;
 }
 
-int readtrack(unsigned short * track,unsigned short size,unsigned char waiti)
+int readtrack(unsigned short * track,unsigned short size,unsigned char wait_index)
 {
 	WRITEREG_B(CIABPRB,~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL));
 	WRITEREG_W( DMACON,0x8210);
@@ -549,11 +653,11 @@ int readtrack(unsigned short * track,unsigned short size,unsigned char waiti)
 	WRITEREG_W( DSKSYNC,0x4489);
 	WRITEREG_W( INTREQ, 0x0002);
 
-	if(waiti)
+	if(wait_index)
 	{
 		if(waitindex())
 		{
-			hxc_printf_box("ERROR: READ - No Index Timeout ! (state %d)",(READREG_B(CIAB_ICR)&0x10)>>4);
+			hxc_printf_box(&g_ui_ctx,"ERROR: READ - No Index Timeout ! (state %d)",(READREG_B(CIAB_ICR)&0x10)>>4);
 			lockup();
 		}
 	}
@@ -573,7 +677,7 @@ int readtrack(unsigned short * track,unsigned short size,unsigned char waiti)
 
 }
 
-int writetrack(unsigned short * track,unsigned short size,unsigned char waiti)
+int writetrack(unsigned short * track,unsigned short size,unsigned char wait_index)
 {
 
 //	while(!(READREG_W(INTREQR)&0x0002));
@@ -594,14 +698,14 @@ int writetrack(unsigned short * track,unsigned short size,unsigned char waiti)
 	WRITEREG_W( DSKSYNC,0x4489);
 	WRITEREG_W( INTREQ, 0x0002);
 
-	if(waiti)
+	if(wait_index)
 	{
 		io_floppy_timeout = 0;
 		while( READREG_B(CIAB_ICR)&0x10 && ( io_floppy_timeout < 0x200 ) );
 		while( !(READREG_B(CIAB_ICR)&0x10) && ( io_floppy_timeout < 0x200 ) );
 		if(!( io_floppy_timeout < 0x200 ))
 		{
-			hxc_printf_box("ERROR: WRITE - No Index Timeout ! (state %d)",(READREG_B(CIAB_ICR)&0x10)>>4);
+			hxc_printf_box(&g_ui_ctx,"ERROR: WRITE - No Index Timeout ! (state %d)",(READREG_B(CIAB_ICR)&0x10)>>4);
 			lockup();
 		}
 	}
@@ -781,7 +885,7 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 			{
 				if(jumptotrack(255))
 				{
-					hxc_printf_box("ERROR: writesector -> failure while seeking the track 00!");
+					hxc_printf_box(&g_ui_ctx,"ERROR: writesector -> failure while seeking the track 00!");
 				}
 				retry=30;
 			}
@@ -1005,7 +1109,7 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 		{
 			if(jumptotrack(255))
 			{
-				hxc_printf_box("ERROR: readsector -> failure while seeking the track 00!");
+				hxc_printf_box(&g_ui_ctx,"ERROR: readsector -> failure while seeking the track 00!");
 			}
 
 			retry2--;
@@ -1023,64 +1127,8 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 	return sectorfound;
 }
 
-void NewList(struct List *lh)
-{
-	lh->lh_Head = (struct Node *)(&lh->lh_Tail);
-	lh->lh_Tail = NULL;
-	lh->lh_TailPred = (struct Node *)(&lh->lh_Head);
-}
-
-struct MsgPort *CreatePort(UBYTE *name, LONG pri)
-{
-	LONG sigBit;
-	struct MsgPort *mp;
-
-	if ((sigBit = AllocSignal(-1L)) == -1)
-		return(NULL);
-
-	mp = (struct MsgPort *) AllocMem((ULONG)sizeof(struct MsgPort),
-			(ULONG)MEMF_PUBLIC | MEMF_CLEAR);
-
-	if (!mp) {
-			FreeSignal(sigBit);
-			return(NULL);
-	}
-
-	mp->mp_Node.ln_Name = (char*)name;
-	mp->mp_Node.ln_Pri  = pri;
-	mp->mp_Node.ln_Type = NT_MSGPORT;
-	mp->mp_Flags        = PA_SIGNAL;
-	mp->mp_SigBit       = sigBit;
-	mp->mp_SigTask      = (struct Task *)FindTask(0L);  /* Find THIS task.   */
-
-	if (name)
-		AddPort(mp);
-	else
-		NewList(&(mp->mp_MsgList));          /* init message list */
-
-	return(mp);
-}
-
-struct IOStdReq * LCreateIORequest(struct MsgPort * replyPort,long  size)
-{
-	struct IOStdReq *io = NULL;
-
-	if (replyPort)
-	{
-		io = AllocMem(size, MEMF_PUBLIC | MEMF_CLEAR);
-		if ( io )
-		{
-			io->io_Message.mn_ReplyPort = replyPort;
-			io->io_Message.mn_Length = size;
-			io->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-		}
-	}
-	return(io);
-}
-
 static void setnoclick(ULONG unitnum, ULONG onoff)
 {
-
 	struct MsgPort *port;
 
 	port = CreatePort(0,0);
@@ -1117,50 +1165,6 @@ static void setnoclick(ULONG unitnum, ULONG onoff)
 	}
 }
 
-extern struct ExecBase *SysBase;
-
-int FlushDevice(unsigned char *name)
-{
-	struct Device *devpoint;
-
-	Forbid();
-
-	devpoint = (struct Device *)FindName(&SysBase->DeviceList,name);
-
-	if ( devpoint )
-	{
-		RemDevice(devpoint);
-
-		Permit();
-		return 1;
-	}
-
-	Permit();
-
-	return 0;
-}
-
-int FlushResource(unsigned char *name)
-{
-	APTR resource;
-
-	Forbid();
-
-	resource = (APTR)FindName(&SysBase->ResourceList,name);
-
-	if ( resource )
-	{
-		RemResource(resource);
-
-		Permit();
-		return 1;
-	}
-
-	Permit();
-
-	return 0;
-}
-
 void init_fdc(int drive)
 {
 	unsigned short i;
@@ -1173,8 +1177,6 @@ void init_fdc(int drive)
 		setnoclick(i,0);
 
 	CIABPRB_DSKSEL = CIABPRB_DSKSEL0 << (drive&3);
-
-	//	for(i=0;i<3;i++) setnoclick(i, 1);
 
 	validcache=0;
 
@@ -1221,7 +1223,7 @@ void init_fdc(int drive)
 	if(jumptotrack(255))
 	{
 		Permit();
-		hxc_printf_box("ERROR: init_fdc drive %d -> failure while seeking the track 00!",drive);
+		hxc_printf_box(&g_ui_ctx,"ERROR: init_fdc drive %d -> failure while seeking the track 00!",drive);
 		lockup();
 	}
 	Delay(12);
@@ -1259,6 +1261,7 @@ void deinit_fdc()
 	}
 
 }
+
 /********************************************************************************
 *                          Joystick / Keyboard I/O
 *********************************************************************************/
@@ -1300,7 +1303,6 @@ unsigned char Joystick()
 
 	return( ret );
 }
-
 
 unsigned char Keyboard()
 {
@@ -1359,7 +1361,6 @@ unsigned char get_char()
 
 	return function_code;
 }
-
 
 unsigned char wait_function_key()
 {
@@ -1430,74 +1431,52 @@ unsigned char wait_function_key()
 	return function_code;
 }
 
+void ithandler(void)
+{
+	timercnt++;
+
+	io_floppy_timeout++;
+
+	if( ( Keyboard() & 0x80 )  && !Joystick())
+	{
+		keyup  = 2;
+	}
+}
+
+void init_timer()
+{
+	rbfint = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC|MEMF_CLEAR);
+	rbfint->is_Node.ln_Type = NT_INTERRUPT;      /* Init interrupt node. */
+	rbfint->is_Node.ln_Name = "HxCFESelectorTimerInt";
+	rbfint->is_Data = 0;//(APTR)rbfdata;
+	rbfint->is_Code = ithandler;
+
+	AddIntServer(5,rbfint);
+}
+
 /********************************************************************************
 *                              Display Output
 *********************************************************************************/
 
-void setvideomode(int mode)
+int init_display(ui_context * ctx)
 {
-	Forbid();
+	unsigned short loop;
 
-	switch(mode)
-	{
-		case 0:
-			// PAL Mode
-			WRITEREG_W( BEAMCON0, READREG_W(BEAMCON0) | 0x0020);
-			//WRITEREG_W( BEAMCON0, 0x0020);
-			WRITEREG_W( DDFSTRT,  0x0038);
-			WRITEREG_W( DDFSTOP,  0x00D8);
-			WRITEREG_W( FMODE,    0x0003);
-			WRITEREG_W( DIWSTRT,  0x4481);
-			WRITEREG_W( DIWSTOP,  0x0CC1);
-			WRITEREG_W( BPLCON0,  0x0211);
-			WRITEREG_W( BPL1MOD,  0x0000);
-			WRITEREG_W( BPL2MOD,  0x0000);
-
-			//WRITEREG_W( DMACON,  0x0082);
-			//WRITEREG_W( DMACON,  0x8300);
-
-		break;
-		case 1:
-			// NTSC Mode
-			WRITEREG_W( BEAMCON0, READREG_W(BEAMCON0) & ~0x0020);
-			//WRITEREG_W( BEAMCON0, 0x0000);
-			WRITEREG_W( DDFSTRT,  0x0038);
-			WRITEREG_W( DDFSTOP,  0x00D8);
-			WRITEREG_W( FMODE,    0x0003);
-			WRITEREG_W( DIWSTRT,  0x2C81);
-			WRITEREG_W( DIWSTOP,  0xF4C1);
-			WRITEREG_W( BPLCON0,  0x0211);
-			WRITEREG_W( BPL1MOD,  0x0000);
-			WRITEREG_W( BPL2MOD,  0x0000);
-
-			//WRITEREG_W( DMACON,  0x0082);
-			//WRITEREG_W( DMACON,  0x8300);
-
-			break;
-	}
-
-	Permit();
-}
-
-int init_display()
-{
-	unsigned short loop,yr;
-
-	SCREEN_XRESOL = 640;
+	ctx->SCREEN_XRESOL = 640;
 
 	memset(&view,0,sizeof(struct View));
 	memset(&viewPort,0,sizeof(struct ViewPort));
 	memset(&rasInfo,0,sizeof(struct RasInfo));
 	memset(&my_bit_map,0,sizeof(struct BitMap));
 	memset(&my_rast_port,0,sizeof(struct RastPort));
-	screen_buffer_backup=(unsigned char*)AllocMem(8*1024, MEMF_PUBLIC|MEMF_CLEAR);
 
-	IntuitionBase= (struct IntuitionBase *) OpenLibrary( (CONST_STRPTR)"intuition.library", 0 );
-	screen=(struct Screen *)OpenScreen(&screen_cfg);
+	IntuitionBase = (struct IntuitionBase *) OpenLibrary( (CONST_STRPTR)"intuition.library", 0 );
+	screen = (struct Screen *)OpenScreen(&screen_cfg);
 
 	/* Open the Graphics library: */
 	GfxBaseptr = (struct GfxBase *) OpenLibrary( (CONST_STRPTR)"graphics.library", 0 );
-	if( !GfxBaseptr )  return -1;
+	if( !GfxBaseptr )
+		return -1;
 
 	/* Save the current View, so we can restore it later: */
 	my_old_view = GfxBaseptr->ActiView;
@@ -1508,13 +1487,13 @@ int init_display()
 	view.Modes |= HIRES;//LACE;
 
 	/* 4. Prepare the BitMap: */
-	InitBitMap( &my_bit_map, DEPTH, SCREEN_XRESOL, 256 );
+	InitBitMap( &my_bit_map, DEPTH, ctx->SCREEN_XRESOL, 256 );
 
 	/* Allocate memory for the Raster: */
 	for( loop = 0; loop < DEPTH; loop++ )
 	{
-		my_bit_map.Planes[ loop ] = (PLANEPTR) AllocRaster( SCREEN_XRESOL, 256 );
-		BltClear( my_bit_map.Planes[ loop ], RASSIZE( SCREEN_XRESOL, 256 ), 0 );
+		my_bit_map.Planes[ loop ] = (PLANEPTR) AllocRaster( ctx->SCREEN_XRESOL, 256 );
+		BltClear( my_bit_map.Planes[ loop ], RASSIZE( ctx->SCREEN_XRESOL, 256 ), 0 );
 	}
 
 	/* 5. Prepare the RasInfo structure: */
@@ -1528,7 +1507,7 @@ int init_display()
 	InitVPort(&viewPort);           /*  Initialize the ViewPort.  */
 	view.ViewPort = &viewPort;      /*  Link the ViewPort into the View.  */
 	viewPort.RasInfo = &rasInfo;
-	viewPort.DWidth = SCREEN_XRESOL;
+	viewPort.DWidth = ctx->SCREEN_XRESOL;
 	viewPort.DHeight = 256;
 
 	/* Set the display mode the old-fashioned way */
@@ -1554,17 +1533,10 @@ int init_display()
 	SetAPen( &my_rast_port,   1 );
 	screen_buffer = my_bit_map.Planes[ 0 ];
 
-	yr= get_vid_mode();
-	if(yr>290)
-	{
-		SCREEN_YRESOL=256;
-	}
-	else
-	{
-		SCREEN_YRESOL=200;
-	}
+	ctx->SCREEN_YRESOL = (GfxBaseptr->DisplayFlags & PAL) ? 256 : 200;
 
-	// Number of free line to display the file list.
+	ctx->screen_txt_xsize = ctx->SCREEN_XRESOL / FONT_SIZE_X;
+	ctx->screen_txt_ysize = (ctx->SCREEN_YRESOL / FONT_SIZE_Y) - 1;
 
 	disablemousepointer();
 	init_timer();
@@ -1576,47 +1548,22 @@ void DestroyScrn ()
 {
 	WORD Cntr;
 
-	if (view.LOFCprList) FreeCprList(view.LOFCprList);
-	if (view.SHFCprList) FreeCprList(view.SHFCprList);
+	if (view.LOFCprList)
+		FreeCprList(view.LOFCprList);
+
+	if (view.SHFCprList)
+		FreeCprList(view.SHFCprList);
 
 	FreeVPortCopLists(&viewPort);
 
-	if (cm) FreeColorMap(cm);
-	//if (VpXtr) GfxFree (VpXtr);
+	if (cm)
+		FreeColorMap(cm);
+
 	for (Cntr = 0; Cntr < 8; Cntr++)
 	{
 		if (my_bit_map.Planes[Cntr])
 			FreeRaster (my_bit_map.Planes[Cntr], 640, 480);
 	}
-
-	/*if (VwXtr)
-	{ if (VwXtr->Monitor)
-	CloseMonitor (VwXtr->Monitor);
-	GfxFree (VwXtr);
-	}*/
-}
-
-unsigned short get_vid_mode()
-{
-	unsigned short vpos,vpos2;
-
-	vpos=0;
-	vpos2=0;
-
-	Forbid();
-	do
-	{
-		vpos = READREG_W(VHPOSR) >> 8;
-		while (vpos == (READREG_W(VHPOSR) >> 8));
-
-		vpos=((READREG_W(VPOSR)&1)<<8)  | (READREG_W(VHPOSR)>>8);
-		if(vpos>=vpos2)
-		{
-			vpos2=vpos;
-		}
-	}while(vpos>=vpos2);
-	Permit();
-	return vpos2;
 }
 
 void disablemousepointer()
@@ -1645,112 +1592,54 @@ unsigned char set_color_scheme(unsigned char color)
 	return color;
 }
 
-void print_char8x8(unsigned char * membuffer, bmaptype * font,int x, int y,unsigned char c)
+void print_char8x8(ui_context * ctx, unsigned char * membuffer, bmaptype * font, int col, int line, unsigned char c, int mode)
 {
 	int j;
 	unsigned char *ptr_src;
 	unsigned char *ptr_dst;
+	unsigned char invert_byte;
 
-	ptr_dst=(unsigned char*)membuffer;
-	ptr_src=(unsigned char*)&font->data[0];
-
-	x = x>>3;
-	//x=((x&(~0x1))<<1)+(x&1);//  0 1   2 3
-	ptr_dst += ((y*80)+ x);
-	ptr_src += (((c>>4)*(8*8*2))+(c&0xF));
-	for(j=0;j<8;j++)
+	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
 	{
-		*ptr_dst=*ptr_src;
-		ptr_src += 16;
-		ptr_dst += 80;
-	}
-}
+		ptr_dst = (unsigned char*)membuffer;
+		ptr_src = (unsigned char*)&font->data[0];
 
-void display_sprite(unsigned char * membuffer, bmaptype * sprite,int x, int y)
-{
-	int i,j,base_offset;
-	unsigned short k,l;
-	unsigned short *ptr_src;
-	unsigned short *ptr_dst;
+		if(mode & INVERTED)
+			invert_byte = 0xFF;
+		else
+			invert_byte = 0x00;
 
-	ptr_dst=(unsigned short*)membuffer;
-	ptr_src=(unsigned short*)&sprite->data[0];
+		ptr_dst += (( line * (80*8) ) + col);
+		ptr_src += (((c>>4)*(8*8*2))+(c&0xF));
 
-	k=0;
-	l=0;
-	base_offset = ((y*80)+ ((x>>3)))/2;
-	for(j=0;j<(sprite->Ysize);j++)
-	{
-		l = base_offset + (40*j);
-		for(i=0;i<(sprite->Xsize/16);i++)
+		for(j=0;j<8;j++)
 		{
-			ptr_dst[l] = ptr_src[k];
-			l++;
-			k++;
+			*ptr_dst = (*ptr_src ^ invert_byte);
+			ptr_src += 16;
+			ptr_dst += 80;
 		}
 	}
 }
 
-void h_line(int y_pos,unsigned short val)
-{
-	unsigned short *ptr_dst;
-	int i,ptroffset;
-
-	ptr_dst = (unsigned short*)screen_buffer;
-	ptroffset = 40* y_pos;
-
-	for(i=0;i<40;i++)
-	{
-		ptr_dst[ptroffset+i]=val;
-	}
-}
-
-void box(int x_p1,int y_p1,int x_p2,int y_p2,unsigned short fillval,unsigned char fill)
-{
-	unsigned short *ptr_dst;
-	int i,j,ptroffset,x_size;
-
-	ptr_dst=(unsigned short*)screen_buffer;
-
-	x_size=((x_p2-x_p1)/16)*2;
-
-	ptroffset = 80 * y_p1;
-	for(j=0;j<(y_p2-y_p1);j++)
-	{
-		for(i=0;i<x_size;i++)
-		{
-			ptr_dst[ptroffset+i]=fillval;
-		}
-		ptroffset=80* (y_p1+j);
-	}
-}
-
-void invert_line(int x_pos,int y_pos)
+void invert_line(ui_context * ctx,int line)
 {
 	int i,j;
 	unsigned short *ptr_dst;
 	int ptroffset;
 
-	for(j=0;j<8;j++)
+	if(line < ctx->screen_txt_ysize)
 	{
-		ptr_dst=(unsigned short*)screen_buffer;
-		ptroffset=(40* (y_pos+j))+x_pos;
-
-		for(i=0;i<40;i++)
+		for(j=0;j<8;j++)
 		{
-			ptr_dst[ptroffset+i]=ptr_dst[ptroffset+i]^0xFFFF;
+			ptr_dst = (unsigned short*)screen_buffer;
+			ptroffset = ( 40 * ((line<<3)+j) );
+
+			for(i=0;i<40;i++)
+			{
+				ptr_dst[ptroffset+i] ^= 0xFFFF;
+			}
 		}
 	}
-}
-
-void save_box()
-{
-	memcpy(screen_buffer_backup,&screen_buffer[160*70], 8*1024);
-}
-
-void restore_box()
-{
-	memcpy(&screen_buffer[160*70],screen_buffer_backup, 8*1024);
 }
 
 void reboot()
@@ -1759,28 +1648,6 @@ void reboot()
 	lockup();
 }
 
-void ithandler(void)
-{
-	timercnt++;
-
-	io_floppy_timeout++;
-
-	if( ( Keyboard() & 0x80 )  && !Joystick())
-	{
-		keyup  = 2;
-	}
-}
-
-void init_timer()
-{
-	rbfint = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC|MEMF_CLEAR);
-	rbfint->is_Node.ln_Type = NT_INTERRUPT;      /* Init interrupt node. */
-	rbfint->is_Node.ln_Name = "HxCFESelectorTimerInt";
-	rbfint->is_Data = 0;//(APTR)rbfdata;
-	rbfint->is_Code = ithandler;
-
-	AddIntServer(5,rbfint);
-}
 
 int process_command_line(int argc, char* argv[])
 {

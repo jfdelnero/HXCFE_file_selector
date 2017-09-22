@@ -53,6 +53,8 @@
 #include "ui_context.h"
 #include "gui_utils.h"
 
+#include "../hal.h"
+
 #include "slot_list_gen.h"
 
 #include "../hxcfeda.h"
@@ -116,8 +118,7 @@ void waitms(int ms)
 	SDL_Delay(ms);
 }
 
-#ifdef WIN32
-void sleep(int secs)
+void waitsec(int secs)
 {
 	int i;
 
@@ -126,7 +127,6 @@ void sleep(int secs)
 		waitms(1000);
 	}
 }
-#endif
 
 void alloc_error()
 {
@@ -582,9 +582,12 @@ int init_display(ui_context * ctx)
 
 	track_number = 0;
 
-	ctx->SCREEN_XRESOL = 640;
-	ctx->SCREEN_YRESOL = 256;
-	
+	ctx->SCREEN_XRESOL = 1024;
+	ctx->SCREEN_YRESOL = 480;
+
+	ctx->screen_txt_xsize = ctx->SCREEN_XRESOL / FONT_SIZE_X;
+	ctx->screen_txt_ysize = ctx->SCREEN_YRESOL / FONT_SIZE_Y;
+
 	buffer_size = ctx->SCREEN_XRESOL * ctx->SCREEN_YRESOL;
 
 	screen_buffer = malloc(buffer_size);
@@ -629,7 +632,7 @@ int init_display(ui_context * ctx)
 	update_screen(ctx);
 
 	init_timer();
-	
+
 	return 0;
 }
 
@@ -688,27 +691,33 @@ unsigned char set_color_scheme(unsigned char color)
 	return color;
 }
 
-void print_char8x8(ui_context * ctx, unsigned char * membuffer, bmaptype * font,int x, int y,unsigned char c)
+void print_char8x8(ui_context * ctx, unsigned char * membuffer, bmaptype * font, int col, int line, unsigned char c, int mode)
 {
 	int i,j;
 	unsigned char *ptr_src;
 	unsigned char *ptr_dst;
+	unsigned char set_byte;
 
 	ptr_dst = (unsigned char*)membuffer;
 	ptr_src = (unsigned char*)&font->data[0];
 
-	if( y < ctx->SCREEN_YRESOL && x < ctx->SCREEN_XRESOL)
+	if(mode & INVERTED)
+		set_byte = 0x00;
+	else
+		set_byte = 0xFF;
+
+	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
 	{
-		ptr_dst=ptr_dst + ((y*ctx->SCREEN_XRESOL)+ x);
+		ptr_dst=ptr_dst + (((line<<3)*ctx->SCREEN_XRESOL)+ (col<<3));
 		ptr_src=ptr_src + (((c>>4)*(8*8*2))+(c&0xF));
 		for(j=0;j<8;j++)
 		{
 			for(i=0;i<8;i++)
 			{
-				if(*ptr_src & (0x80>>i) )
-					ptr_dst[i]= 0xFF;
+				if( *ptr_src & (0x80>>i) )
+					ptr_dst[i]= set_byte;
 				else
-					ptr_dst[i]= 0x00;
+					ptr_dst[i]= set_byte ^ 0xFF;
 			}
 			ptr_src=ptr_src+16;
 			ptr_dst=ptr_dst + ctx->SCREEN_XRESOL;
@@ -717,89 +726,23 @@ void print_char8x8(ui_context * ctx, unsigned char * membuffer, bmaptype * font,
 
 }
 
-void display_sprite(ui_context * ctx, unsigned char * membuffer, bmaptype * sprite,int x, int y)
-{
-	int i,j,k,l,base_offset;
-	unsigned char *ptr_src;
-	unsigned char *ptr_dst;
-
-	ptr_dst = (unsigned char*)membuffer;
-	ptr_src = (unsigned char*)&sprite->data[0];
-
-	if( y < ctx->SCREEN_YRESOL && x < ctx->SCREEN_XRESOL)
-	{
-		k=0;
-		l=0;
-		base_offset=(( y * ctx->SCREEN_XRESOL)+ x);
-		for(j=0;j<(sprite->Ysize);j++)
-		{
-			l = base_offset + (ctx->SCREEN_XRESOL * j);
-			k = (j * sprite->Xsize) / 8;
-			for(i=0;i<(sprite->Xsize);i++)
-			{
-				if(ptr_src[k + (i>>3)] & (0x80>>(i&7)) )
-					ptr_dst[l + i]= 0xFF;
-				else
-					ptr_dst[l + i]= 0x00;
-			}
-		}
-	}
-}
-
-void h_line(ui_context * ctx, int y_pos,unsigned short val)
-{
-	unsigned char *ptr_dst;
-	int i,ptroffset;
-
-	ptr_dst = screen_buffer;
-	ptroffset = ctx->SCREEN_XRESOL * y_pos;
-
-	for(i=0;i< (ctx->SCREEN_XRESOL/2);i++)
-	{
-		ptr_dst[ptroffset + (i*2)]=(val>>8)&0xFF;
-		ptr_dst[ptroffset + (i*2) + 1]=(val)&0xFF;
-	}
-}
-
-void box(ui_context * ctx,int x_p1,int y_p1,int x_p2,int y_p2,unsigned short fillval,unsigned char fill)
-{
-	unsigned short *ptr_dst;
-	int i,j,ptroffset,x_size;
-
-	ptr_dst=(unsigned short*)screen_buffer;
-
-	x_size=(x_p2-x_p1);
-
-	ptroffset = ctx->SCREEN_XRESOL * y_p1;
-	for(j=0;j<(y_p2-y_p1);j++)
-	{
-		for(i=0;i<x_size/2;i++)
-		{
-			ptr_dst[ptroffset+(i*2)]  =(fillval>>8);
-			ptr_dst[ptroffset+(i*2)+1]=(fillval)&0xFF;
-		}
-		ptroffset = ctx->SCREEN_XRESOL * (y_p1+j);
-	}
-
-}
-
-void invert_line(ui_context * ctx,int x_pos,int y_pos)
+void invert_line(ui_context * ctx, int line)
 {
 	int i,j;
 	unsigned char *ptr_dst;
 	int ptroffset;
 
-	if( y_pos < ctx->SCREEN_YRESOL && x_pos < ctx->SCREEN_XRESOL )
+	if( line < ctx->screen_txt_xsize )
 	{
+		ptr_dst=(unsigned char*)screen_buffer;
 
 		for(j=0;j<8;j++)
 		{
-			ptr_dst=(unsigned char*)screen_buffer;
-			ptroffset=(ctx->SCREEN_XRESOL* (y_pos + j))+x_pos;
+			ptroffset=(ctx->SCREEN_XRESOL* ((line<<3) + j));
 
 			for(i=0;i<ctx->SCREEN_XRESOL;i++)
 			{
-				ptr_dst[ptroffset+i]=ptr_dst[ptroffset+i]^0xFF;
+				ptr_dst[ptroffset+i] ^= 0xFF;
 			}
 		}
 	}
@@ -827,19 +770,6 @@ void ithandler(void)
 	}
 }
 
-char *strlwr(char *s)
-{
-	unsigned char *s1;
-
-	s1=(unsigned char *)s;
-	while(*s1) {
-	if (isupper(*s1))
-		*s1+='a'-'A';
-	++s1;
-	}
-	return s;
-}
-
 #ifdef DEBUG
 
 void dbg_printf(char * chaine, ...)
@@ -860,7 +790,7 @@ void lockup()
 	dbg_printf("lockup : Sofware halted...\n");
 	#endif
 
-	sleep(2);
+	waitsec(2);
 
 	if(sdl_timer_id)
 		SDL_RemoveTimer(sdl_timer_id);

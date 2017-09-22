@@ -31,26 +31,22 @@
 
 #include "keysfunc_defs.h"
 
-#include "cfg_file.h"
-
 #include "conf.h"
+
+#include "cfg_file.h"
 #include "ui_context.h"
-
 #include "gui_utils.h"
-#include "hxcfeda.h"
 
-#include "hardware.h"
-
+#include "hal.h"
 
 #include "fectrl.h"
-
 #include "menu.h"
 
 int menu_draw(ui_context * ctx, const menu * submenu, int *max_len)
 {
 	int i,t;
 
-	clear_list(ctx,0);
+	clear_list(ctx);
 
 	*max_len = 0;
 	i = 0;
@@ -71,11 +67,11 @@ int menu_draw(ui_context * ctx, const menu * submenu, int *max_len)
 	i = 0;
 	while( submenu[i].text )
 	{
-		hxc_print(ctx,submenu[i].align,0,FILELIST_Y_POS+(i*8), (char*)submenu[i].text);
+		hxc_print(ctx,submenu[i].align,0,FILELIST_Y_POS + i, (char*)submenu[i].text);
 
 		if(submenu[i].menu_cb)
 		{
-			submenu[i].menu_cb(ctx,0,*max_len * 8,FILELIST_Y_POS+(i*8),submenu[i].cb_parameter);
+			submenu[i].menu_cb(ctx,0,*max_len,FILELIST_Y_POS + i,submenu[i].cb_parameter);
 		}
 		i++;
 	}
@@ -93,7 +89,7 @@ int enter_menu(ui_context * ctx, const menu * submenu)
 
 	i = 0;
 
-	invert_line(ctx,0,FILELIST_Y_POS+(i*8));
+	invert_line(ctx, FILELIST_Y_POS + i);
 
 	do
 	{
@@ -103,26 +99,26 @@ int enter_menu(ui_context * ctx, const menu * submenu)
 		switch(c)
 		{
 			case FCT_UP_KEY:
-				invert_line(ctx,0,FILELIST_Y_POS+(i*8));
+				invert_line( ctx, FILELIST_Y_POS + i );
 				if(i)
 					i--;
-				invert_line(ctx,0,FILELIST_Y_POS+(i*8));
+				invert_line( ctx, FILELIST_Y_POS + i );
 			break;
 			case FCT_DOWN_KEY:
-				invert_line(ctx,0,FILELIST_Y_POS+(i*8));
+				invert_line( ctx, FILELIST_Y_POS + i );
 				if( i < item_count - 1 )
 					i++;
-				invert_line(ctx,0,FILELIST_Y_POS+(i*8));
+				invert_line( ctx, FILELIST_Y_POS + i );
 			break;
 
 			case FCT_SELECT_FILE_DRIVEA:
 			case FCT_LEFT_KEY:
 			case FCT_RIGHT_KEY:
 				// call callback.
-				invert_line(ctx,0,FILELIST_Y_POS+(i*8));
+				invert_line( ctx, FILELIST_Y_POS + i );
 				if(submenu[i].menu_cb)
 				{
-					cb_return = submenu[i].menu_cb(ctx,c,max_len*8,FILELIST_Y_POS+(i*8),submenu[i].cb_parameter);
+					cb_return = submenu[i].menu_cb(ctx,c,max_len,FILELIST_Y_POS + i,submenu[i].cb_parameter);
 					if(cb_return == MENU_REDRAWMENU)
 					{
 						menu_draw(ctx, submenu, &max_len);
@@ -138,7 +134,7 @@ int enter_menu(ui_context * ctx, const menu * submenu)
 					}
 				}
 
-				invert_line(ctx,0,FILELIST_Y_POS+(i*8));
+				invert_line( ctx, FILELIST_Y_POS + i );
 
 			break;
 		}

@@ -38,7 +38,7 @@
 #include "gui_utils.h"
 #include "hxcfeda.h"
 
-#include "hardware.h"
+#include "hal.h"
 
 #include "fat_opts.h"
 #include "fat_misc.h"
@@ -58,7 +58,7 @@ void setcfg_backgroundcolor(int color)
 	cfgfile * cfgfile_ptr;
 
 	cfgfile_ptr=(cfgfile * )cfgfile_header;
-	
+
 	cfgfile_ptr->background_color = color;
 }
 

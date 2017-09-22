@@ -204,7 +204,7 @@ int tolowers (int c) {
 	return c;
 }
 
-void sleep(int secs)
+void waitsec(int secs)
 {
 	unsigned long curtick,delta;
 	int i;

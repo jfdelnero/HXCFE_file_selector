@@ -5,4 +5,4 @@ void ui_config_menu(ui_context * ctx);
 void ui_chgcolor(ui_context * ctx,int color);
 void print_help(ui_context * ctx);
 int  mount_drive(ui_context * ctx, int drive);
-void clear_list(ui_context * ctx,unsigned char add);
+void clear_list(ui_context * ctx);

@@ -2,15 +2,15 @@ CC=gcc
 AS=as
 
 CFLAGS= -O3 -Wall -I . -I .. -I ../fat32 -DFATFS_IS_LITTLE_ENDIAN=1 -DSDLHOST
-#CFLAGS= -O0 -Wall -I . -I .. -I ../fat32 -g -DFATFS_IS_LITTLE_ENDIAN=1 -DDEBUG -DSDLHOST -fsanitize=address  -fno-omit-frame-pointer
+#CFLAGS= -O0 -Wall -I . -I .. -I ../fat32 -g -DFATFS_IS_LITTLE_ENDIAN=1 -DDEBUG -DSDLHOST #-fsanitize=address  -fno-omit-frame-pointer
 
 LDFLAGS= -s -Wl,-Map,foo.map -lSDL
-#LDFLAGS=  -Wl,-Map,foo.map -lasan -lSDL
+#LDFLAGS=  -Wl,-Map,foo.map  -lSDL -g #-lasan
 
 EXEC=HXCFEMNG
 
 all: $(EXEC)
-	strip -s $(EXEC)
+	#strip -s $(EXEC)
 
 HXCFEMNG:      fectrl.o media_access.o config_file.o menu.o menu_settings.o menu_selectdrive.o menu_commands.o gui_utils.o sdl_hal.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o msg_txt.o slot_list_gen.o
 	$(CC) -o $@    $^ $(LDFLAGS)

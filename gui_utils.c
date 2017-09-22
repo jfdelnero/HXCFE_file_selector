@@ -35,7 +35,6 @@
 #include "cfg_file.h"
 
 #include "graphx/data_bmp_font8x8_bmp.h"
-#include "graphx/data_bmp_hxc2001_smalllogo_bmp.h"
 
 #include "msg_txt.h"
 
@@ -46,22 +45,22 @@
 
 #include "conf.h"
 
-#include "hardware.h"
+#include "hal.h"
 
 #include "version.h"
 
 extern unsigned char * screen_buffer;
 
-void print_str(ui_context * ctx,unsigned char * membuffer,char * buf,int maxsize,int x_pos,int y_pos,int linefeed)
+void print_str(ui_context * ctx,unsigned char * membuffer,char * buf,int maxsize,int col,int line,int linefeed,int mode)
 {
 	int i;
 	int x_offset,y_offset;
 
-	x_offset = x_pos;
-	y_offset = y_pos;
+	x_offset = col;
+	y_offset = line;
 
 	#ifdef DEBUG
-	dbg_printf("UIOut x:%d y:%d %s\n",y_pos,y_pos,buf);
+	dbg_printf("UIOut x:%d y:%d %s\n",col,line,buf);
 	#endif
 
 	#ifdef SDLHOST
@@ -74,24 +73,24 @@ void print_str(ui_context * ctx,unsigned char * membuffer,char * buf,int maxsize
 	i = 0;
 	while(buf[i] && i < maxsize)
 	{
-		if(x_offset<=(ctx->SCREEN_XRESOL-8))
+		if( (x_offset*8) <=(ctx->SCREEN_XRESOL-8))
 		{
 			if(buf[i] == '\n' && linefeed)
 			{
-				x_offset = x_pos;
-				y_offset += 8;
+				x_offset = line;
+				y_offset++;
 			}
 			else
 			{
-				print_char8x8(ctx,membuffer,bitmap_font8x8_bmp,x_offset,y_offset,buf[i]);
-				x_offset=x_offset+8;
+				print_char8x8(ctx,membuffer,bitmap_font8x8_bmp,x_offset,y_offset,buf[i],mode);
+				x_offset++;
 			}
 		}
 		i++;
 	}
 }
 
-int hxc_print(ui_context * ctx,unsigned char mode,int x_pos,int y_pos,char * string)
+int hxc_print(ui_context * ctx,unsigned char mode,int col,int line,char * string)
 {
 	int line_size,i,linenb;
 	int x_offset;
@@ -102,10 +101,10 @@ int hxc_print(ui_context * ctx,unsigned char mode,int x_pos,int y_pos,char * str
 	else
 		linefeed = 1;
 
-	switch(mode & 0xF)
+	switch( ( mode & (LEFT_ALIGNED|CENTER_ALIGNED|RIGHT_ALIGNED)) )
 	{
 		case LEFT_ALIGNED: // Left aligned
-			print_str(ctx,screen_buffer,string,MAXTXTSIZE,x_pos,y_pos,linefeed);
+			print_str(ctx,screen_buffer,string,MAXTXTSIZE,col,line,linefeed,mode);
 		break;
 		case CENTER_ALIGNED: // Center aligned
 		case RIGHT_ALIGNED: // Right aligned
@@ -119,11 +118,11 @@ int hxc_print(ui_context * ctx,unsigned char mode,int x_pos,int y_pos,char * str
 					line_size++;
 				}
 
-				x_offset = (ctx->SCREEN_XRESOL-(line_size*8));
-				if(mode == CENTER_ALIGNED)
+				x_offset = ctx->screen_txt_xsize - line_size;
+				if(mode & CENTER_ALIGNED)
 					x_offset /= 2;
 
-				print_str(ctx,screen_buffer,&string[i],line_size,x_offset,y_pos + (linenb*8),linefeed);
+				print_str(ctx,screen_buffer,&string[i],line_size,x_offset,line + linenb,linefeed,mode);
 
 				if(string[i + line_size] == '\n')
 					i += (line_size + 1);
@@ -138,7 +137,7 @@ int hxc_print(ui_context * ctx,unsigned char mode,int x_pos,int y_pos,char * str
 	return 0;
 }
 
-int hxc_printf(ui_context * ctx,unsigned char mode,int x_pos,int y_pos,char * chaine, ...)
+int hxc_printf(ui_context * ctx,unsigned char mode,int col,int line,char * chaine, ...)
 {
 	char temp_buffer[MAXTXTSIZE];
 
@@ -153,16 +152,19 @@ int hxc_printf(ui_context * ctx,unsigned char mode,int x_pos,int y_pos,char * ch
 
 	va_end( marker );
 
-	hxc_print(ctx,mode,x_pos,y_pos,temp_buffer);
+	hxc_print(ctx,mode,col,line,temp_buffer);
 
 	return 0;
 }
 
-void clear_line(ui_context * ctx,int y_pos,unsigned short val)
+void clear_line(ui_context * ctx,int line,int mode)
 {
 	int i;
-	for(i=0;i<8;i++)
-		h_line(ctx,y_pos+i,val);
+
+	for(i=0;i<ctx->screen_txt_xsize;i++)
+	{
+		print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,i,line,' ',mode);
+	}
 }
 
 int hxc_printf_box(ui_context * ctx,char * chaine, ...)
@@ -180,31 +182,47 @@ int hxc_printf_box(ui_context * ctx,char * chaine, ...)
 	vsnprintf(temp_buffer,1024,chaine,marker);
 #endif
 
-	str_size=strlen(temp_buffer) * 8;
-	str_size=str_size+(4*8);
+	str_size = strlen(temp_buffer);
+	str_size += 4;
 
-	for(i=0;i< str_size;i=i+8)
+	// Upper bar
+	for(i=0;i< str_size;i++)
 	{
-		print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->SCREEN_XRESOL-str_size)/2)+i,80-8,8);
-	}
-	print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->SCREEN_XRESOL-str_size)/2)+(i-8),80-8,3);
-	print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->SCREEN_XRESOL-str_size)/2),80-8,2);
-
-	for(i=0;i< str_size;i=i+8)
-	{
-		print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->SCREEN_XRESOL-str_size)/2)+i,80,' ');
+		print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->screen_txt_xsize - str_size)/2)+i,10-1,8,0);
 	}
 
-	print_str(ctx,screen_buffer,temp_buffer,MAXTXTSIZE,((ctx->SCREEN_XRESOL-str_size)/2)+(2*8),80,0);
-	print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->SCREEN_XRESOL-str_size)/2)+(i-8),80,7);
-	print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->SCREEN_XRESOL-str_size)/2),80,6);
 
-	for(i=0;i< str_size;i=i+8)
+	// Upper left & right bar
+	print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->screen_txt_xsize-str_size)/2)+(i-1),10-1,3,0);
+	print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->screen_txt_xsize-str_size)/2),10-1,2,0);
+
+	for(i=0;i< str_size;i++)
 	{
-		print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->SCREEN_XRESOL-str_size)/2)+i,80+8,9);
+		print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->screen_txt_xsize-str_size)/2)+i,80,' ',0);
 	}
-	print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->SCREEN_XRESOL-str_size)/2)+(i-8),80+8,5);
-	print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->SCREEN_XRESOL-str_size)/2),80+8,4);
+
+	// Upper bar
+	for(i=0;i< str_size;i++)
+	{
+		print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->screen_txt_xsize - str_size)/2)+i,10,' ',0);
+	}
+
+	// Middle left & right bar
+	print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->screen_txt_xsize-str_size)/2)+(i-1),10,7,0);
+	print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->screen_txt_xsize-str_size)/2),10,6,0);
+
+	// Print the string
+	print_str(ctx,screen_buffer,temp_buffer,MAXTXTSIZE,((ctx->screen_txt_xsize-str_size)/2)+2,10,0,0);
+
+	// Lower bar
+	for(i=0;i<str_size;i++)
+	{
+		print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->screen_txt_xsize-str_size)/2)+i,10+1,9,0);
+	}
+
+	// Lower left & right bar
+	print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->screen_txt_xsize-str_size)/2)+(i-1),10+1,5,0);
+	print_char8x8(ctx,screen_buffer,bitmap_font8x8_bmp,((ctx->screen_txt_xsize-str_size)/2),10+1,4,0);
 
 	va_end( marker );
 
@@ -213,29 +231,79 @@ int hxc_printf_box(ui_context * ctx,char * chaine, ...)
 
 void init_display_buffer(ui_context * ctx)
 {
-	// HxC2001 logo
-	display_sprite(ctx,screen_buffer, bitmap_hxc2001_smalllogo_bmp,
-	                                    (ctx->SCREEN_XRESOL-bitmap_hxc2001_smalllogo_bmp->Xsize),
-	                                    (ctx->SCREEN_YRESOL-bitmap_hxc2001_smalllogo_bmp->Ysize));
-	// Horizontal separator lines
-	h_line(ctx,0,0xFFFF);
-	h_line(ctx,9,0xFFFF);
-	h_line(ctx,ctx->SCREEN_YRESOL-(bitmap_hxc2001_smalllogo_bmp->Ysize + 1),0xFFFF);
+	ctx->NUMBER_OF_FILE_ON_DISPLAY = ctx->screen_txt_ysize - 2;
 
 	// Footprint : Current software / firmware version and title
-	hxc_printf(ctx,LEFT_ALIGNED,0,ctx->SCREEN_YRESOL - ( 8 + 2 ),"FW Ver %s",ctx->FIRMWAREVERSION);
-	hxc_print(ctx,CENTER_ALIGNED,0,ctx->SCREEN_YRESOL - ( 8 + 2 ),(char*)title_msg);
-	hxc_print(ctx,LEFT_ALIGNED,0,CURDIR_Y_POS, (char*)cur_folder_msg);
+	clear_line(ctx, ctx->screen_txt_ysize - 1, INVERTED);
+	hxc_printf(ctx,LEFT_ALIGNED | INVERTED,0, ctx->screen_txt_ysize - 1,"FW Ver %s",ctx->FIRMWAREVERSION);
+	hxc_print(ctx,CENTER_ALIGNED | INVERTED,0,ctx->screen_txt_ysize - 1,(char*)title_msg);
+	hxc_print(ctx,RIGHT_ALIGNED | INVERTED,0,ctx->screen_txt_ysize - 1,(char*)copyright_msg);
 
-	hxc_print(ctx,CENTER_ALIGNED,0,HELP_Y_POS+8, (char*)startup_msg);
+	// Top header : current folder path
+	clear_line(ctx, 0, INVERTED);
+	hxc_print(ctx,LEFT_ALIGNED|INVERTED,0,0, (char*)cur_folder_msg);
 
-	ctx->NUMBER_OF_FILE_ON_DISPLAY = ( (ctx->SCREEN_YRESOL - (bitmap_hxc2001_smalllogo_bmp->Ysize + 1 ) ) - 10 ) / 8;
+	// Startup message
+	hxc_print(ctx,CENTER_ALIGNED,0,HELP_Y_POS+1, (char*)startup_msg);
+
 }
 
+char to_lower(char c)
+{
+	if(c>='A' && c<='Z')
+	{
+		return c + ('a' - 'A');
+	}
+
+	return c;
+}
+
+// https://stackoverflow.com/questions/27303062/strstr-function-like-that-ignores-upper-or-lower-case
+char* stristr( const char* str1, const char* str2 )
+{
+    const char* p1 = str1 ;
+    const char* p2 = str2 ;
+    const char* r = *p2 == 0 ? str1 : 0 ;
+
+    while( *p1 && *p2 )
+    {
+        if( to_lower( (unsigned char)*p1 ) == to_lower( (unsigned char)*p2 ) )
+        {
+            if( r == 0 )
+            {
+                r = p1 ;
+            }
+
+            p2++ ;
+        }
+        else
+        {
+            p2 = str2 ;
+            if( r != 0 )
+            {
+                p1 = r + 1 ;
+            }
+
+            if( to_lower( (unsigned char)*p1 ) == to_lower( (unsigned char)*p2 ) )
+            {
+                r = p1 ;
+                p2++ ;
+            }
+            else
+            {
+                r = 0 ;
+            }
+        }
+
+        p1++ ;
+    }
+
+    return *p2 == 0 ? (char*)r : 0 ;
+}
 
 #ifdef DEBUG
 
-void print_hex_buffer(unsigned char * buffer, int size)
+void print_hex_buffer(ui_context * ctx,unsigned char * buffer, int size)
 {
 	int c,i;
 	int x,y;
@@ -246,12 +314,12 @@ void print_hex_buffer(unsigned char * buffer, int size)
 	y=0;
 	for(i=0;i<size;i++)
 	{
-		x=((c & 0xF)*24);
+		x = ( (c & 0xF) * 3 );
 		hxc_printf(ctx,LEFT_ALIGNED,x,y,"%.2X ", buffer[i]);
 		c++;
-		if(!(c&0xF))
+		if( !( c & 0xF ) )
 		{
-			y=y+9;
+			y++;
 		}
 	}
 
@@ -278,7 +346,7 @@ void print_hex_buffer(unsigned char * buffer, int size)
 		c++;
 		if(!(c&0xF))
 		{
-			y=y+9;
+			y++;
 		}
 	}
 }

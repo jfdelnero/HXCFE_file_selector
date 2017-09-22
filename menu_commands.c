@@ -39,7 +39,7 @@
 
 #include "fectrl.h"
 
-#include "hardware.h"
+#include "hal.h"
 
 extern unsigned char cfgfile_header[512];
 
@@ -61,7 +61,7 @@ static int commnand_menu_savereboot_cb(ui_context * ctx, int event, int xpos, in
 		}
 		else
 		{
-			sleep(1);
+			waitsec(1);
 		}
 	}
 

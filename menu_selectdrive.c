@@ -36,7 +36,7 @@
 #include "gui_utils.h"
 
 #include "menu.h"
-#include "hardware.h"
+#include "hal.h"
 
 #include "fectrl.h"
 

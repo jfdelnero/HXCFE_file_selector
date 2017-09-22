@@ -25,8 +25,10 @@ typedef struct ui_context_
 
 	char FIRMWAREVERSION[16];
 
-	unsigned int SCREEN_XRESOL;
-	unsigned int SCREEN_YRESOL;
-	unsigned char NUMBER_OF_FILE_ON_DISPLAY;
+	int SCREEN_XRESOL;
+	int SCREEN_YRESOL;
+	int NUMBER_OF_FILE_ON_DISPLAY;
 
+	int screen_txt_xsize;
+	int screen_txt_ysize;
 }ui_context;
