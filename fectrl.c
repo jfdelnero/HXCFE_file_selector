@@ -868,7 +868,6 @@ int ui_mainfileselector(ui_context * ctx)
 				case FCT_SEARCH:
 					ctx->filtermode=0xFF;
 					hxc_print(ctx,LEFT_ALIGNED | INVERTED,(ctx->screen_txt_xsize/2)+8,CURDIR_Y_POS,"Filter:                     ");
-					flush_char();
 					i=0;
 					do
 					{

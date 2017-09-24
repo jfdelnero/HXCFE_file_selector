@@ -52,6 +52,8 @@
 #include "ui_context.h"
 #include "gui_utils.h"
 
+#include "../graphx/font.h"
+
 #include "../hal.h"
 
 #include "atari_hw.h"
@@ -613,10 +615,6 @@ unsigned char Keyboard()
 	return 0x80;
 }
 
-void flush_char()
-{
-}
-
 unsigned char get_char()
 {
 	unsigned char key,i,c;
@@ -829,18 +827,19 @@ void disablemousepointer()
 
 }
 
-void print_char8x8(ui_context * ctx, unsigned char * membuffer, unsigned char * font, int col, int line, unsigned char c, int mode)
+void print_char8x8(ui_context * ctx, int col, int line, unsigned char c, int mode)
 {
 	int j;
 	unsigned char *ptr_dst;
+	unsigned char * font;
 
 	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
 	{
 		col <<= 3;
 		line <<= 3;
 
-		font    += (c * ((FONT_SIZE_X*FONT_SIZE_Y)/8));
-		ptr_dst  = membuffer + ((unsigned long) line * LINE_BYTES) + ((col>>4)<<PLANES_ALIGNDEC) + ((col&8)==8);
+		ptr_dst  = screen_buffer + ((unsigned long) line * LINE_BYTES) + ((col>>4)<<PLANES_ALIGNDEC) + ((col&8)==8);
+		font     = font_data + (c * ((FONT_SIZE_X*FONT_SIZE_Y)/8));
 
 		// in a 16-pixel chunk, there are 2 8-pixel chars, hence the x&8==8
 		if(mode & INVERTED)
@@ -852,7 +851,7 @@ void print_char8x8(ui_context * ctx, unsigned char * membuffer, unsigned char * 
 
 				*ptr_dst = (*font++) ^ 0xFF;
 				ptr_dst += LINE_BYTES;
-				
+
 			}
 		}
 		else
@@ -868,6 +867,73 @@ void print_char8x8(ui_context * ctx, unsigned char * membuffer, unsigned char * 
 		}
 	}
 }
+
+void clear_line(ui_context * ctx,int line,int mode)
+{
+	unsigned short *ptr_dst;
+	int i;
+
+	if(line < ctx->screen_txt_ysize)
+	{
+		ptr_dst  = (unsigned short *)(screen_buffer + ( line * (LINE_WORDS* 8 * 2) ));
+
+		if(mode & INVERTED)
+		{
+			for(i=0; i<LINE_WORDS*2; i+=NB_PLANES)
+			{
+				*(ptr_dst) = 0xFFFF;
+				ptr_dst += NB_PLANES;
+				*(ptr_dst) = 0xFFFF;
+				ptr_dst += NB_PLANES;
+				*(ptr_dst) = 0xFFFF;
+				ptr_dst += NB_PLANES;
+				*(ptr_dst) = 0xFFFF;
+				ptr_dst += NB_PLANES;
+			}
+		}
+		else
+		{
+			for(i=0; i<LINE_WORDS*8; i+=NB_PLANES)
+			{
+				*(ptr_dst) = 0x0000;
+				ptr_dst += NB_PLANES;
+				*(ptr_dst) = 0x0000;
+				ptr_dst += NB_PLANES;
+				*(ptr_dst) = 0x0000;
+				ptr_dst += NB_PLANES;
+				*(ptr_dst) = 0x0000;
+				ptr_dst += NB_PLANES;
+			}
+		}
+	}
+}
+
+void h_line(int y_pos,unsigned short val)
+{
+	unsigned short * ptr_dst;
+	int i;
+
+	ptr_dst=(unsigned short *) screen_buffer;
+	ptr_dst += (unsigned long) LINE_WORDS * y_pos;
+
+	if(val)
+	{
+		for(i=0; i<LINE_WORDS; i+=NB_PLANES)
+		{
+			*(ptr_dst) = val;
+			ptr_dst += NB_PLANES;
+		}
+	}
+	else
+	{
+		for(i=0; i<LINE_WORDS; i++)
+		{
+			*(ptr_dst) = val;
+			ptr_dst ++;
+		}
+	}
+}
+
 
 void invert_line(ui_context * ctx,int line)
 {

@@ -31,7 +31,6 @@
 void restore_atari_hw(void);
 void init_atari_hw(void);
 void init_atari_fdc(unsigned char drive);
-void flush_char();
 void jumptotrack0();
 void su_reboot();
 unsigned long read_long_odd(unsigned char * adr);

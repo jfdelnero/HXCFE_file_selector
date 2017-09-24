@@ -9,7 +9,6 @@ int hxc_print(ui_context * ctx,unsigned char mode,int col,int line,char * chaine
 int hxc_printf(ui_context * ctx,unsigned char mode,int col,int line,char * chaine, ...);
 int hxc_printf_box(ui_context * ctx,char * chaine, ...);
 
-void clear_line(ui_context * ctx, int line, int mode);
 void invert_line(ui_context * ctx, int line);
 
 void init_display_buffer(ui_context * ctx);

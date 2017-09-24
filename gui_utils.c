@@ -34,8 +34,6 @@
 
 #include "cfg_file.h"
 
-#include "graphx/font.h"
-
 #include "msg_txt.h"
 
 #include "conf.h"
@@ -49,9 +47,7 @@
 
 #include "version.h"
 
-extern unsigned char * screen_buffer;
-
-void print_str(ui_context * ctx,unsigned char * membuffer,char * buf,int maxsize,int col,int line,int linefeed,int mode)
+void print_str(ui_context * ctx,char * buf,int maxsize,int col,int line,int linefeed,int mode)
 {
 	int i;
 	int x_offset,y_offset;
@@ -82,7 +78,7 @@ void print_str(ui_context * ctx,unsigned char * membuffer,char * buf,int maxsize
 			}
 			else
 			{
-				print_char8x8(ctx,membuffer,font_data,x_offset,y_offset,buf[i],mode);
+				print_char8x8(ctx,x_offset,y_offset,buf[i],mode);
 				x_offset++;
 			}
 		}
@@ -104,7 +100,7 @@ int hxc_print(ui_context * ctx,unsigned char mode,int col,int line,char * string
 	switch( ( mode & (LEFT_ALIGNED|CENTER_ALIGNED|RIGHT_ALIGNED)) )
 	{
 		case LEFT_ALIGNED: // Left aligned
-			print_str(ctx,screen_buffer,string,MAXTXTSIZE,col,line,linefeed,mode);
+			print_str(ctx,string,MAXTXTSIZE,col,line,linefeed,mode);
 		break;
 		case CENTER_ALIGNED: // Center aligned
 		case RIGHT_ALIGNED: // Right aligned
@@ -122,7 +118,7 @@ int hxc_print(ui_context * ctx,unsigned char mode,int col,int line,char * string
 				if(mode & CENTER_ALIGNED)
 					x_offset /= 2;
 
-				print_str(ctx,screen_buffer,&string[i],line_size,x_offset,line + linenb,linefeed,mode);
+				print_str(ctx,&string[i],line_size,x_offset,line + linenb,linefeed,mode);
 
 				if(string[i + line_size] == '\n')
 					i += (line_size + 1);
@@ -157,16 +153,6 @@ int hxc_printf(ui_context * ctx,unsigned char mode,int col,int line,char * chain
 	return 0;
 }
 
-void clear_line(ui_context * ctx,int line,int mode)
-{
-	int i;
-
-	for(i=0;i<ctx->screen_txt_xsize;i++)
-	{
-		print_char8x8(ctx,screen_buffer,font_data,i,line,' ',mode);
-	}
-}
-
 int hxc_printf_box(ui_context * ctx,char * chaine, ...)
 {
 	char temp_buffer[1024];
@@ -188,41 +174,41 @@ int hxc_printf_box(ui_context * ctx,char * chaine, ...)
 	// Upper bar
 	for(i=0;i< str_size;i++)
 	{
-		print_char8x8(ctx,screen_buffer,font_data,((ctx->screen_txt_xsize - str_size)/2)+i,10-1,8,0);
+		print_char8x8(ctx,((ctx->screen_txt_xsize - str_size)/2)+i,10-1,8,0);
 	}
 
 
 	// Upper left & right bar
-	print_char8x8(ctx,screen_buffer,font_data,((ctx->screen_txt_xsize-str_size)/2)+(i-1),10-1,3,0);
-	print_char8x8(ctx,screen_buffer,font_data,((ctx->screen_txt_xsize-str_size)/2),10-1,2,0);
+	print_char8x8(ctx,((ctx->screen_txt_xsize-str_size)/2)+(i-1),10-1,3,0);
+	print_char8x8(ctx,((ctx->screen_txt_xsize-str_size)/2),10-1,2,0);
 
 	for(i=0;i< str_size;i++)
 	{
-		print_char8x8(ctx,screen_buffer,font_data,((ctx->screen_txt_xsize-str_size)/2)+i,80,' ',0);
+		print_char8x8(ctx,((ctx->screen_txt_xsize-str_size)/2)+i,80,' ',0);
 	}
 
 	// Upper bar
 	for(i=0;i< str_size;i++)
 	{
-		print_char8x8(ctx,screen_buffer,font_data,((ctx->screen_txt_xsize - str_size)/2)+i,10,' ',0);
+		print_char8x8(ctx,((ctx->screen_txt_xsize - str_size)/2)+i,10,' ',0);
 	}
 
 	// Middle left & right bar
-	print_char8x8(ctx,screen_buffer,font_data,((ctx->screen_txt_xsize-str_size)/2)+(i-1),10,7,0);
-	print_char8x8(ctx,screen_buffer,font_data,((ctx->screen_txt_xsize-str_size)/2),10,6,0);
+	print_char8x8(ctx,((ctx->screen_txt_xsize-str_size)/2)+(i-1),10,7,0);
+	print_char8x8(ctx,((ctx->screen_txt_xsize-str_size)/2),10,6,0);
 
 	// Print the string
-	print_str(ctx,screen_buffer,temp_buffer,MAXTXTSIZE,((ctx->screen_txt_xsize-str_size)/2)+2,10,0,0);
+	print_str(ctx,temp_buffer,MAXTXTSIZE,((ctx->screen_txt_xsize-str_size)/2)+2,10,0,0);
 
 	// Lower bar
 	for(i=0;i<str_size;i++)
 	{
-		print_char8x8(ctx,screen_buffer,font_data,((ctx->screen_txt_xsize-str_size)/2)+i,10+1,9,0);
+		print_char8x8(ctx,((ctx->screen_txt_xsize-str_size)/2)+i,10+1,9,0);
 	}
 
 	// Lower left & right bar
-	print_char8x8(ctx,screen_buffer,font_data,((ctx->screen_txt_xsize-str_size)/2)+(i-1),10+1,5,0);
-	print_char8x8(ctx,screen_buffer,font_data,((ctx->screen_txt_xsize-str_size)/2),10+1,4,0);
+	print_char8x8(ctx,((ctx->screen_txt_xsize-str_size)/2)+(i-1),10+1,5,0);
+	print_char8x8(ctx,((ctx->screen_txt_xsize-str_size)/2),10+1,4,0);
 
 	va_end( marker );
 

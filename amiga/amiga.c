@@ -57,6 +57,8 @@
 #include "ui_context.h"
 #include "gui_utils.h"
 
+#include "../graphx/font.h"
+
 #include "../hal.h"
 
 #include "amiga_regs.h"
@@ -1319,10 +1321,6 @@ unsigned char Keyboard()
 	return( code );
 }
 
-void flush_char()
-{
-}
-
 unsigned char get_char()
 {
 	unsigned char key,i,c;
@@ -1592,37 +1590,108 @@ unsigned char set_color_scheme(unsigned char color)
 	return color;
 }
 
-void print_char8x8(ui_context * ctx, unsigned char * membuffer, unsigned char * font, int col, int line, unsigned char c, int mode)
+void print_char8x8(ui_context * ctx,int col, int line, unsigned char c, int mode)
 {
-	int j;
 	unsigned char *ptr_dst;
+	unsigned char * font;
 
 	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
 	{
-		ptr_dst  = membuffer + (( line * (80*8) ) + col);
-		font    += (c * ((FONT_SIZE_X*FONT_SIZE_Y)/8));
+		ptr_dst  = screen_buffer + (( line * (80*8) ) + col);
+		font     = font_data + (c * ((FONT_SIZE_X*FONT_SIZE_Y)/8));
 
 		if(mode & INVERTED)
 		{
-			for(j=0;j<4;j++)
-			{
-				*ptr_dst = (*font++ ^ 0xFF);
-				ptr_dst += 80;
+			*ptr_dst = (*font++ ^ 0xFF);
+			ptr_dst += 80;
 
-				*ptr_dst = (*font++ ^ 0xFF);
-				ptr_dst += 80;
+			*ptr_dst = (*font++ ^ 0xFF);
+			ptr_dst += 80;
+
+			*ptr_dst = (*font++ ^ 0xFF);
+			ptr_dst += 80;
+
+			*ptr_dst = (*font++ ^ 0xFF);
+			ptr_dst += 80;
+
+			*ptr_dst = (*font++ ^ 0xFF);
+			ptr_dst += 80;
+
+			*ptr_dst = (*font++ ^ 0xFF);
+			ptr_dst += 80;
+
+			*ptr_dst = (*font++ ^ 0xFF);
+			ptr_dst += 80;
+
+			*ptr_dst = (*font++ ^ 0xFF);
+			ptr_dst += 80;
+
+		}
+		else
+		{
+			*ptr_dst = *font++;
+			ptr_dst += 80;
+
+			*ptr_dst = *font++;
+			ptr_dst += 80;
+
+			*ptr_dst = *font++;
+			ptr_dst += 80;
+
+			*ptr_dst = *font++;
+			ptr_dst += 80;
+
+			*ptr_dst = *font++;
+			ptr_dst += 80;
+
+			*ptr_dst = *font++;
+			ptr_dst += 80;
+
+			*ptr_dst = *font++;
+			ptr_dst += 80;
+
+			*ptr_dst = *font++;
+			ptr_dst += 80;
+		}
+	}
+}
+
+void clear_line(ui_context * ctx,int line,int mode)
+{
+	unsigned short *ptr_dst;
+	int i;
+
+	if(line < ctx->screen_txt_ysize)
+	{
+		ptr_dst  = (unsigned short *)(screen_buffer + ( line * (80*8) ));
+
+		if(mode & INVERTED)
+		{
+			for(i=0;i< 40;i++)
+			{
+				*ptr_dst++ = 0xFFFF;
+				*ptr_dst++ = 0xFFFF;
+				*ptr_dst++ = 0xFFFF;
+				*ptr_dst++ = 0xFFFF;
+				*ptr_dst++ = 0xFFFF;
+				*ptr_dst++ = 0xFFFF;
+				*ptr_dst++ = 0xFFFF;
+				*ptr_dst++ = 0xFFFF;
 			}
 		}
 		else
 		{
-			for(j=0;j<4;j++)
+			for(i=0;i<40;i++)
 			{
-				*ptr_dst = *font++;
-				ptr_dst += 80;
-
-				*ptr_dst = *font++;
-				ptr_dst += 80;
-			}			
+				*ptr_dst++ = 0x0000;
+				*ptr_dst++ = 0x0000;
+				*ptr_dst++ = 0x0000;
+				*ptr_dst++ = 0x0000;
+				*ptr_dst++ = 0x0000;
+				*ptr_dst++ = 0x0000;
+				*ptr_dst++ = 0x0000;
+				*ptr_dst++ = 0x0000;
+			}
 		}
 	}
 }

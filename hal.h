@@ -15,14 +15,14 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data);
 unsigned char Keyboard();
 unsigned char wait_function_key();
 unsigned char get_char();
-void flush_char();
 void disablemousepointer();
 
 ////////////////////////////////////
 // Screen
 ////////////////////////////////////
 int  init_display(ui_context * ctx);
-void print_char8x8(ui_context * ctx, unsigned char * membuffer, unsigned char * font, int col, int line, unsigned char c, int mode);
+void print_char8x8(ui_context * ctx, int col, int line, unsigned char c, int mode);
+void clear_line(ui_context * ctx, int line, int mode);
 int  restore_display(ui_context * ctx);
 
 ////////////////////////////////////

@@ -51,6 +51,8 @@
 #include "ui_context.h"
 #include "gui_utils.h"
 
+#include "../graphx/font.h"
+
 #include "../hal.h"
 
 #include "slot_list_gen.h"
@@ -401,16 +403,12 @@ unsigned char Keyboard()
 	return last_key | 0x80;
 }
 
-void flush_char()
-{
-}
-
 unsigned char get_char()
 {
 	int i;
 
 	do
-	{		
+	{
 		SDL_PumpEvents();
 
 		i = 0;
@@ -668,13 +666,14 @@ unsigned char set_color_scheme(unsigned char color)
 	return color;
 }
 
-void print_char8x8(ui_context * ctx, unsigned char * membuffer, unsigned char * font, int col, int line, unsigned char c, int mode)
+void print_char8x8(ui_context * ctx, int col, int line, unsigned char c, int mode)
 {
 	int i,j;
 	unsigned char *ptr_dst;
+	unsigned char *font;
 	unsigned char set_byte;
 
-	ptr_dst = (unsigned char*)membuffer;
+	ptr_dst = (unsigned char*)screen_buffer;
 
 	if(mode & INVERTED)
 		set_byte = 0x00;
@@ -684,7 +683,7 @@ void print_char8x8(ui_context * ctx, unsigned char * membuffer, unsigned char * 
 	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
 	{
 		ptr_dst += (((line<<3)*ctx->SCREEN_XRESOL)+ (col<<3));
-		font    += (c * ((FONT_SIZE_X*FONT_SIZE_Y)/8));
+		font     = font_data + (c * ((FONT_SIZE_X*FONT_SIZE_Y)/8));
 
 		for(j=0;j<8;j++)
 		{
@@ -700,6 +699,16 @@ void print_char8x8(ui_context * ctx, unsigned char * membuffer, unsigned char * 
 		}
 	}
 
+}
+
+void clear_line(ui_context * ctx,int line,int mode)
+{
+	int i;
+
+	for(i=0;i<ctx->screen_txt_xsize;i++)
+	{
+		print_char8x8(ctx,i,line,' ',mode);
+	}
 }
 
 void invert_line(ui_context * ctx, int line)
