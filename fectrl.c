@@ -830,7 +830,10 @@ int ui_mainfileselector(ui_context * ctx)
 					}
 					else
 					{
-						return PAGE_SLOTSLIST;
+						if(disk_ptr->name[0])
+						{
+							return PAGE_SLOTSLIST;
+						}
 					}
 					break;
 
