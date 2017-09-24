@@ -76,5 +76,7 @@ keyboard_funct_mapper char_keysmap[]=
 	{'.',0x39},
 	{'\n',0x44},
 
+	{127,0x41}, // Delete
+
 	{0xFF,0x00},
 };
