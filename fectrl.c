@@ -216,9 +216,9 @@ void show_all_slots(ui_context * ctx,int drive)
 
 	hxc_printf(ctx,CENTER_ALIGNED,0,FILELIST_Y_POS,"--- Drive %c slots selection ---",'A'+drive);
 
-	for ( i = 1; i < ctx->NUMBER_OF_FILE_ON_DISPLAY; i++ )
+	for ( i = 0; i < ctx->NUMBER_OF_FILE_ON_DISPLAY; i++ )
 	{
-		slotnumber = i + (ctx->slotselectorpage * ctx->NUMBER_OF_FILE_ON_DISPLAY);
+		slotnumber = i + 1 + (ctx->slotselectorpage * ctx->NUMBER_OF_FILE_ON_DISPLAY);
 
 		if( slotnumber < ctx->config_file_number_max_of_slot)
 		{
@@ -237,16 +237,16 @@ void show_all_slots(ui_context * ctx,int drive)
 				if( slotnumber > 9 )
 				{
 					xoffset = 1;
-					hxc_printf(ctx,LEFT_ALIGNED,0,FILELIST_Y_POS + i,"0");
+					hxc_printf(ctx,LEFT_ALIGNED,0,FILELIST_Y_POS + i + 1,"0");
 				}
 				else
 				{
 					xoffset = 2;
-					hxc_printf(ctx,LEFT_ALIGNED,0,FILELIST_Y_POS + i,"00");
+					hxc_printf(ctx,LEFT_ALIGNED,0,FILELIST_Y_POS + i + 1,"00");
 				}
 			}
 
-			hxc_printf(ctx,LEFT_ALIGNED,xoffset,FILELIST_Y_POS + i,"%d:%s", slotnumber, tmp_str);
+			hxc_printf(ctx,LEFT_ALIGNED,xoffset,FILELIST_Y_POS + i + 1,"%d:%s", slotnumber, tmp_str);
 		}
 	}
 }
