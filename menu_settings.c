@@ -43,7 +43,7 @@
 
 extern unsigned char cfgfile_header[512];
 
-static int settings_menu_stepsound_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
+static int settings_menu_stepsound_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -59,7 +59,7 @@ static int settings_menu_stepsound_cb(ui_context * ctx, int event, int xpos, int
 	return MENU_STAYINMENU;
 }
 
-static int settings_menu_usersound_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
+static int settings_menu_usersound_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -87,7 +87,7 @@ static int settings_menu_usersound_cb(ui_context * ctx, int event, int xpos, int
 	return MENU_STAYINMENU;
 }
 
-static int settings_menu_lcdstandby_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
+static int settings_menu_lcdstandby_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -112,7 +112,7 @@ static int settings_menu_lcdstandby_cb(ui_context * ctx, int event, int xpos, in
 	return MENU_STAYINMENU;
 }
 
-static int settings_menu_sdstandby_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
+static int settings_menu_sdstandby_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -137,7 +137,7 @@ static int settings_menu_sdstandby_cb(ui_context * ctx, int event, int xpos, int
 	return MENU_STAYINMENU;
 }
 
-static int settings_menu_driveb_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
+static int settings_menu_driveb_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -153,7 +153,7 @@ static int settings_menu_driveb_cb(ui_context * ctx, int event, int xpos, int yp
 	return MENU_STAYINMENU;
 }
 
-static int settings_menu_autobootpowerup_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
+static int settings_menu_autobootpowerup_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
 {
 	cfgfile * cfgfile_ptr;
 
@@ -169,7 +169,7 @@ static int settings_menu_autobootpowerup_cb(ui_context * ctx, int event, int xpo
 	return MENU_STAYINMENU;
 }
 
-static int settings_menu_ejectpowerup_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
+static int settings_menu_ejectpowerup_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
 {
 	cfgfile * cfgfile_ptr;
 

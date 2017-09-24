@@ -42,13 +42,13 @@
 
 extern unsigned char cfgfile_header[512];
 
-static int selectdrive_menu_cb(ui_context * ctx, int event, int xpos, int ypos, void * parameter)
+static int selectdrive_menu_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
 {
 	int drive;
 
 	if(event)
 	{
-		drive = (int)parameter;
+		drive = parameter;
 		hxc_printf_box(ctx,"Init emulator I/O...");
 		deinit_fdc();
 		init_fdc(drive);
@@ -63,10 +63,10 @@ const menu selectdrive_menu[]=
 	{"",                                0,                                0, 0, CENTER_ALIGNED},	
 	{"Select Drive:",   0,                                                0, 0, CENTER_ALIGNED},
 	{"",                                0,                                0, 0, CENTER_ALIGNED},
-	{"A: / DF0",                        selectdrive_menu_cb,     (void *) 0, 0, CENTER_ALIGNED},
-	{"B: / DF1",                        selectdrive_menu_cb,     (void *) 1, 0, CENTER_ALIGNED},
-	{"DF2",                             selectdrive_menu_cb,     (void *) 2, 0, CENTER_ALIGNED},
-	{"DF3",                             selectdrive_menu_cb,     (void *) 3, 0, CENTER_ALIGNED},
+	{"A: / DF0",                        selectdrive_menu_cb,              0, 0, CENTER_ALIGNED},
+	{"B: / DF1",                        selectdrive_menu_cb,              1, 0, CENTER_ALIGNED},
+	{"DF2",                             selectdrive_menu_cb,              2, 0, CENTER_ALIGNED},
+	{"DF3",                             selectdrive_menu_cb,              3, 0, CENTER_ALIGNED},
 	{"",                                0,                                0, 0, CENTER_ALIGNED},
 	{"--- Exit ---",                    0,                                0, (struct menu * )-1, CENTER_ALIGNED},
 	{0, 0 , 0 ,0}
