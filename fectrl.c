@@ -840,7 +840,7 @@ int ui_mainfileselector(ui_context * ctx)
 				case FCT_SELECTSAVEREBOOT:
 					if(ctx->selectorpos)
 					{
-						disk_ptr=(disk_in_drive_v2_long * )&DirectoryEntry_tab[ctx->selectorpos];
+						disk_ptr=(disk_in_drive_v2_long * )&DirectoryEntry_tab[ctx->selectorpos-1];
 
 						if( disk_ptr->attributes & FILE_ATTR_DIRECTORY )
 						{
@@ -849,7 +849,7 @@ int ui_mainfileselector(ui_context * ctx)
 						else
 						{
 							// Update the Slot 1, select it and reboot...
-							memcpy((void*)&disks_slots[1*ctx->number_of_drive],(void*)&DirectoryEntry_tab[ctx->selectorpos],sizeof(disk_in_drive_v2));
+							memcpy((void*)&disks_slots[1*ctx->number_of_drive],(void*)&DirectoryEntry_tab[ctx->selectorpos-1],sizeof(disk_in_drive_v2));
 							ctx->slot_map[1>>3]   |= (0x80 >> (1&7));
 							ctx->change_map[1>>3] |= (0x80 >> (1&7));
 							ui_savereboot(ctx,1);
