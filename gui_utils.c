@@ -231,7 +231,8 @@ int hxc_printf_box(ui_context * ctx,char * chaine, ...)
 
 void init_display_buffer(ui_context * ctx)
 {
-	ctx->NUMBER_OF_FILE_ON_DISPLAY = ctx->screen_txt_ysize - 2;
+	ctx->NUMBER_OF_ENTRIES_ON_DISPLAY = ctx->screen_txt_ysize - 2;          // (Display size minus top + bottom)
+	ctx->NUMBER_OF_FILE_ON_DISPLAY = ctx->NUMBER_OF_ENTRIES_ON_DISPLAY - 1; // (Display size minus top + bottom + tittle)
 
 	// Footprint : Current software / firmware version and title
 	clear_line(ctx, ctx->screen_txt_ysize - 1, INVERTED);
