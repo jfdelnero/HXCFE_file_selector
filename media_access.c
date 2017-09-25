@@ -126,6 +126,7 @@ int media_init()
 	unsigned char ret;
 	unsigned char sector[512];
 	direct_access_status_sector * dass;
+	int i,count;
 
 	#ifdef DEBUG
 	dbg_printf("media_init\n");
@@ -134,17 +135,48 @@ int media_init()
 	last_setlbabase=0xFFFFF000;
 	ret=readsector(0,(unsigned char*)&sector,1);
 
+	g_ui_ctx.firmware_type = INVALID_FIRMWARE;
+
 	if(ret)
 	{
 		dass=(direct_access_status_sector *)sector;
+
 		if(!strcmp(dass->DAHEADERSIGNATURE,"HxCFEDA"))
+		{
+			g_ui_ctx.firmware_type = HXC_LEGACY_FIRMWARE;
+			i = 0;
+			count = 0;
+
+			if(dass->FIRMWAREVERSION[0] != 'v' && dass->FIRMWAREVERSION[0] != 'V')
+			{
+				g_ui_ctx.firmware_type = HXC_CLONE_FIRMWARE;
+			}
+
+			while(dass->FIRMWAREVERSION[i] && i < sizeof(dass->FIRMWAREVERSION))
+			{
+				if(dass->FIRMWAREVERSION[i] == '.')
+					count++;
+
+				i++;
+			}
+
+			if(count != 3)
+				g_ui_ctx.firmware_type = HXC_CLONE_FIRMWARE;
+		}
+
+		if(!strncmp(dass->DAHEADERSIGNATURE,"CORTEXAD",8))
+		{
+			g_ui_ctx.firmware_type = CORTEX_FIRMWARE;
+		}
+
+		if( g_ui_ctx.firmware_type != INVALID_FIRMWARE )
 		{
 			strncpy(g_ui_ctx.FIRMWAREVERSION,dass->FIRMWAREVERSION,sizeof(g_ui_ctx.FIRMWAREVERSION));
 			hxc_printf(&g_ui_ctx,LEFT_ALIGNED|INVERTED,0, g_ui_ctx.screen_txt_ysize - 1,"FW %s",g_ui_ctx.FIRMWAREVERSION);
 
 			test_floppy_if();
 
-			dass= (direct_access_status_sector *)sector;
+			dass = (direct_access_status_sector *)sector;
 			last_setlbabase=0;
 			setlbabase(last_setlbabase);
 
