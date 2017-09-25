@@ -32,6 +32,8 @@
 
 #include "cfg_file.h"
 
+#include "cortex_cfg_file.h"
+
 #include "conf.h"
 #include "ui_context.h"
 
@@ -71,7 +73,7 @@ int getcfg_backgroundcolor()
 	return cfgfile_ptr->background_color;
 }
 
-char read_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
+char read_hxc_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 {
 	char ret;
 	unsigned short number_of_slots;
@@ -261,7 +263,99 @@ char read_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 	return ret;
 }
 
-char save_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_selected_slot)
+char read_cortex_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
+{
+	char ret;
+	unsigned short number_of_slots;
+	unsigned short i;
+	unsigned char temp_sector[512];
+	Cortex_disk_in_drive * cortex_disk;
+
+	Cortex_cfgfile * cfgfile_ptr;
+
+	memset((void*)&disks_slots,0,sizeof(disks_slots));
+	memset(ctx->change_map,0,512);
+	memset(ctx->slot_map,0,512);
+
+	cfg_file_handle = fl_fopen("/SELECTOR.ADF", "r");
+	if (!cfg_file_handle)
+	{
+		hxc_printf_box(ctx,"ERROR: Can't open SELECTOR.ADF !");
+		lockup();
+	}
+
+	ret=0;
+	if (cfg_file_handle)
+	{
+		cfgfile_ptr = (Cortex_cfgfile * )cfgfile_header;
+
+		fl_fseek(cfg_file_handle , 15*(512*11*2) , SEEK_SET);
+
+		fl_fread(cfgfile_header, 1, 512 , cfg_file_handle);
+
+		ctx->config_file_number_max_of_slot = MAX_NUMBER_OF_SLOT;
+		ctx->number_of_drive = 1;
+
+		number_of_slots = ENDIAN_16BIT(cfgfile_ptr->number_of_slot);
+
+		if( number_of_slots > ctx->config_file_number_max_of_slot )
+			number_of_slots = (unsigned short) (ctx->config_file_number_max_of_slot - 1);
+
+		ctx->number_of_slots = number_of_slots;
+
+		fl_fseek(cfg_file_handle , (15*(512*11*2))+(2*512) , SEEK_SET);
+		i=1;
+		fl_fread(temp_sector, 1, 512 , cfg_file_handle);
+		do
+		{
+			if(!(i&3))
+			{
+				fl_fread(temp_sector, 1, 512 , cfg_file_handle);
+			}
+
+			cortex_disk = (Cortex_disk_in_drive *)&temp_sector[(i&3)*128];
+
+			disks_slots[i].attributes       = cortex_disk->DirEnt.attributes;
+			disks_slots[i].firstCluster     = cortex_disk->DirEnt.firstCluster;
+			disks_slots[i].size             = cortex_disk->DirEnt.size;
+			memcpy(&disks_slots[i].name,      cortex_disk->DirEnt.longName,41);
+			disks_slots[i].name[41]         = 0;
+			memcpy(&disks_slots[i].type,&cortex_disk->DirEnt.name[8],3);
+
+			ctx->slot_map[i>>3] |= (0x80 >> (i&7));
+			ctx->change_map[i>>3] |= (0x80 >> (i&7));
+
+			i++;
+		}while(i<number_of_slots);
+
+		fl_fclose(cfg_file_handle);
+
+		return ret;
+	}
+
+	return 1;
+}
+
+char read_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
+{
+	if( ctx->firmware_type == HXC_LEGACY_FIRMWARE || ctx->firmware_type == HXC_CLONE_FIRMWARE )
+	{
+		hxc_printf_box(ctx,"Reading HXCSDFE.CFG ...");
+		return read_hxc_cfg_file(ctx,cfgfile_header);
+	}
+	else
+	{
+		if(ctx->firmware_type == CORTEX_FIRMWARE)
+		{
+			hxc_printf_box(ctx,"Reading SELECTOR.ADF ...");
+			return read_cortex_cfg_file(ctx,cfgfile_header);
+		}
+	}
+
+	return 1;
+}
+
+char save_hxc_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_selected_slot)
 {
 	unsigned char number_of_slot,slot_index;
 	unsigned char ret;
@@ -497,4 +591,130 @@ char save_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_select
 	#endif
 
 	return ret;
+}
+
+char save_cortex_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_selected_slot)
+{
+	unsigned int number_of_slot,slot_index;
+	unsigned int sect_nb,ret;
+	unsigned int i;
+	Cortex_cfgfile * cfgfile_ptr;
+	Cortex_disk_in_drive * cortex_disk;
+	unsigned int floppyselectorindex;
+	unsigned char writeneeded;
+	FL_FILE *file;
+	unsigned char temp_buf[512];
+
+	ret=0;
+	writeneeded = 0;
+
+	file = fl_fopen("/SELECTOR.ADF", "r");
+	if (file)
+	{
+		number_of_slot=1;
+		slot_index=1;
+		i=1;
+
+		memset( temp_buf,0,512);                           // Clear the sector
+
+		floppyselectorindex = 128;                         // First slot offset
+		sect_nb=2;                                         // Slots Sector offset
+
+		do
+		{
+			if( ctx->slot_map[i>>3] & (0x80 >> (i&7)) )    // Valid slot found
+			{
+				// Copy it to the actual file sector
+				cortex_disk = (Cortex_disk_in_drive *)&temp_buf[floppyselectorindex];
+
+				cortex_disk->DirEnt.attributes = disks_slots[i].attributes;
+				cortex_disk->DirEnt.firstCluster = disks_slots[i].firstCluster;
+				cortex_disk->DirEnt.size = disks_slots[i].size;
+				memcpy(&cortex_disk->DirEnt.longName, &disks_slots[i].name, 40);
+				cortex_disk->DirEnt.longName[40] = 0;
+
+				memset(&temp_buf[floppyselectorindex+64],0,sizeof(Cortex_disk_in_drive));
+				slot_index = i;
+			}
+			else
+			{
+				memset(&temp_buf[floppyselectorindex],0,sizeof(Cortex_disk_in_drive));
+				memset(&temp_buf[floppyselectorindex+64],0,sizeof(Cortex_disk_in_drive));
+			}
+
+			if( ctx->change_map[i>>3] & (0x80 >> (i&7)) )
+			{
+				ctx->change_map[i>>3] ^= (0x80 >> (i&7));
+				writeneeded = 0xFF;
+			}
+
+			//Next slot...
+			number_of_slot++;
+			floppyselectorindex = (floppyselectorindex+128) & 0x1FF;
+
+			if((!(number_of_slot&0x3)))                // Need to change to the next sector
+			{
+				if(writeneeded)
+				{
+					// Save the sector
+					if (fl_fswrite((unsigned char*)temp_buf, 1,330+sect_nb, file) != 1)
+					{
+						ret=1;
+					}
+					// Next sector
+					writeneeded = 0x00;
+				}
+
+				sect_nb++;
+				memset( temp_buf,0,512);                  // Clear the next sector
+			}
+
+			i++;
+		}while( i < MAX_NUMBER_OF_SLOT );
+
+		if((number_of_slot&0x3) &&  writeneeded)
+		{
+			writeneeded = 0x00;
+			if (fl_fswrite((unsigned char*)temp_buf, 1,330+sect_nb, file) != 1)
+			{
+				ret=1;
+			}
+		}
+
+		number_of_slot = slot_index + 1;
+
+		fl_fseek(file , 0 , SEEK_SET);
+
+		// Update the file header
+		slot_index = 1;
+		cfgfile_ptr = (Cortex_cfgfile * )cfgfile_header;
+		cfgfile_ptr->number_of_slot = ENDIAN_16BIT(number_of_slot);
+		cfgfile_ptr->slot_index = ENDIAN_16BIT(slot_index);
+
+		if (fl_fswrite((unsigned char*)cfgfile_header, 1,330, file) != 1)
+		{
+			ret=1;
+		}
+	}
+	else
+	{
+		ret=1;
+	}
+
+	// Close file
+	fl_fclose(file);
+
+	return ret;
+}
+
+char save_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_selected_slot)
+{
+	if( ctx->firmware_type == HXC_LEGACY_FIRMWARE || ctx->firmware_type == HXC_CLONE_FIRMWARE )
+	{
+		return save_hxc_cfg_file(ctx,sdfecfg_file, pre_selected_slot);
+	}
+	else
+	{
+		return save_cortex_cfg_file(ctx,sdfecfg_file, pre_selected_slot);
+	}
 }

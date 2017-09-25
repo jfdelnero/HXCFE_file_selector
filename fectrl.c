@@ -74,32 +74,6 @@ static struct fs_dir_ent dir_entry;
 
 ui_context g_ui_ctx;
 
-int check_version(direct_access_status_sector * dass)
-{
-	int i,count;
-
-	i = 0;
-	count = 0;
-
-	if(dass->FIRMWAREVERSION[0] != 'v' && dass->FIRMWAREVERSION[0] != 'V')
-	{
-		return 0;
-	}
-
-	while(dass->FIRMWAREVERSION[i] && i < sizeof(dass->FIRMWAREVERSION))
-	{
-		if(dass->FIRMWAREVERSION[i] == '.')
-			count++;
-
-		i++;
-	}
-
-	if(count == 3)
-		return 1;
-
-	return 0;
-}
-
 void clear_list(ui_context * ctx)
 {
 	int i;
@@ -929,8 +903,6 @@ int mount_drive(ui_context * ctx, int drive)
 
 	if(media_access_init(drive))
 	{
-		hxc_printf_box(ctx,"Reading HXCSDFE.CFG ...");
-
 		read_cfg_file(ctx,cfgfile_header);
 
 		#ifdef DEBUG
