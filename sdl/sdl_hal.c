@@ -59,9 +59,6 @@
 
 #include "../hxcfeda.h"
 
-
-#define VIRT_VERSIONCODE "v3.X.X.Xa"
-
 #define DEPTH    2 /* 1 BitPlanes should be used, gives eight colours. */
 #define COLOURS  2 /* 2^1 = 2                                          */
 
@@ -98,6 +95,7 @@ uint32_t virt_lba;
 
 unsigned char * keys_stat;
 unsigned char last_key;
+unsigned char cortexfw;
 
 direct_access_status_sector virtual_hxcfe_status;
 
@@ -107,6 +105,12 @@ static unsigned char datacache[512*16];
 static unsigned char valid_cache;
 
 extern ui_context g_ui_ctx;
+
+static const char HXC_FW_ID[]="HxCFEDA";
+static const char CORTEX_FW_ID[]="CORTEXAD";
+
+static const char VIRT_VERSIONCODE[]="v3.X.X.Xa";
+static const char CORTEX_VIRT_VERSIONCODE[]="v1.05a";
 
 void waitus(int centus)
 {
@@ -359,8 +363,18 @@ void init_fdc(int drive)
 	#endif
 
 	memset(&virtual_hxcfe_status,0,sizeof(virtual_hxcfe_status));
-	memcpy((char*)&virtual_hxcfe_status.DAHEADERSIGNATURE,	(const char *)"HxCFEDA",	strlen("HxCFEDA"));
-	memcpy((char*)&virtual_hxcfe_status.FIRMWAREVERSION,	(const char *)VIRT_VERSIONCODE,	strlen(VIRT_VERSIONCODE));
+
+	if(cortexfw)
+	{
+		memcpy((char*)&virtual_hxcfe_status.DAHEADERSIGNATURE, CORTEX_FW_ID, strlen(CORTEX_FW_ID));
+		memcpy((char*)&virtual_hxcfe_status.FIRMWAREVERSION,   CORTEX_VIRT_VERSIONCODE, strlen(CORTEX_VIRT_VERSIONCODE));
+	}
+	else
+	{
+		memcpy((char*)&virtual_hxcfe_status.DAHEADERSIGNATURE, HXC_FW_ID, strlen(HXC_FW_ID));
+		memcpy((char*)&virtual_hxcfe_status.FIRMWAREVERSION,   VIRT_VERSIONCODE, strlen(VIRT_VERSIONCODE));
+	}
+
 	virt_lba = 0;
 	valid_cache = 0;
 	number_of_sector = 9;
@@ -860,6 +874,8 @@ void printhelp(char* argv[])
 	printf("  -fixslots\t\t\t\t: Fix the bad slot(s)\n");
 	printf("  -populateslots\t\t\t: Scan all supported file and auto add them into the slots\n");
 	printf("  -clearslots\t\t\t\t: Clear the slots\n");
+	printf("  -cortex \t\t\t\t: Cortex Firmware mode\n");
+
 	printf("\n");
 }
 
@@ -880,6 +896,7 @@ int process_command_line(int argc, char* argv[])
 	printf("under certain conditions;\n\n");
 	printf("%s -help to get the command line options\n\n",argv[0]);
 
+	cortexfw = 0;
 	dev_path[0] = 0;
 
 	if(isOption(argc,argv,"help",0)>0)
@@ -889,6 +906,11 @@ int process_command_line(int argc, char* argv[])
 	else
 	{
 		isOption(argc,argv,"disk",(char*)&dev_path);
+
+		if(isOption(argc,argv,"cortex",0))
+		{
+			cortexfw = 1;
+		}
 
 		inoutfile[0] = 0;
 		if(isOption(argc,argv,"getslots",(char*)&inoutfile))
