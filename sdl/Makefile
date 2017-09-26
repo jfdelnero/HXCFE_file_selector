@@ -1,7 +1,7 @@
 CC=gcc
 AS=as
 
-CFLAGS= -O3 -Wall -I . -I .. -I ../fat32 -DFATFS_IS_LITTLE_ENDIAN=1 -DSDLHOST
+CFLAGS= -O3 -Wall -I . -I .. -I ../fat32 -DFATFS_IS_LITTLE_ENDIAN=1 -DSDLHOST -DCORTEX_FW_SUPPORT
 #CFLAGS= -O0 -Wall -I . -I .. -I ../fat32 -g -DFATFS_IS_LITTLE_ENDIAN=1 -DDEBUG -DSDLHOST #-fsanitize=address  -fno-omit-frame-pointer
 
 LDFLAGS= -s -Wl,-Map,foo.map -lSDL

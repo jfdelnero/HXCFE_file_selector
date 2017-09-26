@@ -32,7 +32,9 @@
 
 #include "cfg_file.h"
 
+#ifdef CORTEX_FW_SUPPORT
 #include "cortex_cfg_file.h"
+#endif
 
 #include "conf.h"
 #include "ui_context.h"
@@ -263,6 +265,7 @@ char read_hxc_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 	return ret;
 }
 
+#ifdef CORTEX_FW_SUPPORT
 char read_cortex_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 {
 	char ret;
@@ -335,6 +338,7 @@ char read_cortex_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 
 	return 1;
 }
+#endif 
 
 char read_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 {
@@ -345,11 +349,13 @@ char read_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 	}
 	else
 	{
+#ifdef CORTEX_FW_SUPPORT
 		if(ctx->firmware_type == CORTEX_FIRMWARE)
 		{
 			hxc_printf_box(ctx,"Reading SELECTOR.ADF ...");
 			return read_cortex_cfg_file(ctx,cfgfile_header);
 		}
+#endif
 	}
 
 	return 1;
@@ -593,6 +599,7 @@ char save_hxc_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_se
 	return ret;
 }
 
+#ifdef CORTEX_FW_SUPPORT
 char save_cortex_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_selected_slot)
 {
 	unsigned int number_of_slot,slot_index;
@@ -706,6 +713,7 @@ char save_cortex_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre
 
 	return ret;
 }
+#endif
 
 char save_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_selected_slot)
 {
@@ -715,6 +723,10 @@ char save_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_select
 	}
 	else
 	{
+#ifdef CORTEX_FW_SUPPORT
 		return save_cortex_cfg_file(ctx,sdfecfg_file, pre_selected_slot);
+#endif
 	}
+
+	return 1;
 }

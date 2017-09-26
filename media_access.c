@@ -57,7 +57,10 @@ extern ui_context g_ui_ctx;
 volatile unsigned short io_floppy_timeout;
 
 static const char HXC_FW_ID[]="HxCFEDA";
+
+#ifdef CORTEX_FW_SUPPORT
 static const char CORTEX_FW_ID[]="CORTEXAD";
+#endif
 
 int setlbabase(unsigned long lba)
 {
@@ -73,6 +76,7 @@ int setlbabase(unsigned long lba)
 
 	memset(&sector,0,512);
 
+#ifdef CORTEX_FW_SUPPORT
 	if(g_ui_ctx.firmware_type == CORTEX_FIRMWARE)
 	{
 		strcpy(dacs->DAHEADERSIGNATURE,CORTEX_FW_ID);
@@ -81,6 +85,9 @@ int setlbabase(unsigned long lba)
 	{
 		strcpy(dacs->DAHEADERSIGNATURE,HXC_FW_ID);
 	}
+#else
+	strcpy(dacs->DAHEADERSIGNATURE,HXC_FW_ID);
+#endif
 
 	dacs->cmd_code=1;
 	dacs->parameter_0 = (unsigned char)((lba>>0)&0xFF);
@@ -175,10 +182,12 @@ int media_init()
 				g_ui_ctx.firmware_type = HXC_CLONE_FIRMWARE;
 		}
 
+#ifdef CORTEX_FW_SUPPORT
 		if(!strncmp(dass->DAHEADERSIGNATURE,CORTEX_FW_ID,strlen(CORTEX_FW_ID)))
 		{
 			g_ui_ctx.firmware_type = CORTEX_FIRMWARE;
 		}
+#endif
 
 		if( g_ui_ctx.firmware_type != INVALID_FIRMWARE )
 		{
