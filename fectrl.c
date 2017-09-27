@@ -281,6 +281,16 @@ void print_help(ui_context * ctx)
 
 		i++;
 	}
+
+	if( ctx->firmware_type != HXC_LEGACY_FIRMWARE )
+	{
+		clear_list(ctx);
+		hxc_print(ctx,CENTER_ALIGNED,0,HELP_Y_POS+1, (char*)project_support_msg);
+		do
+		{
+			key = wait_function_key();
+		}while(key!=FCT_SELECT_FILE_DRIVEA && key!=FCT_ESCAPE);
+	}
 }
 
 void ui_save(ui_context * ctx,int preselected_slot)
@@ -903,7 +913,20 @@ int mount_drive(ui_context * ctx, int drive)
 
 	if(media_access_init(drive))
 	{
+
 		read_cfg_file(ctx,cfgfile_header);
+		if( ctx->firmware_type != HXC_LEGACY_FIRMWARE )
+		{
+			clear_list(ctx);
+			hxc_print(ctx,CENTER_ALIGNED,0,HELP_Y_POS+1, (char*)project_support_msg);
+			i = 8;
+			do
+			{
+				hxc_printf(ctx,CENTER_ALIGNED,0,HELP_Y_POS+16, "--- %d ---", i);
+				waitsec(1);
+				i--;
+			}while(i);
+		}
 
 		#ifdef DEBUG
 		dbg_printf("read_cfg_file done\n");

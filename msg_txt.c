@@ -123,3 +123,19 @@ const char save_msg[] = "Saving selection...";
 const char save_and_restart_msg[] = "Saving selection and restart...";
 const char title_msg[] = { "HxC Floppy Emulator file selector v" VERSIONCODE};
 const char copyright_msg[] = "(c)HxC2001";
+
+const char project_support_msg[]=
+{
+	"\n"
+	"\n"
+	"It seems that you are using a third party firmware using the HxC protocol.\n"
+	"Please consider to support the HxC2001 project if you like this file selector and\n"
+	"all the tools and file formats originally developed for/by the HxC2001 Project.\n"
+	"\n"
+	"To support the project : http://hxc2001.com/store\n"
+	"\n"
+	"Thanks by advance !\n"
+	"Jean-Francois DEL NERO\n"
+	"\n"
+	"---Press Enter / Fire to continue---"
+};
