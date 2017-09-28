@@ -915,17 +915,12 @@ int mount_drive(ui_context * ctx, int drive)
 	{
 
 		read_cfg_file(ctx,cfgfile_header);
+
 		if( ctx->firmware_type != HXC_LEGACY_FIRMWARE )
 		{
 			clear_list(ctx);
 			hxc_print(ctx,CENTER_ALIGNED,0,HELP_Y_POS+1, (char*)project_support_msg);
-			i = 8;
-			do
-			{
-				hxc_printf(ctx,CENTER_ALIGNED,0,HELP_Y_POS+16, "--- %d ---", i);
-				waitsec(1);
-				i--;
-			}while(i);
+			wait_function_key();
 		}
 
 		#ifdef DEBUG
