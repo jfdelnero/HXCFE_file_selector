@@ -53,6 +53,8 @@
 
 #include "media_access.h"
 
+#include "errors_def.h"
+
 extern disk_in_drive_v2 disks_slots[MAX_NUMBER_OF_SLOT];
 unsigned char cfgfile_header[512];
 FL_FILE * cfg_file_handle;
@@ -75,9 +77,9 @@ int getcfg_backgroundcolor()
 	return cfgfile_ptr->background_color;
 }
 
-char read_hxc_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
+int read_hxc_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 {
-	char ret;
+	int ret;
 	unsigned short number_of_slots;
 	unsigned short i,d,slot_offset;
 	short sector_offset,last_sector_offset;
@@ -92,14 +94,9 @@ char read_hxc_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 
 	memset((void*)&disks_slots,0,sizeof(disks_slots));
 
-	cfg_file_handle = fl_fopen("/HXCSDFE.CFG", "r");
-	if (!cfg_file_handle)
-	{
-		hxc_printf_box(ctx,"ERROR: Can't open HXCSDFE.CFG !");
-		lockup();
-	}
+	ret = ERR_NO_ERROR;
 
-	ret=0;
+	cfg_file_handle = fl_fopen("/HXCSDFE.CFG", "r");
 	if (cfg_file_handle)
 	{
 		fl_fseek( cfg_file_handle, 0, SEEK_END );
@@ -237,25 +234,18 @@ char read_hxc_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 
 					ctx->cfg_file_format_version = 0;
 
-					ret=3;
+					ret = -ERR_CONFIG_FILE_VERSION;
 				break;
 			}
 		}
 		else
 		{
-			ret=2;
+			ret = -ERR_CONFIG_FILE_SIGN;
 		}
-
 	}
 	else
 	{
-		ret=1;
-	}
-
-	if(ret)
-	{
-		hxc_printf_box(ctx,"ERROR: Access HXCSDFE.CFG file failed! [%d]",ret);
-		lockup();
+		ret = -ERR_CONFIG_FILE_ACCESS;
 	}
 
 	#ifdef DEBUG
@@ -266,9 +256,9 @@ char read_hxc_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 }
 
 #ifdef CORTEX_FW_SUPPORT
-char read_cortex_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
+int read_cortex_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 {
-	char ret;
+	int ret;
 	unsigned short number_of_slots;
 	unsigned short i;
 	unsigned char temp_sector[512];
@@ -280,14 +270,9 @@ char read_cortex_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 	memset(ctx->change_map,0,512);
 	memset(ctx->slot_map,0,512);
 
+	ret = ERR_NO_ERROR;
+	
 	cfg_file_handle = fl_fopen("/SELECTOR.ADF", "r");
-	if (!cfg_file_handle)
-	{
-		hxc_printf_box(ctx,"ERROR: Can't open SELECTOR.ADF !");
-		lockup();
-	}
-
-	ret=0;
 	if (cfg_file_handle)
 	{
 		cfgfile_ptr = (Cortex_cfgfile * )cfgfile_header;
@@ -335,12 +320,14 @@ char read_cortex_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 
 		return ret;
 	}
-
-	return 1;
+	else
+	{
+		return -ERR_CONFIG_FILE_ACCESS;
+	}
 }
 #endif 
 
-char read_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
+int read_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 {
 	if( ctx->firmware_type == HXC_LEGACY_FIRMWARE || ctx->firmware_type == HXC_CLONE_FIRMWARE )
 	{
@@ -358,13 +345,14 @@ char read_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 #endif
 	}
 
-	return 1;
+	return -ERR_BAD_DRIVE_ID;
 }
 
-char save_hxc_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_selected_slot)
+int save_hxc_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_selected_slot)
 {
+	int ret;
+
 	unsigned char number_of_slot,slot_index;
-	unsigned char ret;
 	unsigned short i,j,sect_nb;
 	cfgfile * cfgfile_ptr;
 	uint32_t  floppyselectorindex;
@@ -375,7 +363,8 @@ char save_hxc_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_se
 	dbg_printf("enter save_cfg_file\n");
 	#endif
 
-	ret=0;
+	ret = ERR_NO_ERROR;
+
 	if (cfg_file_handle)
 	{
 		switch(ctx->cfg_file_format_version)
@@ -464,8 +453,7 @@ char save_hxc_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_se
 							// Save the sector
 							if (fl_fswrite((unsigned char*)temp_buf, 1,sect_nb, cfg_file_handle) != 1)
 							{
-								hxc_printf_box(ctx,"ERROR: Write file failed!");
-								ret=1;
+								return -ERR_WRITE_FILE_ACCESS;								
 							}
 							// Next sector
 							sect_nb++;
@@ -480,8 +468,7 @@ char save_hxc_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_se
 				{
 					if (fl_fswrite((unsigned char*)temp_buf, 1,sect_nb, cfg_file_handle) != 1)
 					{
-						hxc_printf_box(ctx,"ERROR: Write file failed!");
-						ret=1;
+						return -ERR_WRITE_FILE_ACCESS;
 					}
 				}
 
@@ -502,9 +489,7 @@ char save_hxc_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_se
 					#ifdef DEBUG
 					dbg_printf("fl_fswrite error : header %d !\n",0);
 					#endif
-
-					hxc_printf_box(ctx,"ERROR: Write file failed!");
-					ret=1;
+					return -ERR_WRITE_FILE_ACCESS;
 				}
 
 
@@ -536,8 +521,8 @@ char save_hxc_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_se
 							dbg_printf("fl_fswrite error : slot sect %d !\n",sect_nb);
 							#endif
 
-							hxc_printf_box(ctx,"ERROR: Write file failed!");
-							ret=1;
+							return -ERR_WRITE_FILE_ACCESS;
+								
 						}
 
 						// And clear the modified flags for all slots into this sector.
@@ -558,9 +543,7 @@ char save_hxc_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_se
 					#ifdef DEBUG
 					dbg_printf("fl_fswrite error : map sect %d !\n",ENDIAN_32BIT(cfgfile_ptr->slots_map_position));
 					#endif
-
-					hxc_printf_box(ctx,"ERROR: Write file failed!");
-					ret=1;
+					return -ERR_WRITE_FILE_ACCESS;	
 				}
 
 				fl_fseek(cfg_file_handle , 0 , SEEK_SET);
@@ -579,17 +562,14 @@ char save_hxc_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_se
 					#ifdef DEBUG
 					dbg_printf("fl_fswrite error : header %d !\n",0);
 					#endif
-
-					hxc_printf_box(ctx,"ERROR: Write file failed!");
-					ret=1;
+					return -ERR_WRITE_FILE_ACCESS;	
 				}
 			break;
 		}
 	}
 	else
 	{
-		hxc_printf_box(ctx,"ERROR: Create file failed!");
-		ret=1;
+		return -ERR_INVALID_HANDLER;
 	}
 
 	#ifdef DEBUG
@@ -600,10 +580,11 @@ char save_hxc_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_se
 }
 
 #ifdef CORTEX_FW_SUPPORT
-char save_cortex_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_selected_slot)
+int save_cortex_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_selected_slot)
 {
+	int ret;
 	unsigned int number_of_slot,slot_index;
-	unsigned int sect_nb,ret;
+	unsigned int sect_nb;
 	unsigned int i;
 	Cortex_cfgfile * cfgfile_ptr;
 	Cortex_disk_in_drive * cortex_disk;
@@ -612,7 +593,7 @@ char save_cortex_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre
 	FL_FILE *file;
 	unsigned char temp_buf[512];
 
-	ret=0;
+	ret = ERR_NO_ERROR;
 	writeneeded = 0;
 
 	file = fl_fopen("/SELECTOR.ADF", "r");
@@ -666,7 +647,7 @@ char save_cortex_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre
 					// Save the sector
 					if (fl_fswrite((unsigned char*)temp_buf, 1,330+sect_nb, file) != 1)
 					{
-						ret=1;
+						return -ERR_WRITE_FILE_ACCESS;
 					}
 					// Next sector
 					writeneeded = 0x00;
@@ -684,7 +665,7 @@ char save_cortex_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre
 			writeneeded = 0x00;
 			if (fl_fswrite((unsigned char*)temp_buf, 1,330+sect_nb, file) != 1)
 			{
-				ret=1;
+				return -ERR_WRITE_FILE_ACCESS;
 			}
 		}
 
@@ -700,12 +681,12 @@ char save_cortex_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre
 
 		if (fl_fswrite((unsigned char*)cfgfile_header, 1,330, file) != 1)
 		{
-			ret=1;
+			return -ERR_WRITE_FILE_ACCESS;	
 		}
 	}
 	else
 	{
-		ret=1;
+		return -ERR_CONFIG_FILE_ACCESS;
 	}
 
 	// Close file
@@ -715,7 +696,7 @@ char save_cortex_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre
 }
 #endif
 
-char save_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_selected_slot)
+int save_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_selected_slot)
 {
 	if( ctx->firmware_type == HXC_LEGACY_FIRMWARE || ctx->firmware_type == HXC_CLONE_FIRMWARE )
 	{
@@ -728,5 +709,5 @@ char save_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_select
 #endif
 	}
 
-	return 1;
+	return -ERR_BAD_DRIVE_ID;
 }
