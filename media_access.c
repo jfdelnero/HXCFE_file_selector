@@ -229,7 +229,9 @@ int media_access_init(int drive)
 	int ret;
 	io_floppy_timeout = 0;
 
-	init_fdc(drive);
+	ret = init_fdc(drive);
+	if( ret != ERR_NO_ERROR )
+		return ret;
 
 	#ifdef DEBUG
 	dbg_printf("init_fdc Done\n");
