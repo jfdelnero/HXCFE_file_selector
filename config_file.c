@@ -311,7 +311,6 @@ int read_cortex_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 			memcpy(&disks_slots[i].type,&cortex_disk->DirEnt.name[8],3);
 
 			ctx->slot_map[i>>3] |= (0x80 >> (i&7));
-			ctx->change_map[i>>3] |= (0x80 >> (i&7));
 
 			i++;
 		}while(i<number_of_slots);
@@ -662,7 +661,7 @@ int save_cortex_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_
 			i++;
 		}while( i < MAX_NUMBER_OF_SLOT );
 
-		if((number_of_slot&0x3) &&  writeneeded)
+		if((number_of_slot&0x3) && writeneeded )
 		{
 			writeneeded = 0x00;
 			if (fl_fswrite((unsigned char*)temp_buf, 1,330+sect_nb, file) != 1)
@@ -685,7 +684,7 @@ int save_cortex_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_
 		cfgfile_ptr = (Cortex_cfgfile * )cfgfile_header;
 		cfgfile_ptr->number_of_slot = ENDIAN_16BIT(number_of_slot);
 		cfgfile_ptr->slot_index = ENDIAN_16BIT(slot_index);
-		cfgfile_ptr->update_cnt = ENDIAN_16BIT( ENDIAN_16BIT(cfgfile_ptr->update_cnt) + 1);
+		cfgfile_ptr->update_cnt = ENDIAN_16BIT( (ENDIAN_16BIT(cfgfile_ptr->update_cnt) + 1 ) );
 
 		if (fl_fswrite((unsigned char*)cfgfile_header, 1,330, file) != 1)
 		{
