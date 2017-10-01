@@ -259,6 +259,7 @@ void su_fdcRegSet(WORD reg, WORD data)
 	asm_nop();
 	asm_nop();
 }
+
 void su_fdcSendCommandWait(WORD command)
 {
 	MFP *mfp = MFP_BASE;
@@ -845,26 +846,55 @@ void print_char8x8(ui_context * ctx, int col, int line, unsigned char c, int mod
 		// in a 16-pixel chunk, there are 2 8-pixel chars, hence the x&8==8
 		if(mode & INVERTED)
 		{
-			for(j=0;j<4;j++)
-			{
-				*ptr_dst = (*font++) ^ 0xFF;
-				ptr_dst += LINE_BYTES;
+			*ptr_dst = (*font++) ^ 0xFF;
+			ptr_dst += LINE_BYTES;
 
-				*ptr_dst = (*font++) ^ 0xFF;
-				ptr_dst += LINE_BYTES;
+			*ptr_dst = (*font++) ^ 0xFF;
+			ptr_dst += LINE_BYTES;
 
-			}
+			*ptr_dst = (*font++) ^ 0xFF;
+			ptr_dst += LINE_BYTES;
+
+			*ptr_dst = (*font++) ^ 0xFF;
+			ptr_dst += LINE_BYTES;
+
+			*ptr_dst = (*font++) ^ 0xFF;
+			ptr_dst += LINE_BYTES;
+
+			*ptr_dst = (*font++) ^ 0xFF;
+			ptr_dst += LINE_BYTES;
+
+			*ptr_dst = (*font++) ^ 0xFF;
+			ptr_dst += LINE_BYTES;
+
+			*ptr_dst = (*font++) ^ 0xFF;
+			ptr_dst += LINE_BYTES;
 		}
 		else
 		{
-			for(j=0;j<4;j++)
-			{
-				*ptr_dst = *font++;
-				ptr_dst += LINE_BYTES;
+			*ptr_dst = *font++;
+			ptr_dst += LINE_BYTES;
 
-				*ptr_dst = *font++;
-				ptr_dst += LINE_BYTES;
-			}
+			*ptr_dst = *font++;
+			ptr_dst += LINE_BYTES;
+
+			*ptr_dst = *font++;
+			ptr_dst += LINE_BYTES;
+
+			*ptr_dst = *font++;
+			ptr_dst += LINE_BYTES;
+
+			*ptr_dst = *font++;
+			ptr_dst += LINE_BYTES;
+
+			*ptr_dst = *font++;
+			ptr_dst += LINE_BYTES;
+
+			*ptr_dst = *font++;
+			ptr_dst += LINE_BYTES;
+
+			*ptr_dst = *font++;
+			ptr_dst += LINE_BYTES;
 		}
 	}
 }
@@ -880,8 +910,16 @@ void clear_line(ui_context * ctx,int line,int mode)
 
 		if(mode & INVERTED)
 		{
-			for(i=0; i<LINE_WORDS*2; i+=NB_PLANES)
+			for(i=0; i<LINE_WORDS; i+=NB_PLANES)
 			{
+				*(ptr_dst) = 0xFFFF;
+				ptr_dst += NB_PLANES;
+				*(ptr_dst) = 0xFFFF;
+				ptr_dst += NB_PLANES;
+				*(ptr_dst) = 0xFFFF;
+				ptr_dst += NB_PLANES;
+				*(ptr_dst) = 0xFFFF;
+				ptr_dst += NB_PLANES;
 				*(ptr_dst) = 0xFFFF;
 				ptr_dst += NB_PLANES;
 				*(ptr_dst) = 0xFFFF;
@@ -894,8 +932,16 @@ void clear_line(ui_context * ctx,int line,int mode)
 		}
 		else
 		{
-			for(i=0; i<LINE_WORDS*8; i+=NB_PLANES)
+			for(i=0; i<LINE_WORDS; i+=NB_PLANES)
 			{
+				*(ptr_dst) = 0x0000;
+				ptr_dst += NB_PLANES;
+				*(ptr_dst) = 0x0000;
+				ptr_dst += NB_PLANES;
+				*(ptr_dst) = 0x0000;
+				ptr_dst += NB_PLANES;
+				*(ptr_dst) = 0x0000;
+				ptr_dst += NB_PLANES;
 				*(ptr_dst) = 0x0000;
 				ptr_dst += NB_PLANES;
 				*(ptr_dst) = 0x0000;
@@ -916,17 +962,28 @@ void invert_line(ui_context * ctx,int line)
 	unsigned short *ptr_dst2;
 
 	ptr_dst   = screen_buffer;
-	ptr_dst  += (unsigned long) LINE_BYTES * line;
+	ptr_dst  += (unsigned long) LINE_BYTES * line * FONT_SIZE_Y;
 
 	ptr_dst2 = (unsigned short *)ptr_dst;
 
-	for(j=0;j<8;j++)
+	for(i=0; i<LINE_WORDS; i+=NB_PLANES)
 	{
-		for(i=0; i<LINE_WORDS; i+=1)
-		{
-			*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
-			ptr_dst2++;
-		}
+		*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
+		ptr_dst2 += NB_PLANES;
+		*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
+		ptr_dst2 += NB_PLANES;
+		*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
+		ptr_dst2 += NB_PLANES;
+		*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
+		ptr_dst2 += NB_PLANES;
+		*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
+		ptr_dst2 += NB_PLANES;
+		*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
+		ptr_dst2 += NB_PLANES;
+		*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
+		ptr_dst2 += NB_PLANES;
+		*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
+		ptr_dst2 += NB_PLANES;
 	}
 }
 
