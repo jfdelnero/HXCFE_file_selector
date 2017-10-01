@@ -649,7 +649,7 @@ int ui_displayfilelistpage(ui_context * ctx)
 	unsigned char entrytype_icon;
 
 	#ifdef DEBUG
-	dbg_printf("enter ui_loadfilelistpage\n");
+	dbg_printf("enter ui_displayfilelistpage\n");
 	#endif
 
 	lastfile = 0x00;
@@ -926,7 +926,7 @@ int mount_drive(ui_context * ctx, int drive)
 
 	ret = media_access_init(drive);
 
-	if( ret == ERR_NO_ERROR)
+	if( ret == ERR_NO_ERROR )
 	{
 		ret = read_cfg_file(ctx,cfgfile_header);
 
@@ -971,7 +971,7 @@ int mount_drive(ui_context * ctx, int drive)
 
 int main(int argc, char* argv[])
 {
-	int bootdev,slot_drive,ret;
+	int slot_drive,ret;
 	ui_context * ctx;
 
 	ctx = &g_ui_ctx;
@@ -993,17 +993,17 @@ int main(int argc, char* argv[])
 	#endif
 
 	if(argv)
-		bootdev = get_start_unit(argv[0]);
+		ctx->bootdev = get_start_unit(argv[0]);
 	else
-		bootdev = get_start_unit(0);
+		ctx->bootdev = get_start_unit(0);
 
-	if( bootdev < 0 )
+	if( ctx->bootdev < 0 )
 	{
 		hxc_printf_box(ctx,"ERROR: HxC Drive not detected !");
 		lockup();
 	}
 
-	ret = mount_drive(ctx, bootdev);
+	ret = mount_drive(ctx, ctx->bootdev);
 	if( ret == ERR_NO_ERROR )
 	{
 		#ifdef DEBUG
