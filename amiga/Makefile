@@ -17,7 +17,7 @@ AUTOBOOT.ADF: HXCFEMNG bootblock/bootblock.c bootblock/ncrt0.S bootblock/make_bo
 	cd bootblock && $(MAKE) $@
 	hxcfe  -conv:HXC_HFE -finput:$@ -foutput:AUTOBOOT.HFE
 
-HXCFEMNG: libc/ncrt0.o libc/amiga_api.o libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o libc/ncrt0.o fectrl.o media_access.o config_file.o menu.o menu_settings.o menu_selectdrive.o menu_commands.o gui_utils.o amiga.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o reboot.o msg_txt.o
+HXCFEMNG: libc/ncrt0.o libc/amiga_api.o libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o libc/ncrt0.o fectrl.o errors_def.o media_access.o config_file.o menu.o menu_settings.o menu_selectdrive.o menu_commands.o gui_utils.o amiga.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o reboot.o msg_txt.o
 	$(CC) -o $@    $^ $(LDFLAGS)
 	m68k-amigaos-strip -s $@
 	#Shrinkler $(EXEC) $(EXEC).PACKED
@@ -27,6 +27,9 @@ reboot.o: reboot.S
 	$(AS) -o $@ $<
 
 fectrl.o: ../fectrl.c
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+errors_def.o: ../errors_def.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 media_access.o: ../media_access.c
