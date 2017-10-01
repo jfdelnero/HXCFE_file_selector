@@ -489,7 +489,7 @@ int test_drive(int drive)
 
 			Permit();
 
-			return 1;
+			return ERR_NO_ERROR;
 		}
 	}
 
@@ -497,7 +497,7 @@ int test_drive(int drive)
 
 	Permit();
 
-	return 0;
+	return ERR_DRIVE_NOT_FOUND;
 }
 
 int get_start_unit(char * path)
@@ -531,7 +531,7 @@ int get_start_unit(char * path)
 
 	for( i = 0; i < 4; i++ )
 	{
-		if(test_drive((startedFromUnitNum + i) & 0x3))
+		if(test_drive((startedFromUnitNum + i) & 0x3) == ERR_NO_ERROR)
 		{
 			#ifdef DEBUG
 			dbg_printf("get_start_unit : drive %d\n",(startedFromUnitNum + i) & 0x3);
@@ -594,7 +594,7 @@ int jumptotrack(unsigned char t)
 		dbg_printf("jumptotrack %d - jump done\n",t);
 		#endif
 
-		return -ERR_NO_ERROR;
+		return ERR_NO_ERROR;
 	}
 
 	#ifdef DEBUG
