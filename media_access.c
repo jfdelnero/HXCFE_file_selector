@@ -99,17 +99,13 @@ int setlbabase(unsigned long lba)
 	dacs->parameter_4 = 0xA5;
 
 	ret = writesector( 0,(unsigned char *)&sector);
-	if( ret != ERR_NO_ERROR )
-	{
-		hxc_printf_box(&g_ui_ctx,"ERROR: Write CTRL ERROR !");
-		lockup();
-	}
 
-	return 0;
+	return ret;
 }
 
 int test_floppy_if()
 {
+	int ret;
 	unsigned char sector[512];
 	direct_access_status_sector * dass;
 
@@ -118,12 +114,13 @@ int test_floppy_if()
 	last_setlbabase = 2;
 	do
 	{
-		setlbabase(last_setlbabase);
-		if( readsector(0,sector,1) != ERR_NO_ERROR )
-		{
-			hxc_printf_box(&g_ui_ctx,"read sector %d error !",last_setlbabase);
-			lockup();
-		}
+		ret = setlbabase( last_setlbabase );
+		if( ret != ERR_NO_ERROR )
+			return ret;
+
+		ret = readsector(0,sector,1);
+		if( ret != ERR_NO_ERROR )
+			return ret;
 
 		#ifdef DEBUG
 		dbg_printf("test_floppy_if : %.8X = %.8X ?\n",last_setlbabase,L_INDIAN(dass->lba_base));
@@ -131,19 +128,18 @@ int test_floppy_if()
 
 		if(last_setlbabase!=L_INDIAN(dass->lba_base))
 		{
-			hxc_printf_box(&g_ui_ctx,"LBA Change Test Failed ! Write Issue ?");
-			lockup();
+			return -ERR_LBA_CHANGE_FAILURE;
 		}
 
 		last_setlbabase--;
 	}while(last_setlbabase);
 
-	return 0;
+	return ERR_NO_ERROR;
 }
 
 int media_init()
 {
-	unsigned char ret;
+	int ret;
 	unsigned char sector[512];
 	direct_access_status_sector * dass;
 	int i,count;
@@ -159,7 +155,7 @@ int media_init()
 
 	if(ret == ERR_NO_ERROR)
 	{
-		dass=(direct_access_status_sector *)sector;
+		dass = (direct_access_status_sector *)sector;
 
 		if(!strcmp(dass->DAHEADERSIGNATURE,HXC_FW_ID))
 		{
@@ -196,11 +192,16 @@ int media_init()
 			strncpy(g_ui_ctx.FIRMWAREVERSION,dass->FIRMWAREVERSION,sizeof(g_ui_ctx.FIRMWAREVERSION));
 			hxc_printf(&g_ui_ctx,LEFT_ALIGNED|INVERTED,0, g_ui_ctx.screen_txt_ysize - 1,"FW %s",g_ui_ctx.FIRMWAREVERSION);
 
-			test_floppy_if();
+			ret = test_floppy_if();
+			if( ret != ERR_NO_ERROR)
+				return ret;
 
 			dass = (direct_access_status_sector *)sector;
 			last_setlbabase=0;
-			setlbabase(last_setlbabase);
+
+			ret = setlbabase(last_setlbabase);
+			if( ret != ERR_NO_ERROR )
+				return ret;
 
 			#ifdef DEBUG
 			dbg_printf("media_init : HxC FE Found\n");
@@ -209,16 +210,12 @@ int media_init()
 			return ERR_NO_ERROR;
 		}
 
-		hxc_printf_box(&g_ui_ctx,"Bad signature - HxC Floppy Emulator not found!");
-
 		#ifdef DEBUG
 		dbg_printf("media_init : HxC FE not detected\n");
 		#endif
 
-		return -ERR_DRIVE_NOT_FOUND;
+		return -ERR_BAD_DRIVE_ID;
 	}
-
-	error_message_box(&g_ui_ctx, ret);
 
 	#ifdef DEBUG
 	dbg_printf("media_init : Media access error\n");
@@ -288,7 +285,9 @@ int media_read(uint32 sector, uint8 *buffer, uint32 sector_count)
 		{
 			if((sector-last_setlbabase)>=8)
 			{
-				setlbabase(sector);
+				ret = setlbabase(sector);
+				if( ret != ERR_NO_ERROR )
+					return 0;
 			}
 
 			ret = readsector(0,buffer,0); 
@@ -337,7 +336,9 @@ int media_write(uint32 sector, uint8 *buffer, uint32 sector_count)
 		if( sector - last_setlbabase >=8)
 		{
 			last_setlbabase=sector;
-			setlbabase(sector);
+			ret = setlbabase(sector);
+			if( ret != ERR_NO_ERROR )
+				return 0;
 		}
 
 		ret = writesector((unsigned char)((sector-last_setlbabase)+1),buffer);
