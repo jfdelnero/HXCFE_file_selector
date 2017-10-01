@@ -40,27 +40,56 @@
 
 #include "fectrl.h"
 
+#include "errors_def.h"
+
 extern unsigned char cfgfile_header[512];
 
 static int selectdrive_menu_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
 {
-	int drive;
+	int drive,ret,bootdev;
 
 	if(event)
 	{
 		drive = parameter;
 		hxc_printf_box(ctx,"Init emulator I/O...");
 		deinit_fdc();
-		init_fdc(drive);
-		mount_drive(ctx, drive);
+
+		ret = mount_drive(ctx, drive);
+		if( ret != ERR_NO_ERROR )
+			goto mounterror;
 	}
 
 	return MENU_LEAVEMENU;
+
+mounterror:
+
+	deinit_fdc();
+
+	error_message_box(ctx, ret);
+
+	// Fall back to the boot device...
+
+	bootdev = get_start_unit(0);
+
+	if( bootdev < 0 )
+	{
+		hxc_printf_box(ctx,"ERROR: HxC Drive not detected !");
+		lockup();
+	}
+
+	ret = mount_drive(ctx, drive);
+	if( ret != ERR_NO_ERROR )
+	{
+		error_message_box(ctx, ret);
+		lockup();
+	}
+
+	return MENU_REDRAWMENU;
 }
 
 const menu selectdrive_menu[]=
 {
-	{"",                                0,                                0, 0, CENTER_ALIGNED},	
+	{"",                                0,                                0, 0, CENTER_ALIGNED},
 	{"Select Drive:",   0,                                                0, 0, CENTER_ALIGNED},
 	{"",                                0,                                0, 0, CENTER_ALIGNED},
 	{"A: / DF0",                        selectdrive_menu_cb,              0, 0, CENTER_ALIGNED},
