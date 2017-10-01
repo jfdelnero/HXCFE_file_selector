@@ -50,6 +50,8 @@
 
 #include "media_access.h"
 
+#include "errors_def.h"
+
 static uint32_t last_setlbabase;
 
 extern ui_context g_ui_ctx;
@@ -97,7 +99,7 @@ int setlbabase(unsigned long lba)
 	dacs->parameter_4 = 0xA5;
 
 	ret = writesector( 0,(unsigned char *)&sector);
-	if(!ret)
+	if( ret != ERR_NO_ERROR )
 	{
 		hxc_printf_box(&g_ui_ctx,"ERROR: Write CTRL ERROR !");
 		lockup();
@@ -117,7 +119,7 @@ int test_floppy_if()
 	do
 	{
 		setlbabase(last_setlbabase);
-		if(!readsector(0,sector,1))
+		if( readsector(0,sector,1) != ERR_NO_ERROR )
 		{
 			hxc_printf_box(&g_ui_ctx,"read sector %d error !",last_setlbabase);
 			lockup();
@@ -151,11 +153,11 @@ int media_init()
 	#endif
 
 	last_setlbabase=0xFFFFF000;
-	ret=readsector(0,(unsigned char*)&sector,1);
+	ret = readsector(0,(unsigned char*)&sector,1);
 
 	g_ui_ctx.firmware_type = INVALID_FIRMWARE;
 
-	if(ret)
+	if(ret == ERR_NO_ERROR)
 	{
 		dass=(direct_access_status_sector *)sector;
 
@@ -204,7 +206,7 @@ int media_init()
 			dbg_printf("media_init : HxC FE Found\n");
 			#endif
 
-			return 1;
+			return ERR_NO_ERROR;
 		}
 
 		hxc_printf_box(&g_ui_ctx,"Bad signature - HxC Floppy Emulator not found!");
@@ -213,20 +215,21 @@ int media_init()
 		dbg_printf("media_init : HxC FE not detected\n");
 		#endif
 
-		return 0;
+		return -ERR_DRIVE_NOT_FOUND;
 	}
 
-	hxc_printf_box(&g_ui_ctx,"ERROR: Floppy Access error!  [%d]",ret);
+	error_message_box(&g_ui_ctx, ret);
 
 	#ifdef DEBUG
 	dbg_printf("media_init : Media access error\n");
 	#endif
 
-	return 0;
+	return ret;
 }
 
 int media_access_init(int drive)
 {
+	int ret;
 	io_floppy_timeout = 0;
 
 	init_fdc(drive);
@@ -235,7 +238,8 @@ int media_access_init(int drive)
 	dbg_printf("init_fdc Done\n");
 	#endif
 
-	if(media_init())
+	ret = media_init();
+	if( ret == ERR_NO_ERROR )
 	{
 		#ifdef DEBUG
 		dbg_printf("media_init done\n");
@@ -251,26 +255,26 @@ int media_access_init(int drive)
 		/* Attach media access functions to library*/
 		if (fl_attach_media(media_read, media_write) != FAT_INIT_OK)
 		{
-			hxc_printf_box(&g_ui_ctx,"ERROR: Media attach failed !");
-			lockup();
+			return -ERR_MEDIA_ATTACH;
 		}
 
 		#ifdef DEBUG
 		dbg_printf("fl_attach_media done\n");
 		#endif
 
-		return 1;
+		return ERR_NO_ERROR;
 	}
 
-	return 0;
+	return ret;
 }
 
 int media_read(uint32 sector, uint8 *buffer, uint32 sector_count)
 {
+	int ret;
 	uint32 i;
 	direct_access_status_sector * dass;
 
-	dass= (direct_access_status_sector *)buffer;
+	dass = (direct_access_status_sector *)buffer;
 
 	#ifdef DEBUG
 	dbg_printf("media_read sector : 0x%.8X, cnt : %d \n",sector,sector_count);
@@ -287,18 +291,22 @@ int media_read(uint32 sector, uint8 *buffer, uint32 sector_count)
 				setlbabase(sector);
 			}
 
-			if(!readsector(0,buffer,0))
+			ret = readsector(0,buffer,0); 
+			if( ret != ERR_NO_ERROR )
 			{
-				hxc_printf_box(&g_ui_ctx,"ERROR: Read ERROR ! fsector %d",(sector-last_setlbabase)+1);
+				hxc_printf_box(&g_ui_ctx,"ERROR: Read ERROR ! fsector %d [Err %d]",(sector-last_setlbabase)+1,ret);
+
+				return 0;
 			}
 			last_setlbabase = L_INDIAN(dass->lba_base);
 
 		}while((sector-L_INDIAN(dass->lba_base))>=8);
 
-		if(!readsector((unsigned char)((sector-last_setlbabase)+1),&buffer[i*512],0))
+		ret = readsector((unsigned char)((sector-last_setlbabase)+1),&buffer[i*512],0);
+		if( ret != ERR_NO_ERROR )
 		{
-			hxc_printf_box(&g_ui_ctx,"ERROR: Read ERROR ! fsector %d",(sector-last_setlbabase)+1);
-			lockup();
+			hxc_printf_box(&g_ui_ctx,"ERROR: Read ERROR ! fsector %d [Err %d]",(sector-last_setlbabase)+1,ret);
+			return 0;
 		}
 
 		sector++;
@@ -315,6 +323,7 @@ int media_read(uint32 sector, uint8 *buffer, uint32 sector_count)
 
 int media_write(uint32 sector, uint8 *buffer, uint32 sector_count)
 {
+	int ret;
 	uint32 i;
 
 	#ifdef DEBUG
@@ -331,10 +340,11 @@ int media_write(uint32 sector, uint8 *buffer, uint32 sector_count)
 			setlbabase(sector);
 		}
 
-		if(!writesector((unsigned char)((sector-last_setlbabase)+1),buffer))
+		ret = writesector((unsigned char)((sector-last_setlbabase)+1),buffer);
+		if( ret != ERR_NO_ERROR )
 		{
 			hxc_printf_box(&g_ui_ctx,"ERROR: Write sector ERROR !");
-			lockup();
+			return 0;
 		}
 
 		sector++;

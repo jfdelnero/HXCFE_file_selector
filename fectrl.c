@@ -59,6 +59,8 @@
 #include "menu_selectdrive.h"
 #include "menu_commands.h"
 
+#include "errors_def.h"
+
 #include "hal.h"
 
 // Slots buffer
@@ -905,15 +907,17 @@ int ui_mainfileselector(ui_context * ctx)
 
 int mount_drive(ui_context * ctx, int drive)
 {
+	int ret;
 	unsigned short i;
 
 	strcpy( ctx->currentPath, "/" );
 
 	strcpy(ctx->FIRMWAREVERSION,"-------");
 
-	if(media_access_init(drive))
-	{
+	ret = media_access_init(drive);
 
+	if( ret == ERR_NO_ERROR)
+	{
 		read_cfg_file(ctx,cfgfile_header);
 
 		if( ctx->firmware_type != HXC_LEGACY_FIRMWARE )
@@ -946,19 +950,20 @@ int mount_drive(ui_context * ctx, int drive)
 
 		clear_list(ctx);
 
-		return 1;
+		return ERR_NO_ERROR;
 	}
-	return 0;
+
+	return ret;
 }
 
 int main(int argc, char* argv[])
 {
-	int bootdev,slot_drive;
+	int bootdev,slot_drive,ret;
 	ui_context * ctx;
 
 	ctx = &g_ui_ctx;
 
-	memset( ctx,0,sizeof(ui_context));
+	memset(ctx,0,sizeof(ui_context));
 	strcpy(ctx->FIRMWAREVERSION,"-------");
 
 	if(process_command_line(argc, argv))
@@ -985,7 +990,8 @@ int main(int argc, char* argv[])
 		lockup();
 	}
 
-	if( mount_drive(ctx, bootdev) )
+	ret = mount_drive(ctx, bootdev);
+	if( ret == ERR_NO_ERROR )
 	{
 		#ifdef DEBUG
 		dbg_printf("mount_drive done\n");
@@ -1018,6 +1024,8 @@ int main(int argc, char* argv[])
 
 		}while(ctx->page_mode_index != PAGE_QUITAPP);
 	}
+
+	error_message_box(ctx, ret);
 
 	lockup();
 	return 0;
