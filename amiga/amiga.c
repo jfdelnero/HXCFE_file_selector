@@ -1182,6 +1182,9 @@ int init_fdc(int drive)
 
 	CIABPRB_DSKSEL = CIABPRB_DSKSEL0 << (drive&3);
 
+	if( test_drive(drive) != ERR_NO_ERROR )
+		return -ERR_DRIVE_NOT_FOUND;
+
 	validcache=0;
 
 	mfmtobinLUT_L = (unsigned char*)AllocMem(256,MEMF_CHIP);
