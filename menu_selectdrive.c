@@ -46,7 +46,7 @@ extern unsigned char cfgfile_header[512];
 
 static int selectdrive_menu_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
 {
-	int drive,ret,bootdev;
+	int drive,ret;
 
 	if(event)
 	{
@@ -57,6 +57,8 @@ static int selectdrive_menu_cb(ui_context * ctx, int event, int xpos, int ypos, 
 		ret = mount_drive(ctx, drive);
 		if( ret != ERR_NO_ERROR )
 			goto mounterror;
+
+		ui_loadfilelistpage(ctx);
 	}
 
 	return MENU_LEAVEMENU;
@@ -69,15 +71,7 @@ mounterror:
 
 	// Fall back to the boot device...
 
-	bootdev = get_start_unit(0);
-
-	if( bootdev < 0 )
-	{
-		hxc_printf_box(ctx,"ERROR: HxC Drive not detected !");
-		lockup();
-	}
-
-	ret = mount_drive(ctx, drive);
+	ret = mount_drive(ctx, ctx->bootdev);
 	if( ret != ERR_NO_ERROR )
 	{
 		error_message_box(ctx, ret);

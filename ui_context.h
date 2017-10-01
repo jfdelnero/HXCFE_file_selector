@@ -32,5 +32,7 @@ typedef struct ui_context_
 	int screen_txt_xsize;
 	int screen_txt_ysize;
 
+	int bootdev;
+
 	int firmware_type;
 }ui_context;
