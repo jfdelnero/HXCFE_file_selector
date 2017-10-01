@@ -928,7 +928,10 @@ int mount_drive(ui_context * ctx, int drive)
 
 	if( ret == ERR_NO_ERROR)
 	{
-		read_cfg_file(ctx,cfgfile_header);
+		ret = read_cfg_file(ctx,cfgfile_header);
+
+		if( ret != ERR_NO_ERROR)
+			return ret;
 
 		if( ctx->firmware_type != HXC_LEGACY_FIRMWARE )
 		{
