@@ -58,6 +58,8 @@
 
 #include "atari_hw.h"
 
+#include "errors_def.h"
+
 # define _hz_200  ((unsigned long *) 0x4baL)
 
 static unsigned char floppydrive;
@@ -216,12 +218,6 @@ void waitsec(int secs)
 	{
 		waitms(1000);
 	}
-}
-
-void alloc_error()
-{
-	hxc_printf_box(&g_ui_ctx,"ERROR: Memory Allocation Error -> No more free mem ?");
-	for(;;);
 }
 
 void lockup()
@@ -428,16 +424,16 @@ void write1sector(WORD sectorNumber, unsigned char *adr)
 	Super(old_ssp);
 }
 
-unsigned char writesector(unsigned char sectornum,unsigned char * data)
+int writesector(unsigned char sectornum,unsigned char * data)
 {
 	valid_cache=0;
 
 	write1sector(sectornum, data);
 
-	return 1;
+	return ERR_NO_ERROR;
 }
 
-unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned char invalidate_cache)
+int readsector(unsigned char sectornum,unsigned char * data,unsigned char invalidate_cache)
 {
 	if(!valid_cache || invalidate_cache)
 	{
@@ -446,18 +442,19 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 	}
 
 	memcpy((void*)data,&datacache[sectornum*512],512);
-	return 1;
 
+	return ERR_NO_ERROR;
 }
 
 int jumptotrack(unsigned char t)
 {
 	g_trackpos = t;
 	Supexec((LONG *) su_jumptotrack);
-	return 1;
+
+	return ERR_NO_ERROR;
 };
 
-void init_fdc(int drive)
+int init_fdc(int drive)
 {
 	#ifdef DEBUG
 	dbg_printf("init_fdc\n");
@@ -466,6 +463,8 @@ void init_fdc(int drive)
 	valid_cache = 0;
 	floppydrive = drive;
 	Supexec((LONG *) su_headinit);
+
+	return ERR_NO_ERROR;
 }
 
 void deinit_fdc()
@@ -485,10 +484,10 @@ int jumptotrack(unsigned char t)
 
 	Floprd( &data, 0, floppydrive, 1, t, 0, 1 );
 
-	return 1;
+	return ERR_NO_ERROR;
 };
 
-unsigned char writesector(unsigned char sectornum,unsigned char * data)
+int writesector(unsigned char sectornum,unsigned char * data)
 {
 	int ret,retry;
 
@@ -502,17 +501,17 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 	ret=1;
 	while(retry && ret)
 	{
-		ret=Flopwr( data, 0, floppydrive, sectornum, 255, 0, 1 );
+		ret = Flopwr( data, 0, floppydrive, sectornum, 255, 0, 1 );
 		retry--;
 	}
 
 	if(!ret)
-		return 1;
+		return ERR_NO_ERROR;
 	else
-		return 0;
+		return -ERR_MEDIA_WRITE;
 }
 
-unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned char invalidate_cache)
+int readsector(unsigned char sectornum,unsigned char * data,unsigned char invalidate_cache)
 {
 	int ret,retry;
 
@@ -543,18 +542,20 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 	}
 
 	if(!ret)
-		return 1;
+		return ERR_NO_ERROR;
 	else
-		return 0;
+		return -ERR_MEDIA_READ;
 }
 
-void init_fdc(int drive)
+int init_fdc(int drive)
 {
 	valid_cache = 0;
 	floppydrive = drive;
 	Floprate( floppydrive, 2);
 
 	Floprd( &datacache, 0, floppydrive, 0, 255, 0, 1 );
+
+	return ERR_NO_ERROR;
 }
 
 #endif
@@ -819,7 +820,7 @@ int  init_display(ui_context * ctx)
 
 	install_joy_vector();
 
-	return 0;
+	return ERR_NO_ERROR;
 }
 
 void disablemousepointer()
@@ -907,33 +908,6 @@ void clear_line(ui_context * ctx,int line,int mode)
 		}
 	}
 }
-
-void h_line(int y_pos,unsigned short val)
-{
-	unsigned short * ptr_dst;
-	int i;
-
-	ptr_dst=(unsigned short *) screen_buffer;
-	ptr_dst += (unsigned long) LINE_WORDS * y_pos;
-
-	if(val)
-	{
-		for(i=0; i<LINE_WORDS; i+=NB_PLANES)
-		{
-			*(ptr_dst) = val;
-			ptr_dst += NB_PLANES;
-		}
-	}
-	else
-	{
-		for(i=0; i<LINE_WORDS; i++)
-		{
-			*(ptr_dst) = val;
-			ptr_dst ++;
-		}
-	}
-}
-
 
 void invert_line(ui_context * ctx,int line)
 {

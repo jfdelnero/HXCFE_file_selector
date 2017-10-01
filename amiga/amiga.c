@@ -70,6 +70,8 @@
 #include "color_table.h"
 #include "mfm_table.h"
 
+#include "errors_def.h"
+
 #define DEPTH    2 /* 1 BitPlanes should be used, gives eight colours. */
 #define COLOURS  2 /* 2^1 = 2                                          */
 
@@ -349,12 +351,6 @@ void testblink()
 	}
 }
 
-void alloc_error()
-{
-	hxc_printf_box(&g_ui_ctx,"ERROR: Memory Allocation Error -> No more free mem ?");
-	lockup();
-}
-
 void lockup()
 {
 	#ifdef DEBUG
@@ -548,7 +544,7 @@ int get_start_unit(char * path)
 	dbg_printf("get_start_unit : drive not found !\n");
 	#endif
 
-	return -1;
+	return -ERR_DRIVE_NOT_FOUND;
 }
 
 int jumptotrack(unsigned char t)
@@ -598,22 +594,18 @@ int jumptotrack(unsigned char t)
 		dbg_printf("jumptotrack %d - jump done\n",t);
 		#endif
 
-		return 0;
+		return -ERR_NO_ERROR;
 	}
 
 	#ifdef DEBUG
 	dbg_printf("jumptotrack %d - track 0 not found!!\n",t);
 	#endif
 
-	return 1;
+	return -ERR_TRACK0_SEEK;
 };
 
 int waitindex()
 {
-	int timeout;
-
-	timeout = 0;
-
 	io_floppy_timeout = 0;
 
 	do{
@@ -631,10 +623,10 @@ int waitindex()
 
 	if(!(io_floppy_timeout < 0x200 ))
 	{
-		timeout = 1;
+		return -ERR_TIMEOUT;
 	}
 
-	return timeout;
+	return ERR_NO_ERROR;
 }
 
 int readtrack(unsigned short * track,unsigned short size,unsigned char wait_index)
@@ -657,10 +649,9 @@ int readtrack(unsigned short * track,unsigned short size,unsigned char wait_inde
 
 	if(wait_index)
 	{
-		if(waitindex())
+		if(waitindex() != ERR_NO_ERROR)
 		{
-			hxc_printf_box(&g_ui_ctx,"ERROR: READ - No Index Timeout ! (state %d)",(READREG_B(CIAB_ICR)&0x10)>>4);
-			lockup();
+			return -ERR_MEDIA_READ_NO_INDEX;
 		}
 	}
 
@@ -675,8 +666,7 @@ int readtrack(unsigned short * track,unsigned short size,unsigned char wait_inde
 
 	validcache=1;
 
-	return 1;
-
+	return ERR_NO_ERROR;
 }
 
 int writetrack(unsigned short * track,unsigned short size,unsigned char wait_index)
@@ -707,8 +697,7 @@ int writetrack(unsigned short * track,unsigned short size,unsigned char wait_ind
 		while( !(READREG_B(CIAB_ICR)&0x10) && ( io_floppy_timeout < 0x200 ) );
 		if(!( io_floppy_timeout < 0x200 ))
 		{
-			hxc_printf_box(&g_ui_ctx,"ERROR: WRITE - No Index Timeout ! (state %d)",(READREG_B(CIAB_ICR)&0x10)>>4);
-			lockup();
+			return -ERR_MEDIA_WRITE_NO_INDEX;
 		}
 	}
 
@@ -718,12 +707,13 @@ int writetrack(unsigned short * track,unsigned short size,unsigned char wait_ind
 	WRITEREG_W( DSKLEN ,size | 0x8000 | 0x4000 );
 
 	while(!(READREG_W(INTREQR)&0x0002));
+
 	WRITEREG_W( DSKLEN ,0x4000);
 	WRITEREG_W(INTREQ,0x0002);
 
 	validcache=0;
 
-	return 1;
+	return ERR_NO_ERROR;
 }
 
 // Fast Bin to MFM converter
@@ -758,8 +748,9 @@ int BuildCylinder(unsigned char * mfm_buffer,int mfm_size,unsigned char * track_
 	return track_size;
 }
 
-unsigned char writesector(unsigned char sectornum,unsigned char * data)
+int writesector(unsigned char sectornum,unsigned char * data)
 {
+	int ret;
 	unsigned short i,j,len,retry,retry2,lastbit;
 	unsigned char sectorfound;
 	unsigned char c;
@@ -812,7 +803,6 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 
 	len = i;
 
-
 	// Looking for/waiting the sector to write...
 
 	sector_header[0]=0xFF;
@@ -826,18 +816,17 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 	{
 		do
 		{
-
 			do
 			{
-
 				i=0;
 
 				retry--;
 
-				if(!readtrack(track_buffer_rd,16,0))
+				ret = readtrack(track_buffer_rd,16,0);
+				if( ret != ERR_NO_ERROR )
 				{
 					Permit();
-					return 0;
+					return ret;
 				}
 
 				while(track_buffer_rd[i]==0x4489 && (i<16))
@@ -873,10 +862,11 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 						if(j == 3)
 						{
 							sectorfound=1;
-							if(!writetrack(track_buffer_wr,len,0))
+							ret = writetrack(track_buffer_wr,len,0);
+							if( ret != ERR_NO_ERROR )
 							{
 								Permit();
-								return 0;
+								return ret;
 							}
 						}
 					}
@@ -885,9 +875,10 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 
 			if(!sectorfound)
 			{
-				if(jumptotrack(255))
+				ret = jumptotrack(255);
+				if( ret != ERR_NO_ERROR)
 				{
-					hxc_printf_box(&g_ui_ctx,"ERROR: writesector -> failure while seeking the track 00!");
+					return ret;
 				}
 				retry=30;
 			}
@@ -900,21 +891,27 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 	{
 		sectorfound=1;
 
-        if(!writetrack(track_buffer_wr,len,1))
+		ret = writetrack(track_buffer_wr,len,1);
+		if(ret != ERR_NO_ERROR)
 		{
 			Permit();
-			return 0;
+			return ret;
 		}
 
 	}
 
 	Permit();
-	return sectorfound;
+
+	if(sectorfound)
+		return ERR_NO_ERROR;
+	else
+		return -ERR_MEDIA_WRITE_SECTOR_NOT_FOUND;
 }
 
 
-unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned char invalidate_cache)
+int readsector(unsigned char sectornum,unsigned char * data,unsigned char invalidate_cache)
 {
+	int ret;
 	unsigned short i,j;
 	unsigned char sectorfound,tc;
 	unsigned char c,retry,badcrc,retry2;
@@ -927,7 +924,7 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 	#endif
 
 	if(!(sectornum<MAX_CACHE_SECTOR))
-		return 0;
+		return -ERR_INVALID_PARAMETER;
 
 	retry2 = 2;
 	retry = 5;
@@ -962,10 +959,11 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 			if(!validcache || invalidate_cache)
 			{
 				Forbid();
-				if(!readtrack(track_buffer_rd,RD_TRACK_BUFFER_SIZE,0))
+				ret = readtrack(track_buffer_rd,RD_TRACK_BUFFER_SIZE,0);
+				if( ret != ERR_NO_ERROR )
 				{
 					Permit();
-					return 0;
+					return ret;
 				}
 				Permit();
 
@@ -1109,9 +1107,10 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 
 		if(!sectorfound)
 		{
-			if(jumptotrack(255))
+			ret = jumptotrack(255);
+			if( ret != ERR_NO_ERROR)
 			{
-				hxc_printf_box(&g_ui_ctx,"ERROR: readsector -> failure while seeking the track 00!");
+				return ret;
 			}
 
 			retry2--;
@@ -1125,8 +1124,10 @@ unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned c
 		validcache=0;
 	}
 
-
-	return sectorfound;
+	if(sectorfound)
+		return -ERR_NO_ERROR;
+	else
+		return -ERR_MEDIA_READ_SECTOR_NOT_FOUND;
 }
 
 static void setnoclick(ULONG unitnum, ULONG onoff)
@@ -1167,8 +1168,9 @@ static void setnoclick(ULONG unitnum, ULONG onoff)
 	}
 }
 
-void init_fdc(int drive)
+int init_fdc(int drive)
 {
+	int ret;	
 	unsigned short i;
 
 	#ifdef DEBUG
@@ -1194,7 +1196,13 @@ void init_fdc(int drive)
 	}
 	else
 	{
-		alloc_error();
+		if(mfmtobinLUT_L)
+			FreeMem(mfmtobinLUT_L,256);
+
+		if(mfmtobinLUT_H)
+			FreeMem(mfmtobinLUT_H,256);
+		
+		return -ERR_MEM_ALLOC;
 	}
 
 	track_buffer_rd = (unsigned short*)AllocMem( sizeof(unsigned short) * RD_TRACK_BUFFER_SIZE, MEMF_CHIP);
@@ -1204,7 +1212,10 @@ void init_fdc(int drive)
 	}
 	else
 	{
-		alloc_error();
+		FreeMem(mfmtobinLUT_L,256);
+		FreeMem(mfmtobinLUT_H,256);
+
+		return -ERR_MEM_ALLOC;
 	}
 
 	track_buffer_wr=(unsigned short*)AllocMem( sizeof(unsigned short) * WR_TRACK_BUFFER_SIZE,MEMF_CHIP);
@@ -1214,7 +1225,10 @@ void init_fdc(int drive)
 	}
 	else
 	{
-		alloc_error();
+		FreeMem(mfmtobinLUT_L,256);
+		FreeMem(mfmtobinLUT_H,256);
+		FreeMem(track_buffer_rd, sizeof(unsigned short) * RD_TRACK_BUFFER_SIZE);
+		return -ERR_MEM_ALLOC;
 	}
 
 	Forbid();
@@ -1222,16 +1236,19 @@ void init_fdc(int drive)
 	WRITEREG_B(CIABPRB,~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL));
 	WRITEREG_W( DMACON,0x8210);
 
-	if(jumptotrack(255))
+	ret = jumptotrack(255);
+	if( ret != ERR_NO_ERROR )
 	{
 		Permit();
-		hxc_printf_box(&g_ui_ctx,"ERROR: init_fdc drive %d -> failure while seeking the track 00!",drive);
-		lockup();
+		return ret;
 	}
+
 	Delay(12);
 	WRITEREG_W(INTREQ,0x0002);
 
 	Permit();
+
+	return ERR_NO_ERROR;
 }
 
 void deinit_fdc()
@@ -1261,7 +1278,6 @@ void deinit_fdc()
 		FreeMem(track_buffer_wr, sizeof(unsigned short) * WR_TRACK_BUFFER_SIZE);
 		track_buffer_wr = 0;
 	}
-
 }
 
 /********************************************************************************
@@ -1474,7 +1490,7 @@ int init_display(ui_context * ctx)
 	/* Open the Graphics library: */
 	GfxBaseptr = (struct GfxBase *) OpenLibrary( (CONST_STRPTR)"graphics.library", 0 );
 	if( !GfxBaseptr )
-		return -1;
+		return -ERR_SYSLIB_LOAD;
 
 	/* Save the current View, so we can restore it later: */
 	my_old_view = GfxBaseptr->ActiView;
@@ -1539,7 +1555,7 @@ int init_display(ui_context * ctx)
 	disablemousepointer();
 	init_timer();
 
-	return 0;
+	return ERR_NO_ERROR;
 }
 
 void DestroyScrn ()

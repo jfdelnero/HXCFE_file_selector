@@ -53,11 +53,13 @@
 
 #include "../graphx/font.h"
 
-#include "../hal.h"
+#include "hal.h"
 
 #include "slot_list_gen.h"
 
-#include "../hxcfeda.h"
+#include "hxcfeda.h"
+
+#include "errors_def.h"
 
 #define DEPTH    2 /* 1 BitPlanes should be used, gives eight colours. */
 #define COLOURS  2 /* 2^1 = 2                                          */
@@ -132,16 +134,10 @@ void waitsec(int secs)
 	}
 }
 
-void alloc_error()
-{
-	hxc_printf_box(0,"ERROR: Memory Allocation Error -> No more free mem ?");
-	for(;;);
-}
-
 int jumptotrack(unsigned char t)
 {
 	track_number = t;
-	return 1;
+	return ERR_NO_ERROR;
 }
 
 int get_start_unit(char * path)
@@ -196,7 +192,7 @@ int write_mass_storage(unsigned long lba, unsigned char * data)
 			if(locked)
 				DeviceIoControl(hMassStorage,(DWORD) FSCTL_UNLOCK_VOLUME, NULL, 0, NULL, 0, &dwNotUsed, NULL);
 
-			return 1;
+			return ERR_NO_ERROR;
 		}
 
 		if(locked)
@@ -208,11 +204,11 @@ int write_mass_storage(unsigned long lba, unsigned char * data)
 	{
 		fseeko(hMassStorage,(off_t)lba*(off_t)512,SEEK_SET);
 		fwrite(data,512,1,hMassStorage);
-		return 1;
+		return ERR_NO_ERROR;
 	}
 	#endif
 
-	return 0;
+	return -ERR_MEDIA_WRITE;
 }
 
 int read_mass_storage(unsigned long lba, unsigned char * data, int nbsector)
@@ -233,7 +229,7 @@ int read_mass_storage(unsigned long lba, unsigned char * data, int nbsector)
 		SetFilePointer (hMassStorage, lDistLow, &lDistHigh, FILE_BEGIN);
 		if (ReadFile (hMassStorage, data, nbsector*512, &dwNotUsed, NULL))
 		{
-			return 1;
+			return ERR_NO_ERROR;
 		}
 	}
 
@@ -244,21 +240,24 @@ int read_mass_storage(unsigned long lba, unsigned char * data, int nbsector)
 	{
 		fseeko(hMassStorage,(off_t)lba*(off_t)512,SEEK_SET);
 		ret = fread(data,nbsector*512,1,hMassStorage);
-		return ret;
+		if( !ret )
+			return -ERR_MEDIA_READ;
+		else
+			return ERR_NO_ERROR;
 	}
 	#endif
 
-	return 0;
+	return -ERR_MEDIA_READ;
 }
 
-unsigned char writesector(unsigned char sectornum,unsigned char * data)
+int writesector(unsigned char sectornum,unsigned char * data)
 {
 	direct_access_cmd_sector  * da_cmd;
 
 	valid_cache=0;
 
 	if(track_number!=255)
-		return 0;
+		return -ERR_INVALID_PARAMETER;
 
 	if(!sectornum)
 	{
@@ -295,58 +294,56 @@ unsigned char writesector(unsigned char sectornum,unsigned char * data)
 				virtual_hxcfe_status.last_cmd_status=1;
 			break;
 		}
+
+		return ERR_NO_ERROR;
 	}
 	else
 	{
 		if(sectornum > number_of_sector)
 		{
-			return 0;
+			return -ERR_INVALID_PARAMETER;
 		}
 
 		return write_mass_storage(virtual_hxcfe_status.lba_base + (sectornum - 1), data);
 	}
-
-	return 1;
 }
 
-
-unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned char invalidate_cache)
+int readsector(unsigned char sectornum,unsigned char * data,unsigned char invalidate_cache)
 {
 	int ret;
 
 	if(track_number!=255)
-		return 0;
+		return -ERR_INVALID_PARAMETER;
 
 	if(!sectornum)
 	{
 		memset(data,0,512);
 		memcpy(data,&virtual_hxcfe_status,sizeof(virtual_hxcfe_status));
+
+		return ERR_NO_ERROR;
 	}
 	else
 	{
 		if(sectornum > number_of_sector)
-		{
-			return 0;
-		}
+			return -ERR_INVALID_PARAMETER;
 
-		ret = 1;
+		ret = ERR_NO_ERROR;
 
 		if(!valid_cache || invalidate_cache)
 		{
 			ret = read_mass_storage(virtual_hxcfe_status.lba_base + (sectornum - 1), datacache, number_of_sector);
-			if(ret)
+			if( ret == ERR_NO_ERROR )
 				valid_cache=0xFF;
 		}
 
-		if(ret)
+		if( ret == ERR_NO_ERROR )
 			memcpy((void*)data,&datacache[(sectornum-1)*512],512);
 
 		return ret;
 	}
-	return 1;
 }
 
-void init_fdc(int drive)
+int init_fdc(int drive)
 {
 	#ifdef WIN32
 	char drv_path[64];
@@ -379,6 +376,8 @@ void init_fdc(int drive)
 	valid_cache = 0;
 	number_of_sector = 9;
 	jumptotrack(255);
+
+	return ERR_NO_ERROR;
 }
 
 void deinit_fdc()
@@ -529,7 +528,7 @@ int update_screen(ui_context * ctx)
 	SDL_BlitSurface( bBuffer, NULL, screen, &rBuffer );
 	SDL_UpdateRect( screen, 0, 0, 0, 0 );
 
-	return 0;
+	return ERR_NO_ERROR;
 }
 
 uint32_t sdl_timer(Uint32 interval, void *param)
@@ -581,7 +580,7 @@ int init_display(ui_context * ctx)
 
 	screen_buffer = malloc(buffer_size);
 	if(!screen_buffer)
-		return 1;
+		return -ERR_MEM_ALLOC;
 
 	memset(screen_buffer,0,buffer_size);
 
@@ -622,7 +621,7 @@ int init_display(ui_context * ctx)
 
 	init_timer();
 
-	return 0;
+	return ERR_NO_ERROR;
 }
 
 void disablemousepointer()
