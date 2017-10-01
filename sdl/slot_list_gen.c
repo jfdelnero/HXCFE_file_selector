@@ -43,20 +43,19 @@
 #include "fat_defs.h"
 #include "fat_filelib.h"
 
+#include "hal.h"
+
 extern int media_init();
 extern int media_read(uint32 sector, uint8 *buffer, uint32 sector_count);
 extern int media_write(uint32 sector, uint8 *buffer, uint32 sector_count);
 extern FL_FILE * cfg_file_handle;
-extern void init_fdc(int drive);
 extern int getext(char * path,char * exttodest);
 extern char read_cfg_file(ui_context * ctx,unsigned char * cfgfile_header);
 extern char save_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_selected_slot);
 
-
 extern ui_context g_ui_ctx;
 extern disk_in_drive_v2 disks_slots[MAX_NUMBER_OF_SLOT];
 char scanfolderpath[1024];
-
 
 int attach_and_init_media()
 {

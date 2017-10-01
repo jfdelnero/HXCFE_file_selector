@@ -232,7 +232,6 @@ void init_display_buffer(ui_context * ctx)
 
 	// Startup message
 	hxc_print(ctx,CENTER_ALIGNED,0,HELP_Y_POS+1, (char*)startup_msg);
-
 }
 
 char to_lower(char c)
