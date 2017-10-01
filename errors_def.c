@@ -74,10 +74,15 @@ void error_message_box(ui_context * ctx, int error_code)
 		if( (error_messages[i].error_code) == -error_code )
 		{
 			hxc_printf_box(ctx, (char*)error_messages[i].text);
+
+			waitsec(5);
+
 			return;
 		}
 		i++;
 	}
-	
+
 	hxc_printf_box(ctx, "ERROR: Unknown Error ! [%d]",error_code);
+
+	waitsec(5);
 }
