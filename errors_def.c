@@ -31,6 +31,8 @@
 #include "ui_context.h"
 #include "gui_utils.h"
 
+#include "hal.h"
+
 #include "errors_def.h"
 
 typedef struct _err_mess_txt
