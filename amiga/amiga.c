@@ -497,7 +497,7 @@ int test_drive(int drive)
 
 	Permit();
 
-	return ERR_DRIVE_NOT_FOUND;
+	return -ERR_DRIVE_NOT_FOUND;
 }
 
 int get_start_unit(char * path)
