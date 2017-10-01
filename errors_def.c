@@ -36,7 +36,7 @@
 typedef struct _err_mess_txt
 {
 	int error_code;
-	char * text;
+	const char * text;
 }err_mess_txt;
 
 err_mess_txt error_messages[]=
@@ -53,7 +53,14 @@ err_mess_txt error_messages[]=
 	{ ERR_TRACK0_SEEK,                    "ERROR: writesector -> failure while seeking the track 00!"},
 	{ ERR_INVALID_PARAMETER,              "ERROR: Invalid function parameter(s)."},
 	{ ERR_MEDIA_ATTACH,                   "ERROR: Media attach failed !"},
-
+	{ ERR_LBA_CHANGE_FAILURE,             "ERROR: LBA Change Test Failed ! Write Issue ?"},
+	{ ERR_BAD_DRIVE_ID,                   "ERROR: Bad signature - HxC Floppy Emulator not found!"},
+	{ ERR_CONFIG_FILE_ACCESS,             "ERROR: Can't open HXCSDFE.CFG !"},
+	{ ERR_CONFIG_FILE_VERSION,            "ERROR: Bad Config File version !"},
+	{ ERR_CONFIG_FILE_SIGN,               "ERROR: Bad Config File !"},
+	{ ERR_READ_FILE_ACCESS,               "ERROR: Read file failed!"},
+	{ ERR_WRITE_FILE_ACCESS,              "ERROR: Write file failed!"},
+	{ ERR_INVALID_HANDLER,                "ERROR: Invalid Handler!"},
 	{ 0, 0}
 };
 
@@ -66,7 +73,7 @@ void error_message_box(ui_context * ctx, int error_code)
 	{
 		if( (error_messages[i].error_code) == -error_code )
 		{
-			hxc_printf_box(ctx, error_messages[i].text);
+			hxc_printf_box(ctx, (char*)error_messages[i].text);
 			return;
 		}
 		i++;
