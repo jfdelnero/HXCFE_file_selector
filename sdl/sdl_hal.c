@@ -202,8 +202,12 @@ int write_mass_storage(unsigned long lba, unsigned char * data)
 	#else
 	if(hMassStorage)
 	{
-		fseeko(hMassStorage,(off_t)lba*(off_t)512,SEEK_SET);
-		fwrite(data,512,1,hMassStorage);
+		if( fseeko(hMassStorage,(off_t)lba*(off_t)512,SEEK_SET) )
+			return -ERR_MEDIA_WRITE;
+
+		if( fwrite(data,512,1,hMassStorage) != 1 )
+			return -ERR_MEDIA_WRITE;
+
 		return ERR_NO_ERROR;
 	}
 	#endif
@@ -238,9 +242,10 @@ int read_mass_storage(unsigned long lba, unsigned char * data, int nbsector)
 
 	if(hMassStorage)
 	{
-		fseeko(hMassStorage,(off_t)lba*(off_t)512,SEEK_SET);
-		ret = fread(data,nbsector*512,1,hMassStorage);
-		if( !ret )
+		if( fseeko(hMassStorage,(off_t)lba*(off_t)512,SEEK_SET) )
+			return -ERR_MEDIA_READ;
+
+		if( fread(data,nbsector*512,1,hMassStorage) != 1 )
 			return -ERR_MEDIA_READ;
 		else
 			return ERR_NO_ERROR;
