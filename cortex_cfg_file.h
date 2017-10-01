@@ -34,6 +34,7 @@ typedef struct Cortex_cfgfile_
 	uint8_t  undef[22];
 	uint16_t number_of_slot;
 	uint16_t slot_index;
+	uint16_t update_cnt; 
 #ifndef WIN32
 }__attribute__((__packed__)) Cortex_cfgfile;
 #else

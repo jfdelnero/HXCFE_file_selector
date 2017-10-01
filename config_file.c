@@ -271,7 +271,7 @@ int read_cortex_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 	memset(ctx->slot_map,0,512);
 
 	ret = ERR_NO_ERROR;
-	
+
 	cfg_file_handle = fl_fopen("/SELECTOR.ADF", "r");
 	if (cfg_file_handle)
 	{
@@ -325,7 +325,7 @@ int read_cortex_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 		return -ERR_CONFIG_FILE_ACCESS;
 	}
 }
-#endif 
+#endif
 
 int read_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 {
@@ -453,7 +453,7 @@ int save_hxc_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_sel
 							// Save the sector
 							if (fl_fswrite((unsigned char*)temp_buf, 1,sect_nb, cfg_file_handle) != 1)
 							{
-								return -ERR_WRITE_FILE_ACCESS;								
+								return -ERR_WRITE_FILE_ACCESS;
 							}
 							// Next sector
 							sect_nb++;
@@ -522,7 +522,7 @@ int save_hxc_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_sel
 							#endif
 
 							return -ERR_WRITE_FILE_ACCESS;
-								
+
 						}
 
 						// And clear the modified flags for all slots into this sector.
@@ -543,7 +543,7 @@ int save_hxc_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_sel
 					#ifdef DEBUG
 					dbg_printf("fl_fswrite error : map sect %d !\n",ENDIAN_32BIT(cfgfile_ptr->slots_map_position));
 					#endif
-					return -ERR_WRITE_FILE_ACCESS;	
+					return -ERR_WRITE_FILE_ACCESS;
 				}
 
 				fl_fseek(cfg_file_handle , 0 , SEEK_SET);
@@ -562,7 +562,7 @@ int save_hxc_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_sel
 					#ifdef DEBUG
 					dbg_printf("fl_fswrite error : header %d !\n",0);
 					#endif
-					return -ERR_WRITE_FILE_ACCESS;	
+					return -ERR_WRITE_FILE_ACCESS;
 				}
 			break;
 		}
@@ -622,7 +622,9 @@ int save_cortex_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_
 				cortex_disk->DirEnt.longName[40] = 0;
 
 				memset(&temp_buf[floppyselectorindex+64],0,sizeof(Cortex_disk_in_drive));
-				slot_index = i;
+
+				if( cortex_disk->DirEnt.size )
+					slot_index = i;
 			}
 			else
 			{
@@ -674,14 +676,20 @@ int save_cortex_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_
 		fl_fseek(file , 0 , SEEK_SET);
 
 		// Update the file header
-		slot_index = 1;
+
+		if(pre_selected_slot>=0)
+			slot_index = pre_selected_slot;
+		else
+			slot_index = 1;
+
 		cfgfile_ptr = (Cortex_cfgfile * )cfgfile_header;
 		cfgfile_ptr->number_of_slot = ENDIAN_16BIT(number_of_slot);
 		cfgfile_ptr->slot_index = ENDIAN_16BIT(slot_index);
+		cfgfile_ptr->update_cnt = ENDIAN_16BIT( ENDIAN_16BIT(cfgfile_ptr->update_cnt) + 1);
 
 		if (fl_fswrite((unsigned char*)cfgfile_header, 1,330, file) != 1)
 		{
-			return -ERR_WRITE_FILE_ACCESS;	
+			return -ERR_WRITE_FILE_ACCESS;
 		}
 	}
 	else
