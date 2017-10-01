@@ -128,9 +128,10 @@ const char project_support_msg[]=
 {
 	"\n"
 	"\n"
-	"It seems that you are using a third party firmware using the HxC protocol.\n"
-	"Please consider to support the HxC2001 project if you like this file selector and\n"
-	"all the tools and file formats originally developed for/by the HxC2001 Project.\n"
+	"You are using a third party firmware based on the HxC protocol.\n"
+	"Please consider to support the HxC2001 project if you like this\n"
+	"file selector and all the tools and file formats originally\n"
+	"developed by/for the HxC2001 Project.\n"
 	"\n"
 	"To support the project : http://hxc2001.com/store\n"
 	"\n"
