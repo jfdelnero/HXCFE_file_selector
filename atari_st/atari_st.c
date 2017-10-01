@@ -831,7 +831,6 @@ void disablemousepointer()
 
 void print_char8x8(ui_context * ctx, int col, int line, unsigned char c, int mode)
 {
-	int j;
 	unsigned char *ptr_dst;
 	unsigned char * font;
 
@@ -957,7 +956,7 @@ void clear_line(ui_context * ctx,int line,int mode)
 
 void invert_line(ui_context * ctx,int line)
 {
-	int i,j;
+	int i;
 	unsigned char  *ptr_dst;
 	unsigned short *ptr_dst2;
 
