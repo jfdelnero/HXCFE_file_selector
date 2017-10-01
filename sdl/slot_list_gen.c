@@ -45,6 +45,13 @@
 
 #include "hal.h"
 
+#include "fectrl.h"
+#include "media_access.h"
+
+#include "config_file.h"
+
+#include "errors_def.h"
+
 extern int media_init();
 extern int media_read(uint32 sector, uint8 *buffer, uint32 sector_count);
 extern int media_write(uint32 sector, uint8 *buffer, uint32 sector_count);
@@ -75,6 +82,37 @@ int attach_and_init_media()
 	}
 	return 0;
 }
+
+int cmd_mount_drive(ui_context * ctx, int drive)
+{
+	int ret;
+
+	strcpy( ctx->currentPath, "/" );
+
+	strcpy(ctx->FIRMWAREVERSION,"-------");
+
+	ret = media_access_init(drive);
+
+	if( ret == ERR_NO_ERROR )
+	{
+		ret = read_cfg_file(ctx,cfgfile_header);
+
+		if( ret != ERR_NO_ERROR)
+			return ret;
+
+		ctx->selectorpos = 1;
+		ctx->page_number = 0;
+
+		ctx->page_mode_index = 0;
+
+		clear_list(ctx);
+
+		return ERR_NO_ERROR;
+	}
+
+	return ret;
+}
+
 
 int get_path_from_cluster(char * path, unsigned long cluster)
 {
@@ -287,28 +325,16 @@ int check_slots(ui_context * ctx,char * outputfile,int fix)
 int generate_slot_list(char * outputfile,int fix)
 {
 	ui_context * ctx;
-	unsigned char cfgfile_header[512];
-	int errorcnt;
+	int errorcnt,ret;
 
 	ctx = &g_ui_ctx;
 
-	memset( ctx,0,sizeof(ui_context));
-	strcpy( ctx->currentPath, "/" );
-
-	init_fdc(0);
-
-	attach_and_init_media();
-
-	printf("Reading HXCSDFE.CFG ...\n");
-
-	cfg_file_handle = fl_fopen("/HXCSDFE.CFG", "r");
-	if (!cfg_file_handle)
+	ret = cmd_mount_drive(ctx, 0);
+	if( ret != ERR_NO_ERROR )
 	{
-		printf("ERROR: Can't open HXCSDFE.CFG !");
-		return 0;
+		error_message_box(ctx, ret);
+		exit(ret);
 	}
-
-	read_cfg_file(ctx,(unsigned char*)&cfgfile_header);
 
 	errorcnt = check_slots(ctx,outputfile,fix);
 
@@ -317,7 +343,7 @@ int generate_slot_list(char * outputfile,int fix)
 	if(errorcnt && fix)
 	{
 		printf("Saving...\n");
-		save_cfg_file(ctx,(unsigned char*)&cfgfile_header, -1);
+		save_cfg_file(ctx,(unsigned char*)cfgfile_header, -1);
 	}
 
 	scanfolderpath[0] = 0;
@@ -328,37 +354,25 @@ int generate_slot_list(char * outputfile,int fix)
 int insert_slot_list(char * inputfile)
 {
 	ui_context * ctx;
-	unsigned char cfgfile_header[512];
 	char linebuffer[1024];
 	char * filename;
 	char * ptr;
 	FILE * fin;
 	int j,drive;
 	FL_FILE * slotfile;
-	int slotnumber;
+	int slotnumber,ret;
 	disk_in_drive_v2_long DirectoryEntry;
-
-	drive = 0;
 
 	ctx = &g_ui_ctx;
 
-	memset( ctx,0,sizeof(ui_context));
-	strcpy( ctx->currentPath, "/" );
-
-	init_fdc(0);
-
-	attach_and_init_media();
-
-	printf("Reading HXCSDFE.CFG ...\n");
-
-	cfg_file_handle = fl_fopen("/HXCSDFE.CFG", "r");
-	if (!cfg_file_handle)
+	ret = cmd_mount_drive(ctx, 0);
+	if( ret != ERR_NO_ERROR )
 	{
-		printf("ERROR: Can't open HXCSDFE.CFG !");
-		return 0;
+		error_message_box(ctx, ret);
+		exit(ret);
 	}
 
-	read_cfg_file(ctx,(unsigned char*)&cfgfile_header);
+	drive = 0;
 
 	printf("Opening %s...\n",inputfile);
 	fin = fopen(inputfile,"r");
@@ -437,7 +451,7 @@ int insert_slot_list(char * inputfile)
 
 		fclose(fin);
 
-		save_cfg_file(ctx,(unsigned char*)&cfgfile_header, -1);
+		save_cfg_file(ctx,(unsigned char*)cfgfile_header, -1);
 	}
 
 	return 0;
@@ -446,30 +460,20 @@ int insert_slot_list(char * inputfile)
 int clear_all_slots()
 {
 	ui_context * ctx;
-	unsigned char cfgfile_header[512];
+	int ret;
+
 	ctx = &g_ui_ctx;
 
-	memset( ctx,0,sizeof(ui_context));
-	strcpy( ctx->currentPath, "/" );
-
-	init_fdc(0);
-
-	attach_and_init_media();
-
-	printf("Reading HXCSDFE.CFG ...\n");
-
-	cfg_file_handle = fl_fopen("/HXCSDFE.CFG", "r");
-	if (!cfg_file_handle)
+	ret = cmd_mount_drive(ctx, 0);
+	if( ret != ERR_NO_ERROR )
 	{
-		printf("ERROR: Can't open HXCSDFE.CFG !");
-		return 0;
+		error_message_box(ctx, ret);
+		exit(ret);
 	}
-
-	read_cfg_file(ctx,(unsigned char*)&cfgfile_header);
 
 	clear_slots(ctx);
 
-	save_cfg_file(ctx,(unsigned char*)&cfgfile_header, -1);
+	save_cfg_file(ctx,(unsigned char*)cfgfile_header, -1);
 
 	return 0;
 }
@@ -484,7 +488,9 @@ char * supportedformat[]=
 	0
 };
 
-int strcmpi(char* str1,char* str2)
+#ifdef WIN32
+
+int strcasecmp(char* str1,char* str2)
 {
 	int i;
 
@@ -502,6 +508,8 @@ int strcmpi(char* str1,char* str2)
 	return 1;
 }
 
+#endif
+
 int isSupported(char * ext)
 {
 	int i;
@@ -510,10 +518,11 @@ int isSupported(char * ext)
 
 	while(supportedformat[i])
 	{
-		if(!strcmpi(supportedformat[i],ext))
+		if(!strcasecmp(supportedformat[i],ext))
 			return 1;
 		i++;
 	}
+
 	return 0;
 }
 
@@ -534,7 +543,7 @@ int scan_tree(ui_context * ctx)
 			printf("Folder Entry : %s Cluster 0x%.8X\n",dir_entry.filename,ENDIAN_32BIT(dir_entry.cluster));
 			#endif
 
-			if(strcmpi(dir_entry.filename,".") && strcmpi(dir_entry.filename,".."))
+			if(strcasecmp(dir_entry.filename,".") && strcasecmp(dir_entry.filename,".."))
 			{
 				pathlen = strlen(scanfolderpath);
 				strcat(scanfolderpath,"/");
@@ -550,7 +559,7 @@ int scan_tree(ui_context * ctx)
 			printf("File Entry : %s Size:%d Cluster 0x%.8X\n",dir_entry.filename,ENDIAN_32BIT(dir_entry.size),ENDIAN_32BIT(dir_entry.cluster));
 			#endif
 
-			if(strcmpi(dir_entry.filename,"autoboot.hfe"))
+			if(strcasecmp(dir_entry.filename,"autoboot.hfe"))
 			{
 
 				slot = get_slot_from_cluster(ctx,ENDIAN_32BIT(dir_entry.cluster));
@@ -565,7 +574,8 @@ int scan_tree(ui_context * ctx)
 					slotnumber = 1;
 					// Get the file name extension.
 					getext(dir_entry.filename,(char*)&DirectoryEntry.type);
-					if(isSupported((char*)&DirectoryEntry.type))
+
+					if(isSupported((char*)DirectoryEntry.type))
 					{
 						printf("Adding %s... ",dir_entry.filename);
 						do
@@ -625,32 +635,22 @@ int scan_tree(ui_context * ctx)
 int auto_populate_slots()
 {
 	ui_context * ctx;
-	unsigned char cfgfile_header[512];
+	int ret;
+
 	ctx = &g_ui_ctx;
 
-	memset( ctx,0,sizeof(ui_context));
-	strcpy( ctx->currentPath, "/" );
-
-	init_fdc(0);
-
-	attach_and_init_media();
-
-	printf("Reading HXCSDFE.CFG ...\n");
-
-	cfg_file_handle = fl_fopen("/HXCSDFE.CFG", "r");
-	if (!cfg_file_handle)
+	ret = cmd_mount_drive(ctx, 0);
+	if( ret != ERR_NO_ERROR )
 	{
-		printf("ERROR: Can't open HXCSDFE.CFG !");
-		return 0;
+		error_message_box(ctx, ret);
+		exit(ret);
 	}
-
-	read_cfg_file(ctx,(unsigned char*)&cfgfile_header);
 
 	scanfolderpath[0] = 0;
 	scanfolderpath[1] = 0;
 	scan_tree(ctx);
 
-	save_cfg_file(ctx,(unsigned char*)&cfgfile_header, -1);
+	save_cfg_file(ctx,(unsigned char*)cfgfile_header, -1);
 
 	return 0;
 }
