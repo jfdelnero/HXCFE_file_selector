@@ -134,7 +134,7 @@ const char project_support_msg[]=
 	"\n"
 	"To support the project : http://hxc2001.com/store\n"
 	"\n"
-	"Thanks by advance !\n"
+	"Thanks by advance ! :)\n"
 	"Jean-Francois DEL NERO\n"
 	"\n"
 	"---Press Enter / Fire to continue---"
