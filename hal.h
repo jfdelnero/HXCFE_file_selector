@@ -1,13 +1,13 @@
 ////////////////////////////////////
 // FDC I/O                        //
 ////////////////////////////////////
-void init_fdc(int drive);
+int init_fdc(int drive);
 void deinit_fdc();
 
 int get_start_unit(char * path);
 int jumptotrack(unsigned char t);
-unsigned char readsector(unsigned char sectornum,unsigned char * data,unsigned char invalidate_cache);
-unsigned char writesector(unsigned char sectornum,unsigned char * data);
+int readsector(unsigned char sectornum,unsigned char * data,unsigned char invalidate_cache);
+int writesector(unsigned char sectornum,unsigned char * data);
 
 /////////////////////////////////////
 // Keyboard / Joystick / mouse I/O //
