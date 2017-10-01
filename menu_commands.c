@@ -41,15 +41,24 @@
 
 #include "hal.h"
 
+#include "errors_def.h"
+
 extern unsigned char cfgfile_header[512];
 
 static int commnand_menu_savereboot_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
 {
+	int ret;
+
 	if(event)
 	{
 		if(parameter & 0x01) // Save ?
 		{
-			ui_save(ctx,-1);
+			ret = ui_save(ctx,-1);
+			if( ret != ERR_NO_ERROR )
+			{
+				error_message_box(ctx, ret);
+				return MENU_REDRAWMENU;
+			}
 		}
 
 		if(parameter & 0x02) // Reboot ?

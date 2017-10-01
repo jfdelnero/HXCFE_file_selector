@@ -295,10 +295,10 @@ void print_help(ui_context * ctx)
 	}
 }
 
-void ui_save(ui_context * ctx,int preselected_slot)
+int ui_save(ui_context * ctx,int preselected_slot)
 {
 	hxc_printf_box(ctx,(char*)save_msg);
-	save_cfg_file(ctx,cfgfile_header,preselected_slot);
+	return save_cfg_file(ctx,cfgfile_header,preselected_slot);
 }
 
 void ui_reboot(ui_context * ctx)
@@ -309,10 +309,17 @@ void ui_reboot(ui_context * ctx)
 	reboot();
 }
 
-void ui_savereboot(ui_context * ctx,int preselected_slot)
+int ui_savereboot(ui_context * ctx,int preselected_slot)
 {
-	ui_save(ctx,preselected_slot);
-	ui_reboot(ctx);
+	int ret;
+	
+	ret = ui_save(ctx,preselected_slot);
+	if( ret == ERR_NO_ERROR )
+	{
+		ui_reboot(ctx);
+	}
+
+	return ret;
 }
 
 void ui_chgcolor(ui_context * ctx,int color)
@@ -325,7 +332,7 @@ void ui_chgcolor(ui_context * ctx,int color)
 
 int process_extra_functions(ui_context * ctx, unsigned char key)
 {
-	int refresh;
+	int refresh,ret;
 
 	refresh = 0;
 
@@ -337,11 +344,14 @@ int process_extra_functions(ui_context * ctx, unsigned char key)
 		break;
 
 		case FCT_SAVEREBOOT:
-			ui_savereboot(ctx,-1);
+			error_message_box(ctx, ui_savereboot(ctx,-1));
+			refresh = 1;			
 		break;
 
 		case FCT_SAVE:
-			ui_save(ctx,-1);
+			ret = ui_save(ctx,-1);
+			if( ret != ERR_NO_ERROR )
+				error_message_box(ctx, ret);
 			refresh = 1;
 		break;
 
@@ -470,7 +480,7 @@ int ui_slots_menu(ui_context * ctx, int drive)
 				slot = (ctx->slotselectorpos + (ctx->slotselectorpage * ctx->NUMBER_OF_FILE_ON_DISPLAY));
 				if( ctx->slot_map[slot>>3] & (0x80 >> (slot&7)) )
 				{
-					ui_savereboot(ctx,slot);
+					error_message_box(ctx, ui_savereboot(ctx,slot));
 				}
 
 			break;
@@ -838,7 +848,7 @@ int ui_mainfileselector(ui_context * ctx)
 							memcpy((void*)&disks_slots[1*ctx->number_of_drive],(void*)&DirectoryEntry_tab[ctx->selectorpos-1],sizeof(disk_in_drive_v2));
 							ctx->slot_map[1>>3]   |= (0x80 >> (1&7));
 							ctx->change_map[1>>3] |= (0x80 >> (1&7));
-							ui_savereboot(ctx,1);
+							error_message_box(ctx, ui_savereboot(ctx,1));
 						}
 					}
 					break;
