@@ -45,6 +45,7 @@ err_mess_txt error_messages[]=
 {
 	{ ERR_NO_ERROR,                       "ERROR: No Error"},
 	{ ERR_MEDIA_READ,                     "ERROR: General READ Error !"},
+	{ ERR_MEDIA_READ_SECTOR_NOT_FOUND,    "ERROR: Read - Sector not found !"},
 	{ ERR_MEDIA_READ_NO_INDEX,            "ERROR: READ - No Index Timeout !"},
 	{ ERR_MEDIA_WRITE,                    "ERROR: General WRITE Error !"},
 	{ ERR_MEDIA_WRITE_SECTOR_NOT_FOUND,   "ERROR: WRITE - Sector not found !"},
