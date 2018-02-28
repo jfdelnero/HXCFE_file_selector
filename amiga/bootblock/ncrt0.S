@@ -1,5 +1,5 @@
 | Minimal ncrt0.S for Amiga bootblock env
-| (c)2017 JF.DEL NERO / HxC2001
+| (c)2018 JF.DEL NERO / HxC2001
 
 	.globl _SysBase
 
