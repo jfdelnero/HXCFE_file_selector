@@ -29,6 +29,10 @@
 #include <string.h>
 #include <stdint.h>
 
+#include "keysfunc_defs.h"
+
+#include "conf.h"
+
 #include "cfg_file.h"
 #include "ui_context.h"
 #include "gui_utils.h"
@@ -44,6 +48,7 @@
 #include "errors_def.h"
 
 extern unsigned char cfgfile_header[512];
+extern disk_in_drive_v2 disks_slots[MAX_NUMBER_OF_SLOT];
 
 static int commnand_menu_savereboot_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
 {
@@ -93,6 +98,50 @@ static int commnand_menu_help_cb(ui_context * ctx, int event, int xpos, int ypos
 	return MENU_REDRAWMENU;
 }
 
+static int commnand_menu_clearslots_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
+{
+	int slot, drive, i , key;
+
+	if(event)
+	{
+
+		clear_list(ctx);
+
+		hxc_print(ctx,CENTER_ALIGNED,0,HELP_Y_POS, (char*)"\n\n\nClear all slots ?\n\n\nPress Delete to confirm !");
+
+		do
+		{
+			key = wait_function_key();
+		}while(key!=FCT_SELECT_FILE_DRIVEA && key!=FCT_ESCAPE && key!=FCT_CLEARSLOT);
+
+		if( key == FCT_CLEARSLOT )
+		{
+			for( slot = 0; slot < ctx->config_file_number_max_of_slot ; slot++)
+			{
+				for( drive = 0; drive < ctx->number_of_drive ; drive++)
+				{
+					memset((void*)&disks_slots[(slot*ctx->number_of_drive) + drive ],0,sizeof(disk_in_drive_v2));
+
+					i = 0;
+					while( i < ctx->number_of_drive && !disks_slots[(slot*ctx->number_of_drive)+i].type[0] )
+					{
+						i++;
+					}
+
+					ctx->change_map[slot>>3] |= (0x80 >> (slot&7));
+
+					// All drive empty - clear the slot
+					if( i == ctx->number_of_drive )
+					{
+						ctx->slot_map[slot>>3] &= ~(0x80 >> (slot&7));
+					}
+				}
+			}
+		}
+	}
+	return MENU_REDRAWMENU;
+}
+
 const menu commands_menu[]=
 {
 	{"--- Save and Settings ---",       0,                      PAGE_FILEBROWSER, (struct menu * )-1, CENTER_ALIGNED},
@@ -100,6 +149,8 @@ const menu commands_menu[]=
 	{"Save and Reboot",                 commnand_menu_savereboot_cb,         0x3, 0, CENTER_ALIGNED},
 	{"Save",                            commnand_menu_savereboot_cb,         0x1, 0, CENTER_ALIGNED},
 	{"Reboot",                          commnand_menu_savereboot_cb,         0x2, 0, CENTER_ALIGNED},
+	{"",                                0,                                     0, 0, CENTER_ALIGNED},
+	{"Clear all slots !",               commnand_menu_clearslots_cb,           0, 0, CENTER_ALIGNED},
 	{"",                                0,                                     0, 0, CENTER_ALIGNED},
 //	{"Quit the File selector",          0,                                    -1, (struct menu * )-1, CENTER_ALIGNED},
 //	{"",                                0,                                     0, 0, CENTER_ALIGNED},
