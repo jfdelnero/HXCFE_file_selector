@@ -113,14 +113,14 @@ void test_access(ui_context * ctx, int i)
 			#endif
 		}
 
-		fl_fclose(cfg_file_handle);	
+		fl_fclose(cfg_file_handle);
 	}
 
 
 	cfg_file_handle = fl_fopen("/HXCSDFE.CFG", "r");
 	if (cfg_file_handle)
 	{
-		fl_fclose(cfg_file_handle);	
+		fl_fclose(cfg_file_handle);
 	}
 
 	memset(tbuffer,0,8*1024);
@@ -147,7 +147,7 @@ void test_access(ui_context * ctx, int i)
 			}
 		}
 
-		fl_fclose(cfg_file_handle);	
+		fl_fclose(cfg_file_handle);
 	}
 
 /*	for(j=0;j<8*1024;j++)
@@ -256,6 +256,19 @@ int read_hxc_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 				break;
 
 				case '2':
+					if( ctx->firmware_main_version != 3 )
+					{
+						#ifdef DEBUG
+						dbg_printf("Firmware not supporting this config file !\n");
+						#endif
+
+						ctx->cfg_file_format_version = 0;
+
+						ret = -ERR_CONFIG_FILE_VERSION;
+
+						return ret;
+					}
+
 					#ifdef DEBUG
 					dbg_printf("V2 config file format\n");
 					#endif
