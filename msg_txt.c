@@ -14,7 +14,7 @@ const char startup_msg[]=
 	"HxC Floppy Emulator file selector\n"
 	"V" VERSIONCODE " - " DATECODE "\n"
 	"\n"
-	"(c) 2009-2017 HxC2001 / Jean-Francois DEL NERO\n"
+	"(c) 2009-2018 HxC2001 / Jean-Francois DEL NERO\n"
 	"\n"
 	"Email : hxc2001@free.fr\n"
 	"\n"
@@ -30,7 +30,7 @@ const char startup_msg[]=
 	"\n"
 	"Source code on http://github.com/jfdelnero\n"
 	"\n"
-	"This software use the FAT16/32 File IO Library v2.6\n"
+	"This software uses the FAT16/32 File IO Library v2.6\n"
 	"(c) 2003-2013 Ultra-Embedded.com\n"
 };
 
@@ -65,8 +65,8 @@ const char help_scr2_msg[]=
 	"Function Keys (2/2):\n"
 	"\n"
 	"F1                : Search files in the current folder\n"
-	"                    Type the word to search then enter\n"
-	"                    Excape to abord the search\n"
+	"                    Type the word to search, then enter\n"
+	"                    Escape to abort the search\n"
 	"F2                : Change color\n"
 	"F3                : Settings menu\n"
 	"F8                : Reboot\n"
@@ -90,7 +90,7 @@ const char help_scr3_msg[]=
 	"HxC Floppy Emulator file selector\n"
 	"V" VERSIONCODE " - " DATECODE "\n"
 	"\n"
-	"(c) 2006-2017 HxC2001 / Jean-Francois DEL NERO\n"
+	"(c) 2006-2018 HxC2001 / Jean-Francois DEL NERO\n"
 	"Email : hxc2001@free.fr\n"
 	"\n"
 	"Atari ST version optimized by Gilles Bouthenot\n"
@@ -102,7 +102,7 @@ const char help_scr3_msg[]=
 	"Forum : http://torlus.com/floppy/forum\n"
 	"Sources on http://github.com/jfdelnero\n"
 	"\n"
-	"This software use the\n"
+	"This software uses the\n"
 	"FAT16/32 File IO Library v2.6\n"
 	"(c) 2003-2013 Ultra-Embedded.com\n"
 	"\n"
@@ -120,7 +120,7 @@ const pagedesc help_pages[]=
 const char cur_folder_msg[] = "Current folder:";
 const char reboot_msg[] = ">>>>>Rebooting...<<<<<";
 const char save_msg[] = "Saving selection...";
-const char save_and_restart_msg[] = "Saving selection and restart...";
+const char save_and_restart_msg[] = "Saving selection and restarting...";
 const char title_msg[] = { "HxC Floppy Emulator file selector v" VERSIONCODE};
 const char copyright_msg[] = "(c)HxC2001";
 
@@ -129,13 +129,13 @@ const char project_support_msg[]=
 	"\n"
 	"\n"
 	"You are using a third party firmware based on the HxC protocol.\n"
-	"Please consider to support the HxC2001 project if you like this\n"
+	"Please consider supporting the HxC2001 project if you like this\n"
 	"file selector and all the tools and file formats originally\n"
 	"developed by/for the HxC2001 Project.\n"
 	"\n"
 	"To support the project : http://hxc2001.com/store\n"
 	"\n"
-	"Thanks by advance ! :)\n"
+	"Thanks in advance ! :)\n"
 	"Jean-Francois DEL NERO\n"
 	"\n"
 	"---Press Enter / Fire to continue---"
