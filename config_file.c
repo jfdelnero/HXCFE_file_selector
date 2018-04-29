@@ -55,6 +55,11 @@
 
 #include "errors_def.h"
 
+#ifdef TEST_FLOPPY_IO
+static	unsigned char tbuffer2[8*1024];
+static	unsigned char tbuffer[16*1024];
+#endif
+
 extern disk_in_drive_v2 disks_slots[MAX_NUMBER_OF_SLOT];
 unsigned char cfgfile_header[512];
 FL_FILE * cfg_file_handle;
@@ -76,6 +81,84 @@ int getcfg_backgroundcolor()
 
 	return cfgfile_ptr->background_color;
 }
+
+#ifdef TEST_FLOPPY_IO
+void test_access(ui_context * ctx, int i)
+{
+	int file_cfg_size,j,k;
+
+	hxc_printf_box(ctx,"Cycle %d",i);
+
+	for(j=0;j<4*1024;j++)
+	{
+		tbuffer2[j] = j + i;
+	}
+
+	for(j=0;j<4*1024;j++)
+	{
+		tbuffer2[(4*1024)+j] = ((j + i) ^ 0xA5);
+	}
+
+	cfg_file_handle = fl_fopen("/TEST.BIN", "r");
+	if (cfg_file_handle)
+	{
+		fl_fseek( cfg_file_handle, 0, SEEK_END );
+		file_cfg_size = fl_ftell( cfg_file_handle );
+		fl_fseek( cfg_file_handle, 0, SEEK_SET );
+
+		if (fl_fswrite((unsigned char*)&tbuffer2, 16,0, cfg_file_handle) != 1)
+		{
+			#ifdef DEBUG
+			dbg_printf("fl_fswrite error : header %d !\n",0);
+			#endif
+		}
+
+		fl_fclose(cfg_file_handle);	
+	}
+
+
+	cfg_file_handle = fl_fopen("/HXCSDFE.CFG", "r");
+	if (cfg_file_handle)
+	{
+		fl_fclose(cfg_file_handle);	
+	}
+
+	memset(tbuffer,0,8*1024);
+	cfg_file_handle = fl_fopen("/TEST.BIN", "r");
+	if (cfg_file_handle)
+	{
+		fl_fseek( cfg_file_handle, 0, SEEK_END );
+		file_cfg_size = fl_ftell( cfg_file_handle );
+		fl_fseek( cfg_file_handle, 0, SEEK_SET );
+
+		if (fl_fsread((unsigned char*)&tbuffer, 16,0, cfg_file_handle) != 1)
+		{
+			#ifdef DEBUG
+			dbg_printf("fl_fswrite error : header %d !\n",0);
+			#endif
+		}
+
+		for(j=0;j<8*1024;j++)
+		{
+			if( tbuffer2[j] != tbuffer[j] )
+			{
+				hxc_printf_box(ctx,"Cycle %d - ERROR [%.4X] %.2X != %.2X",i,j,tbuffer2[j],tbuffer[j]);
+				for(;;);
+			}
+		}
+
+		fl_fclose(cfg_file_handle);	
+	}
+
+/*	for(j=0;j<8*1024;j++)
+	{
+		if( tbuffer2[j] != tbuffer[j] )
+			hxc_printf_box(ctx,"Cycle %d - ERROR [%.4X] %.2X != %.2X",i,j,tbuffer2[j],tbuffer[j]);
+
+		//buffer2[j] = j + i;
+	}*/
+}
+#endif
 
 int read_hxc_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 {

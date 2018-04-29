@@ -915,6 +915,33 @@ int ui_mainfileselector(ui_context * ctx)
 	return PAGE_QUITAPP;
 }
 
+#ifdef TEST_FLOPPY_IO
+
+extern FL_FILE * cfg_file_handle;
+
+int test_floppy_io(ui_context * ctx)
+{
+	int i;
+
+	i = 0;
+	do
+	{
+		test_access(ctx,i);
+
+		ret = read_cfg_file(ctx,cfgfile_header);
+
+		if( ret != ERR_NO_ERROR)
+			return ret;
+
+		fl_fclose(cfg_file_handle);
+
+		i++;
+	}while(i<200);
+
+	return ERR_NO_ERROR;
+}
+#endif
+
 int mount_drive(ui_context * ctx, int drive)
 {
 	int ret;
@@ -928,6 +955,11 @@ int mount_drive(ui_context * ctx, int drive)
 
 	if( ret == ERR_NO_ERROR )
 	{
+
+#ifdef TEST_FLOPPY_IO
+		test_floppy_io(ctx);
+#endif
+
 		ret = read_cfg_file(ctx,cfgfile_header);
 
 		if( ret != ERR_NO_ERROR)

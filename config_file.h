@@ -31,3 +31,7 @@ int read_cfg_file(ui_context * ctx,unsigned char * cfgfile_header);
 int save_cfg_file(ui_context * ctx,unsigned char * sdfecfg_file, int pre_selected_slot);
 int getcfg_backgroundcolor();
 void setcfg_backgroundcolor(int color);
+
+#ifdef TEST_FLOPPY_IO
+void test_access(ui_context * ctx, int i);
+#endif
