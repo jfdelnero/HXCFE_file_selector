@@ -1392,6 +1392,45 @@ int fl_fwrite(const void * data, int size, int count, void *f )
     return (size*count);
 }
 
+int fl_fsread(const void * data, int size,int start_sector, void *f)
+{
+	unsigned long sector;
+	int cnt;
+	unsigned char * buffer;
+
+	FL_FILE *file = (FL_FILE *)f;
+
+	// If first call to library, initialise
+	CHECK_FL_INIT();
+
+	if (data==NULL || file==NULL)
+		return -1;
+
+	// Check if read starts past end of file
+	if ( ((unsigned long)start_sector*512) >= file->filelength)
+		return -1;
+
+	buffer = (unsigned char*)data;
+	// Calculate start sector
+	sector = start_sector;
+	cnt=size;
+	while (cnt)
+	{
+		if (!fatfs_read_sector(&_fs, file->startcluster, sector, buffer))
+		{	// Read failed - out of range (probably)
+			return -1;
+		}
+
+		buffer += 512;
+
+		// Move onto next sector and reset copy offset
+		sector++;
+		cnt--;
+	}
+
+	return size;
+}
+
 int fl_fswrite(const void * data, int size,int start_sector, void *f)
 {
 	unsigned long sector;

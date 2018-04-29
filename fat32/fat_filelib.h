@@ -93,6 +93,7 @@ int                 fl_fputs(const char * str, void *file);
 int                 fl_fwrite(const void * data, int size, int count, void *file );
 int                 fl_fswrite(const void * data, int size, int start_sector, void *file);
 int                 fl_fread(void * data, int size, int count, void *file );
+int                 fl_fsread(const void * data, int size,int start_sector, void *f);
 int                 fl_fseek(void *file , long offset , int origin );
 int                 fl_fgetpos(void *file , uint32 * position);
 long                fl_ftell(void *f);
