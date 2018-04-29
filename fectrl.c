@@ -312,7 +312,7 @@ void ui_reboot(ui_context * ctx)
 int ui_savereboot(ui_context * ctx,int preselected_slot)
 {
 	int ret;
-	
+
 	ret = ui_save(ctx,preselected_slot);
 	if( ret == ERR_NO_ERROR )
 	{
@@ -345,7 +345,7 @@ int process_extra_functions(ui_context * ctx, unsigned char key)
 
 		case FCT_SAVEREBOOT:
 			error_message_box(ctx, ui_savereboot(ctx,-1));
-			refresh = 1;			
+			refresh = 1;
 		break;
 
 		case FCT_SAVE:
@@ -915,6 +915,87 @@ int ui_mainfileselector(ui_context * ctx)
 	return PAGE_QUITAPP;
 }
 
+int get_number(char * string, char* numberout)
+{
+	int i,j;
+
+	i = 0;
+	j = 0;
+
+	numberout[j] = 0;
+
+	while( j < 10 && string[i] >= '0' && string[i] <= '9' )
+	{
+		numberout[j] = string[i];
+		j++;
+		i++;
+		numberout[j] = 0;
+	}
+
+	return i;
+}
+
+int check_firmware_version(ui_context * ctx)
+{
+	int fw_version[4];
+	char tmp[16];
+	int ofs;
+	int i;
+
+	ctx->firmware_main_version = 0;
+
+	if(ctx->FIRMWAREVERSION[0] != 'v' && ctx->FIRMWAREVERSION[0] != 'V')
+	{
+		return 1;
+	}
+
+	if( !strncmp(ctx->FIRMWAREVERSION, "V1.", 3) )
+	{
+		ctx->firmware_main_version = 1;
+		return 0;
+	}
+
+	if( !strncmp(ctx->FIRMWAREVERSION, "V2.", 3) )
+	{
+		ctx->firmware_main_version = 2;
+		return 0;
+	}
+
+	if( !strncmp(ctx->FIRMWAREVERSION, "v3.", 3) )
+	{
+		ctx->firmware_main_version = 3;
+
+		ofs = 1;
+
+		for( i = 0; i < 4 ; i++ )
+		{
+			ofs += get_number(&ctx->FIRMWAREVERSION[ofs], tmp);
+			fw_version[i] = atoi(tmp);
+			ofs++;
+			printf("%d\n",fw_version[i]);
+		}
+
+		if( fw_version[1] > 1 )
+		{
+			return 0;
+		}
+
+		if( fw_version[1] ==  1 && fw_version[2] > 22 )
+		{
+			return 0;
+		}
+
+		if( fw_version[1] ==  1 && fw_version[2] == 22 && fw_version[3] >= 6 )
+		{
+			return 0;
+		}
+
+		return 1;
+	}
+
+	return 1;
+}
+
 #ifdef TEST_FLOPPY_IO
 
 extern FL_FILE * cfg_file_handle;
@@ -955,6 +1036,13 @@ int mount_drive(ui_context * ctx, int drive)
 
 	if( ret == ERR_NO_ERROR )
 	{
+
+		if( check_firmware_version(ctx) )
+		{
+			clear_list(ctx);
+			hxc_print(ctx,CENTER_ALIGNED,0,HELP_Y_POS+1, (char*)need_update_msg);
+			wait_function_key();
+		}
 
 #ifdef TEST_FLOPPY_IO
 		test_floppy_io(ctx);

@@ -124,6 +124,21 @@ const char save_and_restart_msg[] = "Saving selection and restarting...";
 const char title_msg[] = { "HxC Floppy Emulator file selector v" VERSIONCODE};
 const char copyright_msg[] = "(c)HxC2001";
 
+const char need_update_msg[] =
+{
+	"\n"
+	"\n"
+	"Your firmware version appears to be outdated !\n\n"
+	"Please visit the HxC2001 download page to get\n"
+	"the latest firmware version and update your emulator !\n\n"
+	"http://hxc2001.com/download/floppy_drive_emulator/\n"
+	"\n"
+	"\n"
+	"Contact me at hxc2001@hxc2001.com if you got any issue !\n"
+	"\n"
+	"---Press Enter / Fire to continue---"
+};
+
 const char project_support_msg[]=
 {
 	"\n"

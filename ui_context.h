@@ -35,4 +35,5 @@ typedef struct ui_context_
 	int bootdev;
 
 	int firmware_type;
+	int firmware_main_version;
 }ui_context;
