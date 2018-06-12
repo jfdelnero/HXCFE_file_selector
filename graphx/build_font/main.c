@@ -42,6 +42,8 @@
 #define FONT_MATRIX_X_SIZE 16
 #define FONT_MATRIX_Y_SIZE 16
 
+#define MAX_PARAM_ARG_SIZE 512
+
 typedef struct font_spec_
 {
 	unsigned int nb_of_chars;
@@ -61,28 +63,50 @@ typedef struct font_spec_
 
 unsigned char framebuffer[(128*64) / 8];
 
-void printbuf(unsigned char * buf,int size)
+void printbuf(char * outfile, unsigned char * buf, int size)
 {
 	int i;
+	FILE * f;
+
+	f = fopen(outfile , "w");
+
+	if(!f)
+		f = stdout;
+
+	fprintf(f,"\nconst unsigned char font[] =\n");
 
 	for(i=0;i<size;i++)
 	{
 		if(!(i&0xF))
 		{
 			if(i)
-				printf("\n\t");
+			{
+				fprintf(f,"\n\t");
+			}
 			else
-				printf("\x7B\n\t");
+			{
+				fprintf(f,"\x7B\n\t");
+			}
 		}
-		printf("0x%.2X",buf[i]);
+
+		fprintf(f,"0x%.2X",buf[i]);
+
 		if( i < size - 1 )
-			printf(",");
+		{
+			fprintf(f,",");
+		}
 		else
 		{
-			printf("\n\x7D\x3B\n");
+			fprintf(f,"\n\x7D\x3B\n");
 		}
 	}
-	printf("\n");
+
+	fprintf(f,"\n");
+
+	if( f != stdout )
+	{
+		fclose(f);
+	}
 }
 
 int getpixstate(bitmap_data * bdata, int xpos, int ypos)
@@ -192,12 +216,93 @@ unsigned char * extractchar(bitmap_data * bdata,int x,int y,int xsize,int ysize,
 	return charbuf;
 }
 
+int isOption(int argc, char* argv[],char * paramtosearch,char * argtoparam)
+{
+	int param=1;
+	int i,j;
+
+	char option[512];
+
+	memset(option,0,512);
+	while(param<=argc)
+	{
+		if(argv[param])
+		{
+			if(argv[param][0]=='-')
+			{
+				memset(option,0,512);
+
+				j=0;
+				i=1;
+				while( argv[param][i] && argv[param][i]!=':')
+				{
+					option[j]=argv[param][i];
+					i++;
+					j++;
+				}
+
+				if( !strcmp(option,paramtosearch) )
+				{
+					if(argtoparam)
+					{
+						if(argv[param][i]==':')
+						{
+							i++;
+							j=0;
+							while( argv[param][i] && j < ( MAX_PARAM_ARG_SIZE - 1 ) )
+							{
+								argtoparam[j]=argv[param][i];
+								i++;
+								j++;
+							}
+							argtoparam[j]=0;
+							return 1;
+						}
+						else
+						{
+							return -1;
+						}
+					}
+					else
+					{
+						return 1;
+					}
+				}
+			}
+		}
+		param++;
+	}
+
+	return 0;
+}
+
+void printhelp(char* argv[])
+{
+	printf("Options:\n");
+	printf("  -help \t\t\t\t: This help\n");
+	printf("  -file:[filename]\t\t\t: Input bmp file\n");
+	printf("  -outfile:[filename]\t\t\t: Output header file\n");
+	printf("  -nbchars:[nb of characters]\t\t: Total number of characters\n");
+	printf("  -cxsize:[nb of pixels]\t\t: Character x size\n");
+	printf("  -cysize:[nb of pixels]\t\t: Character y size\n");
+	printf("  -cxstep:[nb of pixels]\t\t: Character x step\n");
+	printf("  -cystep:[nb of pixels]\t\t: Character y step\n");
+	printf("  -xoffset:[nb of pixels]\t\t: Initial x offset\n");
+	printf("  -yoffset:[nb of pixels]\t\t: Initial y offset\n");
+	printf("  -charsperline:[nb of characters]\t: Characters per line\n");
+	printf("  -charsperrow:[nb of characters]\t: Characters per row\n");
+	printf("\n");
+}
+
 int main(int argc, char *argv[])
 {
 	int bufsize,xchar,ychar,bufoffset;
 	bitmap_data bdata;
 	unsigned char * char_sprite;
 	unsigned char * finalfontbuffer;
+	char filename[MAX_PARAM_ARG_SIZE];
+	char outfilename[MAX_PARAM_ARG_SIZE];
+	char tmpparam[MAX_PARAM_ARG_SIZE];
 	font_spec ifnt;
 
 	printf("FontCP&P v0.8\n");
@@ -205,23 +310,104 @@ int main(int argc, char *argv[])
 
 	memset(&framebuffer,0,sizeof(framebuffer));
 
-	if(argc > 1)
+	// Default font : 256 chars 8x8
+	ifnt.nb_of_chars = 256;
+	ifnt.char_x_size = FONT_X_SIZE;
+	ifnt.char_y_size = FONT_Y_SIZE;
+	ifnt.x_char_step = FONT_X_SRCSTEP_SIZE;
+	ifnt.y_char_step = FONT_Y_SRCSTEP_SIZE;
+	ifnt.x_offset = 0;
+	ifnt.y_offset = 0;
+	ifnt.chars_per_line = FONT_MATRIX_X_SIZE;
+	ifnt.chars_per_row = FONT_MATRIX_Y_SIZE;
+
+	// help option...
+	if(isOption(argc,argv,"help",0)>0)
 	{
-		// Default font : 256 chars 8x8
-		ifnt.nb_of_chars = 256;
-		ifnt.char_x_size = FONT_X_SIZE;
-		ifnt.char_y_size = FONT_Y_SIZE;
-		ifnt.x_char_step = FONT_X_SRCSTEP_SIZE;
-		ifnt.y_char_step = FONT_Y_SRCSTEP_SIZE;
-		ifnt.x_offset = 0;
-		ifnt.y_offset = 0;
-		ifnt.chars_per_line = FONT_MATRIX_X_SIZE;
-		ifnt.chars_per_row = FONT_MATRIX_Y_SIZE;
+		printhelp(argv);
+	}
 
-		if(!bmp_load(argv[1],&bdata))
+	memset(filename,0,sizeof(filename));
+	if(isOption(argc,argv,"file",(char*)&filename)>0)
+	{
+		printf("Input file : %s\n",filename);
+	}
+
+	memset(outfilename,0,sizeof(outfilename));
+	if(isOption(argc,argv,"outfile",(char*)&outfilename)>0)
+	{
+		printf("Output file : %s\n",outfilename);
+	}
+
+	memset(tmpparam,0,sizeof(tmpparam));
+	if(isOption(argc,argv,"nbchars",(char*)&tmpparam)>0)
+	{
+		ifnt.nb_of_chars = atoi(tmpparam);
+	}
+
+	memset(tmpparam,0,sizeof(tmpparam));
+	if(isOption(argc,argv,"cxsize",(char*)&tmpparam)>0)
+	{
+		ifnt.char_x_size = atoi(tmpparam);
+	}
+
+	memset(tmpparam,0,sizeof(tmpparam));
+	if(isOption(argc,argv,"cysize",(char*)&tmpparam)>0)
+	{
+		ifnt.char_y_size = atoi(tmpparam);
+	}
+
+	memset(tmpparam,0,sizeof(tmpparam));
+	if(isOption(argc,argv,"cxstep",(char*)&tmpparam)>0)
+	{
+		ifnt.x_char_step = atoi(tmpparam);
+	}
+
+	memset(tmpparam,0,sizeof(tmpparam));
+	if(isOption(argc,argv,"cystep",(char*)&tmpparam)>0)
+	{
+		ifnt.y_char_step = atoi(tmpparam);
+	}
+
+	memset(tmpparam,0,sizeof(tmpparam));
+	if(isOption(argc,argv,"xoffset",(char*)&tmpparam)>0)
+	{
+		ifnt.x_offset = atoi(tmpparam);
+	}
+
+	memset(tmpparam,0,sizeof(tmpparam));
+	if(isOption(argc,argv,"yoffset",(char*)&tmpparam)>0)
+	{
+		ifnt.y_offset = atoi(tmpparam);
+	}
+
+	memset(tmpparam,0,sizeof(tmpparam));
+	if(isOption(argc,argv,"charsperline",(char*)&tmpparam)>0)
+	{
+		ifnt.chars_per_line = atoi(tmpparam);
+	}
+
+	memset(tmpparam,0,sizeof(tmpparam));
+	if(isOption(argc,argv,"charsperrow",(char*)&tmpparam)>0)
+	{
+		ifnt.chars_per_row = atoi(tmpparam);
+	}
+
+	if(strlen(filename))
+	{
+		if(!bmp_load(filename,&bdata))
 		{
+			printf("Total number of characters : %d characters\n",ifnt.nb_of_chars);
+			printf("Character x size : %d pixels\n",ifnt.char_x_size);
+			printf("Character y size : %d pixels\n",ifnt.char_y_size);
+			printf("Character x step : %d pixels\n",ifnt.x_char_step);
+			printf("Character y step : %d pixels\n",ifnt.y_char_step);
+			printf("Initial x offset : %d pixel(s)\n",ifnt.x_offset);
+			printf("Initial y offset : %d pixel(s)\n",ifnt.y_offset);
+			printf("Characters per line : %d characters\n",ifnt.chars_per_line);
+			printf("Characters per row : %d characters\n",ifnt.chars_per_row);
 
-			printf("Bmp Loaded... Xsize: %d, Ysize: %d\n",bdata.xsize,bdata.ysize);
+			printf("\nBmp Loaded... Xsize: %d, Ysize: %d\n",bdata.xsize,bdata.ysize);
 
 			// Get the sprite size.
 			char_sprite = extractchar(&bdata,0,0,ifnt.char_x_size,ifnt.char_y_size,&bufsize);
@@ -258,10 +444,13 @@ int main(int argc, char *argv[])
 				}
 			}
 
-			printf("\nconst unsigned char font[] =\n");
-			printbuf( (unsigned char*)finalfontbuffer, ifnt.nb_of_chars * bufsize);
+			printbuf(outfilename, (unsigned char*)finalfontbuffer, ifnt.nb_of_chars * bufsize);
 
 			free(finalfontbuffer);
 		}
+	}
+	else
+	{
+		printhelp(argv);
 	}
 }
