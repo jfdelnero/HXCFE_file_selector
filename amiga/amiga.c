@@ -756,7 +756,7 @@ int writesector(unsigned char sectornum,unsigned char * data)
 	unsigned char c;
 	unsigned char CRC16_High,CRC16_Low,byte;
 	unsigned char sector_header[4];
-
+	unsigned short crc16v;
 	#ifdef DEBUG
 	dbg_printf("writesector : %d\n",sectornum);
 	#endif
@@ -769,18 +769,15 @@ int writesector(unsigned char sectornum,unsigned char * data)
 	validcache=0;
 
 	// Preparing the buffer...
-	CRC16_Init(&CRC16_High, &CRC16_Low);
+	crc16v = 0xFFFF;
+
 	for(j=0;j<3;j++)
 	{
-		CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
+		crc16v = crc16( 0xA1 , crc16v );
 	}
 
-	CRC16_Update(&CRC16_High,&CRC16_Low,0xFB);
-
-	for(j=0;j<512;j++)
-	{
-		CRC16_Update(&CRC16_High,&CRC16_Low,data[j]);
-	}
+	crc16v = crc16( 0xFB, crc16v );
+	crc16v = crc16_buf(data, 512, crc16v);
 
 	for(j=0;j<12;j++)
 		track_buffer_wr[i++]=0xAAAA;
@@ -793,6 +790,10 @@ int writesector(unsigned char sectornum,unsigned char * data)
 	BuildCylinder((unsigned char*)&track_buffer_wr[i++],1*2,&byte,1,lastbit,&lastbit);
 	BuildCylinder((unsigned char*)&track_buffer_wr[i],512*2,data,512,lastbit,&lastbit);
 	i += 512;
+
+	CRC16_Low = (crc16v >> 8);
+	CRC16_High = (crc16v & 0xFF);
+
 	BuildCylinder((unsigned char*)&track_buffer_wr[i++],1*2,&CRC16_High,1,lastbit,&lastbit);
 	BuildCylinder((unsigned char*)&track_buffer_wr[i++],1*2,&CRC16_Low,1,lastbit,&lastbit);
 	byte = 0x4E;
@@ -836,19 +837,18 @@ int writesector(unsigned char sectornum,unsigned char * data)
 
 				if(MFMTOBIN(track_buffer_rd[i])==0xFE && (i<(16-3)))
 				{
-
-					CRC16_Init(&CRC16_High, &CRC16_Low);
+					crc16v = 0xFFFF;
 
 					for(j=0;j<3;j++)
-						CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
+						crc16v = crc16( 0xA1 , crc16v );
 
 					for(j=0;j<(1+4+2);j++)
 					{
 						c = MFMTOBIN(track_buffer_rd[i+j]);
-						CRC16_Update(&CRC16_High, &CRC16_Low,c);
+						crc16v = crc16( c , crc16v );
 					}
 
-					if(!CRC16_High && !CRC16_Low)
+					if(!crc16v)
 					{
 						i++;
 
@@ -915,9 +915,9 @@ int readsector(unsigned char sectornum,unsigned char * data,unsigned char invali
 	unsigned short i,j;
 	unsigned char sectorfound,tc;
 	unsigned char c,retry,badcrc,retry2;
-	unsigned char CRC16_High,CRC16_Low;
 	unsigned char sector_header[8];
 	unsigned char sect_num;
+	unsigned short crc16v;
 
 	#ifdef DEBUG
 	dbg_printf("readsector : %d - %d\n",sectornum,invalidate_cache);
@@ -935,19 +935,19 @@ int readsector(unsigned char sectornum,unsigned char * data,unsigned char invali
 	sector_header[3] = sectornum; // Sector
 	sector_header[4] = 0x02;      // Size
 
-	CRC16_Init(&CRC16_High, &CRC16_Low);
+	crc16v = 0xFFFF;
 	for( j = 0; j < 3; j++ )
 	{
-		CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
+		crc16v = crc16( 0xA1 , crc16v );
 	}
 
 	for(j=0;j< 5;j++)
 	{
-		CRC16_Update(&CRC16_High, &CRC16_Low,sector_header[j]);
+		crc16v = crc16( sector_header[j] , crc16v );
 	}
 
-	sector_header[5] = CRC16_High;// CRC H
-	sector_header[6] = CRC16_Low; // CRC L
+	sector_header[5] = crc16v&0xFF; // CRC L
+	sector_header[6] = crc16v>>8;   // CRC H
 
 	do
 	{
@@ -1061,12 +1061,12 @@ int readsector(unsigned char sectornum,unsigned char * data,unsigned char invali
 						#endif
 
 						// 0xA1 * 3
-						CRC16_Init(&CRC16_High, &CRC16_Low);
+						crc16v = 0xFFFF;
 						for(j=0;j<3;j++)
-							CRC16_Update(&CRC16_High,&CRC16_Low,0xA1);
+							crc16v = crc16( 0xA1 , crc16v );
 
 						// Data Mark
-						CRC16_Update(&CRC16_High,&CRC16_Low,MFMTOBIN(track_buffer_rd[i]));
+						crc16v = crc16( MFMTOBIN(track_buffer_rd[i]) , crc16v );
 						i++;
 
 						// Data
@@ -1077,14 +1077,16 @@ int readsector(unsigned char sectornum,unsigned char * data,unsigned char invali
 							data[j] = tc;
 						}
 
+						crc16v = crc16_buf(data, 512, crc16v);
+
 						for(j=0;j<2;j++)
 						{
-							c = MFMTOBIN(track_buffer_rd[i]);
+							c = MFMTOBIN( track_buffer_rd[i] );
+							crc16v = crc16( c, crc16v );
 							i++;
-							//CRC16_Update(&CRC16_High, &CRC16_Low,c);
 						}
 
-						if(1)//!CRC16_High && !CRC16_Low)
+						if(!crc16v)
 						{
 							sectorfound=1;
 						}
@@ -1170,7 +1172,7 @@ static void setnoclick(ULONG unitnum, ULONG onoff)
 
 int init_fdc(int drive)
 {
-	int ret;	
+	int ret;
 	unsigned short i;
 
 	#ifdef DEBUG
@@ -1204,7 +1206,7 @@ int init_fdc(int drive)
 
 		if(mfmtobinLUT_H)
 			FreeMem(mfmtobinLUT_H,256);
-		
+
 		return -ERR_MEM_ALLOC;
 	}
 

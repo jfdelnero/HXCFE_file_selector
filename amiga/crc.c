@@ -1,119 +1,195 @@
-/*************************************************************************
- * Example Table Driven CRC16 Routine using 4-bit message chunks
- *
- * By Ashley Roll
- * Digital Nemesis Pty Ltd
- * www.digitalnemesis.com
- *
- * The following is an example of implementing a restricted size CRC16
- * table lookup. No optimisation as been done so the code is clear and
- * easy to understand.
- *
- * Test Vector: "123456789" (character string, no quotes)
- * Generated CRC: 0x29B1
- *
- *************************************************************************/
+/*
+//
+// Copyright (C) 2009-2018 Jean-François DEL NERO
+//
+// This file is part of the HxCFloppyEmulator file selector.
+//
+// HxCFloppyEmulator file selector may be used and distributed without restriction
+// provided that this copyright statement is not removed from the file and that any
+// derivative work contains the original copyright notice and the associated
+// disclaimer.
+//
+// HxCFloppyEmulator file selector is free software; you can redistribute it
+// and/or modify  it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// HxCFloppyEmulator file selector is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+//   See the GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with HxCFloppyEmulator file selector; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+//
+*/
+
+// Size constrained table based crc16 routine.
+// (c)Jean-François DEL NERO
 
 #include "crc.h"
 
-/*
- * CRC16 Lookup tables (High and Low Byte) for 4 bits per iteration.
- */
-unsigned short CRC16_LookupHigh[16] = {
-        0x00, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70,
-        0x81, 0x91, 0xA1, 0xB1, 0xC1, 0xD1, 0xE1, 0xF1
+//  CCITT CRC 16 - 0x1021
+//  Parameters used with the generator : inv_poly 0, inv_index 0, inv_array_index 0, xchg_array 1, inv_array_value 0.
+static const unsigned int crc_array[16*2] __attribute__ ((aligned (4))) =
+{
+	0x0000, 0x3112, 0x6224, 0x5336, 0xC448, 0xF55A, 0xA66C, 0x977E,
+	0x8891, 0xB983, 0xEAB5, 0xDBA7, 0x4CD9, 0x7DCB, 0x2EFD, 0x1FEF,
+
+	0x0000, 0x2110, 0x4220, 0x6330, 0x8440, 0xA550, 0xC660, 0xE770,
+	0x0881, 0x2991, 0x4AA1, 0x6BB1, 0x8CC1, 0xADD1, 0xCEE1, 0xEFF1
 };
-unsigned short CRC16_LookupLow[16] = {
-        0x00, 0x21, 0x42, 0x63, 0x84, 0xA5, 0xC6, 0xE7,
-        0x08, 0x29, 0x4A, 0x6B, 0x8C, 0xAD, 0xCE, 0xEF
-};
 
-
-
-/*
- * Before each message CRC is generated, the CRC register must be
- * initialised by calling this function
- */
-void CRC16_Init( unsigned char *CRC16_High, unsigned char *CRC16_Low)
+unsigned short crc16_buf(unsigned char * buffer,int size,unsigned short crc16)
 {
-	// Initialise the CRC to 0xFFFF for the CCITT specification
-	*CRC16_High = 0xFF;
-	*CRC16_Low = 0xFF;
-}
+	unsigned char data;
 
-/*
- * Process 4 bits of the message to update the CRC Value.
- *
- * Note that the data must be in the low nibble of val.
- */
-void CRC16_Update4Bits(unsigned char *CRC16_High, unsigned char *CRC16_Low, unsigned char val )
-{
-	unsigned char	t;
-
-	// Step one, extract the Most significant 4 bits of the CRC register
-	t = *CRC16_High >> 4;
-
-	// XOR in the Message Data into the extracted bits
-	t = t ^ val;
-
-	// Shift the CRC Register left 4 bits
-	*CRC16_High = (*CRC16_High << 4) | (*CRC16_Low >> 4);
-	*CRC16_Low = *CRC16_Low << 4;
-
-	// Do the table lookups and XOR the result into the CRC Tables
-	*CRC16_High = *CRC16_High ^ CRC16_LookupHigh[t];
-	*CRC16_Low = *CRC16_Low ^ CRC16_LookupLow[t];
-}
-
-/*
- * Process one Message Byte to update the current CRC Value
- */
-void CRC16_Update(unsigned char *CRC16_High, unsigned char *CRC16_Low, unsigned char val )
-{
-	CRC16_Update4Bits(CRC16_High,CRC16_Low, (unsigned char)(val >> 4) );		// High nibble first
-	CRC16_Update4Bits(CRC16_High,CRC16_Low, (unsigned char)(val & 0x0F) );	// Low nibble
-}
-
-void CRC16_Buf_Update(unsigned char *CRC16_High, unsigned char *CRC16_Low, unsigned char * in_buf, int size )
-{
-	unsigned char t;
-	int i;
-	
-	for(i=0;i<size;i++)
+	while(size--)
 	{
-		CRC16_Update4Bits(CRC16_High,CRC16_Low, (unsigned char)(in_buf[i] >> 4) );		// High nibble first
-		CRC16_Update4Bits(CRC16_High,CRC16_Low, (unsigned char)(in_buf[i] & 0x0F) );	// Low nibble	
+		data = *buffer++;
 
-		// High nibble first
+		data ^= crc16;
 
-		// Step one, extract the Most significant 4 bits of the CRC register
-		t = *CRC16_High >> 4;
+		crc16 = ( (crc_array[ data >> 4 ] ^ crc_array[ (data & 0x0F) + 0x10 ]) ^ (crc16 >> 8) );
+	}
 
-		// XOR in the Message Data into the extracted bits
-		t = t ^ (in_buf[i] >> 4);
+	return crc16;
+}
 
-		// Shift the CRC Register left 4 bits
-		*CRC16_High = (*CRC16_High << 4) | (*CRC16_Low >> 4);
-		*CRC16_Low = *CRC16_Low << 4;
+unsigned short crc16( unsigned char data, unsigned short crc16 )
+{
+	data ^= crc16;
 
-		// Do the table lookups and XOR the result into the CRC Tables
-		*CRC16_High = *CRC16_High ^ CRC16_LookupHigh[t];
-		*CRC16_Low = *CRC16_Low ^ CRC16_LookupLow[t];
+	return ( (crc_array[ data >> 4 ] ^ crc_array[ (data & 0x0F) + 0x10 ] ) ^ (crc16 >> 8) );
+}
 
-		// Low nibble
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		// Step one, extract the Most significant 4 bits of the CRC register
-		t = *CRC16_High >> 4;
+#ifdef CRCARRAYGENERATOR
 
-		// XOR in the Message Data into the extracted bits
-		t = t ^ ( (in_buf[i] & 0x0F) >> 4);
+// Code to generate the above const arry:
 
-		// Shift the CRC Register left 4 bits
-		*CRC16_High = (*CRC16_High << 4) | (*CRC16_Low >> 4);
-		*CRC16_Low = *CRC16_Low << 4;
+static const unsigned char bit_inverter[]=
+{
+	0x00,0x80,0x40,0xC0,0x20,0xA0,0x60,0xE0,
+	0x10,0x90,0x50,0xD0,0x30,0xB0,0x70,0xF0,
+	0x08,0x88,0x48,0xC8,0x28,0xA8,0x68,0xE8,
+	0x18,0x98,0x58,0xD8,0x38,0xB8,0x78,0xF8,
+	0x04,0x84,0x44,0xC4,0x24,0xA4,0x64,0xE4,
+	0x14,0x94,0x54,0xD4,0x34,0xB4,0x74,0xF4,
+	0x0C,0x8C,0x4C,0xCC,0x2C,0xAC,0x6C,0xEC,
+	0x1C,0x9C,0x5C,0xDC,0x3C,0xBC,0x7C,0xFC,
+	0x02,0x82,0x42,0xC2,0x22,0xA2,0x62,0xE2,
+	0x12,0x92,0x52,0xD2,0x32,0xB2,0x72,0xF2,
+	0x0A,0x8A,0x4A,0xCA,0x2A,0xAA,0x6A,0xEA,
+	0x1A,0x9A,0x5A,0xDA,0x3A,0xBA,0x7A,0xFA,
+	0x06,0x86,0x46,0xC6,0x26,0xA6,0x66,0xE6,
+	0x16,0x96,0x56,0xD6,0x36,0xB6,0x76,0xF6,
+	0x0E,0x8E,0x4E,0xCE,0x2E,0xAE,0x6E,0xEE,
+	0x1E,0x9E,0x5E,0xDE,0x3E,0xBE,0x7E,0xFE,
+	0x01,0x81,0x41,0xC1,0x21,0xA1,0x61,0xE1,
+	0x11,0x91,0x51,0xD1,0x31,0xB1,0x71,0xF1,
+	0x09,0x89,0x49,0xC9,0x29,0xA9,0x69,0xE9,
+	0x19,0x99,0x59,0xD9,0x39,0xB9,0x79,0xF9,
+	0x05,0x85,0x45,0xC5,0x25,0xA5,0x65,0xE5,
+	0x15,0x95,0x55,0xD5,0x35,0xB5,0x75,0xF5,
+	0x0D,0x8D,0x4D,0xCD,0x2D,0xAD,0x6D,0xED,
+	0x1D,0x9D,0x5D,0xDD,0x3D,0xBD,0x7D,0xFD,
+	0x03,0x83,0x43,0xC3,0x23,0xA3,0x63,0xE3,
+	0x13,0x93,0x53,0xD3,0x33,0xB3,0x73,0xF3,
+	0x0B,0x8B,0x4B,0xCB,0x2B,0xAB,0x6B,0xEB,
+	0x1B,0x9B,0x5B,0xDB,0x3B,0xBB,0x7B,0xFB,
+	0x07,0x87,0x47,0xC7,0x27,0xA7,0x67,0xE7,
+	0x17,0x97,0x57,0xD7,0x37,0xB7,0x77,0xF7,
+	0x0F,0x8F,0x4F,0xCF,0x2F,0xAF,0x6F,0xEF,
+	0x1F,0x9F,0x5F,0xDF,0x3F,0xBF,0x7F,0xFF
+};
 
-		// Do the table lookups and XOR the result into the CRC Tables
-		*CRC16_High = *CRC16_High ^ CRC16_LookupHigh[t];
-		*CRC16_Low = *CRC16_Low ^ CRC16_LookupLow[t];
+static unsigned short getCRC16entry( const unsigned short index, const unsigned short poly )
+{
+	int i;
+	unsigned short entry;
+
+	entry = index;
+
+	for( i = 0; i < 16; i++ ) {
+		if( entry & 0x8000 )
+			entry = (unsigned short)((entry << 1) ^ poly);
+		else
+			entry = (unsigned short)(entry << 1);
+	}
+
+	return entry;
+}
+
+static unsigned short invert_word(unsigned short w, int invert)
+{
+	if(invert)
+		return ( bit_inverter[w&0xFF]<<8 ) | ( bit_inverter[w>>8] );
+	else
+		return w;
+}
+
+static unsigned short xchg_byte_word(unsigned short w, int invert)
+{
+	if(invert)
+		return ( (w>>8) & 0xFF ) | ( (w<<8) & 0xFF00 );
+	else
+		return w;
+}
+
+unsigned short invert_index(unsigned short v, int invert)
+{
+	if(invert)
+	{
+		return bit_inverter[v]>>4;
+	}
+	else
+	{
+		return v;
 	}
 }
+
+void generate_crc_array( unsigned short poly, int inv_poly, int inv_index, int inv_array_index, int inv_array_value, int xchg_byte, int xchg_array, unsigned short crcarray[32])
+{
+	int i;
+	unsigned short crc16v;
+	unsigned short crcarrayA[16];
+	unsigned short crcarrayB[16];
+
+	for(i=0;i<16;i++)
+	{
+		crc16v  = getCRC16entry( invert_index(i,inv_index), invert_word(poly,inv_poly) );
+
+		if(xchg_array)
+			crcarrayB[invert_index(i,inv_array_index)] = xchg_byte_word(invert_word(crc16v,inv_array_value), xchg_byte);
+		else
+			crcarrayA[invert_index(i,inv_array_index)] = xchg_byte_word(invert_word(crc16v,inv_array_value), xchg_byte);
+	}
+
+	for(i=0;i<16;i++)
+	{
+		crc16v  = getCRC16entry( invert_index(i,inv_index)<<4, invert_word(poly,inv_poly) );
+
+		if(xchg_array)
+			crcarrayA[invert_index(i,inv_array_index)] = xchg_byte_word(invert_word(crc16v,inv_array_value), xchg_byte);
+		else
+			crcarrayB[invert_index(i,inv_array_index)] = xchg_byte_word(invert_word(crc16v,inv_array_value), xchg_byte);
+	}
+
+	printf("\nArray A\n");
+	for(i=0;i<16;i++)
+	{
+		crcarray[i] = crcarrayA[i];
+		printf("0x%.4X,\n",crcarrayA[i]);
+	}
+
+	printf("\nArray B\n");
+	for(i=0;i<16;i++)
+	{
+		crcarray[i+16] = crcarrayA[i];
+		printf("0x%.4X,\n",crcarrayB[i]);
+	}
+}
+#endif
