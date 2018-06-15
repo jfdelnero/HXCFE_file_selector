@@ -33,6 +33,8 @@
 
 #include "bmp_file.h"
 
+// default settings
+
 #define FONT_X_SIZE 8
 #define FONT_Y_SIZE 8
 
@@ -63,17 +65,76 @@ typedef struct font_spec_
 
 unsigned char framebuffer[(128*64) / 8];
 
-void printbuf(char * outfile, unsigned char * buf, int size)
+void generate_source_files(char * outfile, unsigned char * buf, int size, font_spec * font)
 {
 	int i;
 	FILE * f;
+	char filename[MAX_PARAM_ARG_SIZE];
 
-	f = fopen(outfile , "w");
+	f = 0;
+
+	if(strlen(outfile))
+	{
+		// Create header file
+		strcpy(filename,outfile);
+		strcat(filename,".h");
+		f = fopen(filename , "w");
+		if(f)
+		{
+			fprintf(f,"////////////////////////////////////\n");
+			fprintf(f,"//  FontCP&P generated font data  //\n");
+			fprintf(f,"////////////////////////////////////\n");
+			fprintf(f,"\n");
+
+			fprintf(f,"#ifndef FONT_HEADER\n");
+			fprintf(f,"#define FONT_HEADER\n");
+			fprintf(f,"typedef struct _font_type\n");
+			fprintf(f,"{\n");
+			fprintf(f,"\tunsigned int nb_of_chars;\n");
+			fprintf(f,"\tunsigned int char_x_size;\n");
+			fprintf(f,"\tunsigned int char_y_size;\n");
+			fprintf(f,"\tunsigned int buffer_size;\n");
+			fprintf(f,"\tconst unsigned char * font_data;\n");
+			fprintf(f,"}font_type;\n");
+
+			fprintf(f,"#endif\n");
+
+			fprintf(f,"\n");
+			fprintf(f,"extern const unsigned char data_%s[];\n",outfile);
+			fprintf(f,"extern font_type %s;\n",outfile);
+
+			fclose(f);
+		}
+
+		strcpy(filename,outfile);
+		strcat(filename,".c");
+
+		f = fopen(filename , "w");
+	}
 
 	if(!f)
 		f = stdout;
 
-	fprintf(f,"\nconst unsigned char font[] =\n");
+	fprintf(f,"////////////////////////////////////\n");
+	fprintf(f,"//  FontCP&P generated font data  //\n");
+	fprintf(f,"////////////////////////////////////\n");
+	fprintf(f,"\n");
+
+	fprintf(f,"#include \x22%s.h\x22\n",outfile);
+
+	fprintf(f,"\n");
+	fprintf(f,"font_type %s=\n",outfile);
+	fprintf(f,"{\n");
+	fprintf(f,"\t%d,\n",font->nb_of_chars);
+	fprintf(f,"\t%d,\n",font->char_x_size);
+	fprintf(f,"\t%d,\n",font->char_y_size);
+	fprintf(f,"\t%d,\n",size);
+	fprintf(f,"\tdata_%s\n",outfile);
+	fprintf(f,"};\n");
+
+	fprintf(f,"\n");
+
+	fprintf(f,"const unsigned char data_%s[] =\n",outfile);
 
 	for(i=0;i<size;i++)
 	{
@@ -100,8 +161,6 @@ void printbuf(char * outfile, unsigned char * buf, int size)
 			fprintf(f,"\n\x7D\x3B\n");
 		}
 	}
-
-	fprintf(f,"\n");
 
 	if( f != stdout )
 	{
@@ -223,14 +282,14 @@ int isOption(int argc, char* argv[],char * paramtosearch,char * argtoparam)
 
 	char option[512];
 
-	memset(option,0,512);
+	memset(option,0,sizeof(option));
 	while(param<=argc)
 	{
 		if(argv[param])
 		{
 			if(argv[param][0]=='-')
 			{
-				memset(option,0,512);
+				memset(option,0,sizeof(option));
 
 				j=0;
 				i=1;
@@ -281,7 +340,7 @@ void printhelp(char* argv[])
 	printf("Options:\n");
 	printf("  -help \t\t\t\t: This help\n");
 	printf("  -file:[filename]\t\t\t: Input bmp file\n");
-	printf("  -outfile:[filename]\t\t\t: Output header file\n");
+	printf("  -fontname:[name]\t\t\t: Output font name\n");
 	printf("  -nbchars:[nb of characters]\t\t: Total number of characters\n");
 	printf("  -cxsize:[nb of pixels]\t\t: Character x size\n");
 	printf("  -cysize:[nb of pixels]\t\t: Character y size\n");
@@ -301,7 +360,7 @@ int main(int argc, char *argv[])
 	unsigned char * char_sprite;
 	unsigned char * finalfontbuffer;
 	char filename[MAX_PARAM_ARG_SIZE];
-	char outfilename[MAX_PARAM_ARG_SIZE];
+	char fontname[MAX_PARAM_ARG_SIZE];
 	char tmpparam[MAX_PARAM_ARG_SIZE];
 	font_spec ifnt;
 
@@ -333,10 +392,10 @@ int main(int argc, char *argv[])
 		printf("Input file : %s\n",filename);
 	}
 
-	memset(outfilename,0,sizeof(outfilename));
-	if(isOption(argc,argv,"outfile",(char*)&outfilename)>0)
+	memset(fontname,0,sizeof(fontname));
+	if(isOption(argc,argv,"outfile",(char*)&fontname)>0)
 	{
-		printf("Output file : %s\n",outfilename);
+		printf("Output file : %s\n",fontname);
 	}
 
 	memset(tmpparam,0,sizeof(tmpparam));
@@ -444,7 +503,7 @@ int main(int argc, char *argv[])
 				}
 			}
 
-			printbuf(outfilename, (unsigned char*)finalfontbuffer, ifnt.nb_of_chars * bufsize);
+			generate_source_files(fontname, (unsigned char*)finalfontbuffer, ifnt.nb_of_chars * bufsize,&ifnt);
 
 			free(finalfontbuffer);
 		}
