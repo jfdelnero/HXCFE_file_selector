@@ -57,11 +57,11 @@ typedef struct _bblock
 	unsigned char code[1024-(3+1+4+4)];
 }__attribute__ ((packed)) bblock;
 
-int memsearch(unsigned char * tofind,int sizetofind, unsigned char * buffer,int bufsize )
+int memsearch(unsigned char * tofind, int sizetofind, unsigned char * buffer, int bufsize, int startpoint )
 {
 	int i,buf_i;
 
-	buf_i = 0;
+	buf_i = startpoint;
 	i = 0;
 	while( i < sizetofind && (buf_i+i)<bufsize)
 	{
@@ -100,7 +100,7 @@ int checkexec(unsigned char * exec,int execsize, unsigned char * adf,int adfsize
 	blocksize = 512-24;
 	blockcnt = 0;
 	block = 0;
-	first_offset = memsearch(&exec[block * (512-24)],blocksize,adf,adfsize );
+	first_offset = memsearch(&exec[block * (512-24)],blocksize,adf,adfsize, 0 );
 	last_offset = first_offset;
 
 	if(first_offset>0)
@@ -110,7 +110,6 @@ int checkexec(unsigned char * exec,int execsize, unsigned char * adf,int adfsize
 
 		while( block < blocknb )
 		{
-
 			if( execsize - (block * (512-24)) < 512-24 )
 			{
 				blocksize = execsize - (block * (512-24));
@@ -120,7 +119,7 @@ int checkexec(unsigned char * exec,int execsize, unsigned char * adf,int adfsize
 				blocksize = 512-24;
 			}
 
-			exec_offset = memsearch(&exec[block * (512-24)],blocksize,adf,adfsize );
+			exec_offset = memsearch(&exec[block * (512-24)], blocksize, adf, adfsize, last_offset + 512 );
 
 			if((exec_offset/512) - (last_offset / 512)!=1)
 			{
@@ -243,7 +242,7 @@ int main (int argc, char *argv[])
 
 	bblock BOOTBLOCK;
 
-	printf("Amiga Boot block builder v0.2\n");
+	printf("Amiga Boot block builder v0.3\n");
 
 	if(argc == 4 )
 	{
@@ -291,7 +290,7 @@ int main (int argc, char *argv[])
 			exit(-1);
 		}
 
-		tableoffset = memsearch("<HXCFEM>",2*4, (unsigned char*)&BOOTBLOCK, sizeof(BOOTBLOCK));
+		tableoffset = memsearch("<HXCFEM>",2*4, (unsigned char*)&BOOTBLOCK, sizeof(BOOTBLOCK), 0 );
 		if(tableoffset<0)
 		{
 			printf("Entry table not found !!\n");
