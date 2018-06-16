@@ -525,11 +525,16 @@ int main(int argc, char *argv[])
 						if( bufoffset < ifnt.nb_of_chars * bufsize)
 						{
 							memcpy( finalfontbuffer+bufoffset, char_sprite, bufsize );
+							free(char_sprite);
+						}
+						else
+						{
+							printf("Destination buffer full.\n");
+							free(char_sprite);
+							break;
 						}
 
 						bufoffset += bufsize;
-
-						free(char_sprite);
 					}
 				}
 			}
