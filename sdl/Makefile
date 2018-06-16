@@ -12,7 +12,10 @@ EXEC=HXCFEMNG
 all: $(EXEC)
 	#strip -s $(EXEC)
 
-HXCFEMNG:      fectrl.o errors_def.o media_access.o config_file.o menu.o menu_settings.o menu_selectdrive.o menu_commands.o gui_utils.o sdl_hal.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o msg_txt.o slot_list_gen.o
+HXCFEMNG:	fectrl.o errors_def.o media_access.o config_file.o menu.o menu_settings.o menu_selectdrive.o \
+			menu_commands.o gui_utils.o sdl_hal.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o \
+			fat_write.o fat_cache.o msg_txt.o slot_list_gen.o \
+			font_list.o font_st_8x8.o font_charset_8x6.o font_dangen_8x12.o
 	$(CC) -o $@    $^ $(LDFLAGS)
 
 fectrl.o: ../fectrl.c
@@ -70,6 +73,18 @@ fat_cache.o: ../fat32/fat_cache.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 slot_list_gen.o: slot_list_gen.c
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+font_st_8x8.o: ../graphx/fonts/font_st_8x8.c
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+font_dangen_8x12.o: ../graphx/fonts/font_dangen_8x12.c
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+font_charset_8x6.o: ../graphx/fonts/font_charset_8x6.c
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+font_list.o: ../graphx/font_list.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean:

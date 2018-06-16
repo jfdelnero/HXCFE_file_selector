@@ -51,7 +51,7 @@
 #include "ui_context.h"
 #include "gui_utils.h"
 
-#include "../graphx/font.h"
+#include "../graphx/font_list.h"
 
 #include "hal.h"
 
@@ -238,7 +238,6 @@ int read_mass_storage(unsigned long lba, unsigned char * data, int nbsector)
 	}
 
 	#else
-	int ret;
 
 	if(hMassStorage)
 	{
@@ -572,14 +571,12 @@ void init_timer()
 int init_display(ui_context * ctx)
 {
 	int i,buffer_size;
+	font_type * font;
 
 	track_number = 0;
 
 	ctx->SCREEN_XRESOL = 1024;
 	ctx->SCREEN_YRESOL = 480;
-
-	ctx->screen_txt_xsize = ctx->SCREEN_XRESOL / FONT_SIZE_X;
-	ctx->screen_txt_ysize = ctx->SCREEN_YRESOL / FONT_SIZE_Y;
 
 	buffer_size = ctx->SCREEN_XRESOL * ctx->SCREEN_YRESOL;
 
@@ -621,6 +618,11 @@ int init_display(ui_context * ctx)
 		colors[i].b = i;
 	}
 	SDL_SetColors(bBuffer, colors, 0, 256);
+
+	font = font_list[ctx->font_id];
+
+	ctx->screen_txt_xsize = ctx->SCREEN_XRESOL / font->char_x_size;
+	ctx->screen_txt_ysize = (ctx->SCREEN_YRESOL / font->char_y_size);
 
 	update_screen(ctx);
 
@@ -688,8 +690,11 @@ void print_char8x8(ui_context * ctx, int col, int line, unsigned char c, int mod
 {
 	int i,j;
 	unsigned char *ptr_dst;
-	unsigned char *font;
+	const unsigned char *font_sprite;
 	unsigned char set_byte;
+	font_type * font;
+
+	font = font_list[ctx->font_id];
 
 	ptr_dst = (unsigned char*)screen_buffer;
 
@@ -700,19 +705,19 @@ void print_char8x8(ui_context * ctx, int col, int line, unsigned char c, int mod
 
 	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
 	{
-		ptr_dst += (((line<<3)*ctx->SCREEN_XRESOL)+ (col<<3));
-		font     = font_data + (c * ((FONT_SIZE_X*FONT_SIZE_Y)/8));
+		ptr_dst += (((line * font->char_y_size)*ctx->SCREEN_XRESOL)+ (col<<3));
+		font_sprite     = font->font_data + (c * font->char_size);
 
-		for(j=0;j<8;j++)
+		for(j=0;j<font->char_y_size;j++)
 		{
-			for(i=0;i<8;i++)
+			for(i=0;i<font->char_x_size;i++)
 			{
-				if( *font & (0x80>>i) )
+				if( *font_sprite & (0x80>>i) )
 					ptr_dst[i]= set_byte;
 				else
 					ptr_dst[i]= set_byte ^ 0xFF;
 			}
-			font++;
+			font_sprite++;
 			ptr_dst=ptr_dst + ctx->SCREEN_XRESOL;
 		}
 	}
@@ -734,14 +739,17 @@ void invert_line(ui_context * ctx, int line)
 	int i,j;
 	unsigned char *ptr_dst;
 	int ptroffset;
+	font_type * font;
+
+	font = font_list[ctx->font_id];
 
 	if( line < ctx->screen_txt_xsize )
 	{
 		ptr_dst=(unsigned char*)screen_buffer;
 
-		for(j=0;j<8;j++)
+		for(j=0;j<font->char_y_size;j++)
 		{
-			ptroffset=(ctx->SCREEN_XRESOL* ((line<<3) + j));
+			ptroffset=(ctx->SCREEN_XRESOL* ((line * font->char_y_size) + j));
 
 			for(i=0;i<ctx->SCREEN_XRESOL;i++)
 			{
