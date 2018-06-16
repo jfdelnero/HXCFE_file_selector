@@ -631,10 +631,10 @@ int ui_loadfilelistpage(ui_context * ctx)
 				DirectoryEntry_tab[i].firstCluster = ENDIAN_32BIT(dir_entry.cluster) ;
 				DirectoryEntry_tab[i].size =  ENDIAN_32BIT(dir_entry.size);
 
-				entrytype_icon = 12;
+				entrytype_icon = FONT_FILE_ICON;
 
 				if( DirectoryEntry_tab[i].attributes & FILE_ATTR_DIRECTORY )
-					entrytype_icon = 10;
+					entrytype_icon = FONT_FOLDER_ICON;
 
 				hxc_printf(ctx,LEFT_ALIGNED | DONTPARSE,0,y_pos," %c%s",entrytype_icon,DirectoryEntry_tab[i].name);
 
