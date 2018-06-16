@@ -361,12 +361,239 @@ void printhelp(char* argv[])
 	printf("  -yoffset:[nb of pixels]\t\t: Initial y offset\n");
 	printf("  -charsperline:[nb of characters]\t: Characters per line\n");
 	printf("  -charsperrow:[nb of characters]\t: Characters per row\n");
-	printf("  -srcstartchar:[character number]\t: First character index in the source font\n");
+	printf("  -srcstartchar:[character number]\t: First character index in the font\n");
+	printf("  -nofontpatch\t\t\t\t: Don't apply the final patch\n");
 	printf("\n");
+}
+
+void patch_font( font_spec * ifnt, unsigned char * finalfontbuffer)
+{
+	unsigned char * charbuf;
+	int final_xsize,final_ysize;
+	int i_x,i_y;
+	int spritesize;
+	int cur_char;
+
+	final_xsize = ifnt->char_x_size;
+
+	if(ifnt->char_y_size & (ifnt->chars_y_align-1))
+		final_ysize = ( ( ifnt->char_y_size & ~(ifnt->chars_y_align-1) ) + ifnt->chars_y_align);
+	else
+		final_ysize = ifnt->char_y_size;
+
+	spritesize = ((final_xsize*final_ysize)/8);
+
+	charbuf = malloc(spritesize);
+	if(charbuf)
+	{
+		// Char 0 : Blank
+		memset(charbuf,0x00, spritesize);
+		cur_char = 0;
+		memcpy( finalfontbuffer+(cur_char*spritesize), charbuf, spritesize );
+
+		// Char 1 : Full on
+		// ***
+		// ***
+		// ***
+		memset(charbuf,0xFF, spritesize);
+		cur_char = 1;
+		memcpy( finalfontbuffer+(cur_char*spritesize), charbuf, spritesize );
+
+		// Char 2 :
+		// ***
+		// *
+		// *
+		memset(charbuf,0x00, spritesize);
+		cur_char = 2;
+
+		for(i_x = 0; i_x < ifnt->char_x_size;i_x++)
+		{
+			for(i_y = 0; i_y < ifnt->char_y_size;i_y++)
+			{
+				if( (i_x == 0) || (i_y == 0) )
+				{
+					set_char_pix(charbuf, i_x, i_y, final_xsize, final_ysize);
+				}
+			}
+		}
+
+		memcpy( finalfontbuffer+(cur_char*spritesize), charbuf, spritesize );
+
+		// Char 3 :
+		// ***
+		//   *
+		//   *
+		memset(charbuf,0x00, spritesize);
+		cur_char = 3;
+
+		for(i_x = 0; i_x < ifnt->char_x_size;i_x++)
+		{
+			for(i_y = 0; i_y < ifnt->char_y_size;i_y++)
+			{
+				if( (i_x == (ifnt->char_x_size-1)) || (i_y == 0) )
+				{
+					set_char_pix(charbuf, i_x, i_y, final_xsize, final_ysize);
+				}
+			}
+		}
+
+		memcpy( finalfontbuffer+(cur_char*spritesize), charbuf, spritesize );
+
+		// Char 4 :
+		// *
+		// *
+		// ***
+		memset(charbuf,0x00, spritesize);
+		cur_char = 4;
+
+		for(i_x = 0; i_x < ifnt->char_x_size;i_x++)
+		{
+			for(i_y = 0; i_y < ifnt->char_y_size;i_y++)
+			{
+				if( (i_x == 0) || (i_y == (ifnt->char_y_size-1)) )
+				{
+					set_char_pix(charbuf, i_x, i_y, final_xsize, final_ysize);
+				}
+			}
+		}
+
+		memcpy( finalfontbuffer+(cur_char*spritesize), charbuf, spritesize );
+
+		// Char 5 :
+		//   *
+		//   *
+		// ***
+		memset(charbuf,0x00, spritesize);
+		cur_char = 5;
+
+		for(i_x = 0; i_x < ifnt->char_x_size;i_x++)
+		{
+			for(i_y = 0; i_y < ifnt->char_y_size;i_y++)
+			{
+				if( (i_x == (ifnt->char_x_size-1)) || (i_y == (ifnt->char_y_size-1)) )
+				{
+					set_char_pix(charbuf, i_x, i_y, final_xsize, final_ysize);
+				}
+			}
+		}
+
+		memcpy( finalfontbuffer+(cur_char*spritesize), charbuf, spritesize );
+
+		// Char 6 :
+		// *
+		// *
+		// *
+		memset(charbuf,0x00, spritesize);
+		cur_char = 6;
+
+		for(i_x = 0; i_x < ifnt->char_x_size;i_x++)
+		{
+			for(i_y = 0; i_y < ifnt->char_y_size;i_y++)
+			{
+				if( (i_x == 0) )
+				{
+					set_char_pix(charbuf, i_x, i_y, final_xsize, final_ysize);
+				}
+			}
+		}
+		memcpy( finalfontbuffer+(cur_char*spritesize), charbuf, spritesize );
+
+		// Char 7 :
+		//   *
+		//   *
+		//   *
+		memset(charbuf,0x00, spritesize);
+		cur_char = 7;
+
+		for(i_x = 0; i_x < ifnt->char_x_size;i_x++)
+		{
+			for(i_y = 0; i_y < ifnt->char_y_size;i_y++)
+			{
+				if( (i_x == (ifnt->char_x_size-1)) )
+				{
+					set_char_pix(charbuf, i_x, i_y, final_xsize, final_ysize);
+				}
+			}
+		}
+		memcpy( finalfontbuffer+(cur_char*spritesize), charbuf, spritesize );
+
+		// Char 8 :
+		// ***
+		//
+		//
+		memset(charbuf,0x00, spritesize);
+		cur_char = 8;
+
+		for(i_x = 0; i_x < ifnt->char_x_size;i_x++)
+		{
+			for(i_y = 0; i_y < ifnt->char_y_size;i_y++)
+			{
+				if( (i_y == 0) )
+				{
+					set_char_pix(charbuf, i_x, i_y, final_xsize, final_ysize);
+				}
+			}
+		}
+		memcpy( finalfontbuffer+(cur_char*spritesize), charbuf, spritesize );
+
+		// Char 9 :
+		//
+		//
+		// ***
+		memset(charbuf,0x00, spritesize);
+		cur_char = 9;
+
+		for(i_x = 0; i_x < ifnt->char_x_size;i_x++)
+		{
+			for(i_y = 0; i_y < ifnt->char_y_size;i_y++)
+			{
+				if( (i_y == (ifnt->char_y_size-1)) )
+				{
+					set_char_pix(charbuf, i_x, i_y, final_xsize, final_ysize);
+				}
+			}
+		}
+		memcpy( finalfontbuffer+(cur_char*spritesize), charbuf, spritesize );
+
+		// Char 10 : (Folder)
+		//  *
+		// ***
+		//  *
+		memset(charbuf,0x00, spritesize);
+		cur_char = 10;
+
+		for(i_x = 0; i_x < ifnt->char_x_size;i_x++)
+		{
+			for(i_y = 0; i_y < ifnt->char_y_size;i_y++)
+			{
+				if( (i_x != (ifnt->char_x_size-1)) && \
+				    (i_y != (ifnt->char_y_size-1)) && \
+				    (i_x != 0) && \
+				    (i_y != 0) )
+				{
+					set_char_pix(charbuf, i_x, i_y, final_xsize, final_ysize);
+				}
+			}
+		}
+		memcpy( finalfontbuffer+(cur_char*spritesize), charbuf, spritesize );
+
+		// Char 11 : (File)
+		//
+		//
+		//
+		memset(charbuf,0x00, spritesize);
+		cur_char = 11;
+		memcpy( finalfontbuffer+(cur_char*spritesize), charbuf, spritesize );
+
+		free(charbuf);
+	}
+
+	return;
 }
 
 int main(int argc, char *argv[])
 {
+
 	int bufsize,xchar,ychar,bufoffset;
 	bitmap_data bdata;
 	unsigned char * char_sprite;
@@ -537,6 +764,12 @@ int main(int argc, char *argv[])
 						bufoffset += bufsize;
 					}
 				}
+			}
+
+			if(isOption(argc,argv,"nofontpatch",(char*)&tmpparam) <= 0)
+			{
+				printf("Patching the font...\n");
+				patch_font( &ifnt, finalfontbuffer);
 			}
 
 			generate_source_files(fontname, (unsigned char*)finalfontbuffer, ifnt.nb_of_chars * bufsize,&ifnt);
