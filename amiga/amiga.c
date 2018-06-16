@@ -57,7 +57,7 @@
 #include "ui_context.h"
 #include "gui_utils.h"
 
-#include "../graphx/font.h"
+#include "../graphx/font_list.h"
 
 #include "../hal.h"
 
@@ -1480,6 +1480,7 @@ void init_timer()
 int init_display(ui_context * ctx)
 {
 	unsigned short loop;
+	font_type * font;
 
 	ctx->SCREEN_XRESOL = 640;
 
@@ -1554,8 +1555,10 @@ int init_display(ui_context * ctx)
 
 	ctx->SCREEN_YRESOL = (GfxBaseptr->DisplayFlags & PAL) ? 256 : 200;
 
-	ctx->screen_txt_xsize = ctx->SCREEN_XRESOL / FONT_SIZE_X;
-	ctx->screen_txt_ysize = (ctx->SCREEN_YRESOL / FONT_SIZE_Y) - 1;
+	font = font_list[ctx->font_id];
+
+	ctx->screen_txt_xsize = ctx->SCREEN_XRESOL / font->char_x_size;
+	ctx->screen_txt_ysize = (ctx->SCREEN_YRESOL / font->char_y_size);
 
 	disablemousepointer();
 	init_timer();
@@ -1613,66 +1616,33 @@ unsigned char set_color_scheme(unsigned char color)
 
 void print_char8x8(ui_context * ctx,int col, int line, unsigned char c, int mode)
 {
+	int i;
 	unsigned char *ptr_dst;
-	unsigned char * font;
+	const unsigned char * char_data;
+	font_type * font;
+
+	font = font_list[ctx->font_id];
 
 	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
 	{
-		ptr_dst  = screen_buffer + (( line * (80*8) ) + col);
-		font     = font_data + (c * ((FONT_SIZE_X*FONT_SIZE_Y)/8));
+		ptr_dst  = screen_buffer + (( line * ( 80 * font->char_y_size) ) + col);
+		char_data = font->font_data + (c * font->char_size);
 
 		if(mode & INVERTED)
 		{
-			*ptr_dst = (*font++ ^ 0xFF);
-			ptr_dst += 80;
-
-			*ptr_dst = (*font++ ^ 0xFF);
-			ptr_dst += 80;
-
-			*ptr_dst = (*font++ ^ 0xFF);
-			ptr_dst += 80;
-
-			*ptr_dst = (*font++ ^ 0xFF);
-			ptr_dst += 80;
-
-			*ptr_dst = (*font++ ^ 0xFF);
-			ptr_dst += 80;
-
-			*ptr_dst = (*font++ ^ 0xFF);
-			ptr_dst += 80;
-
-			*ptr_dst = (*font++ ^ 0xFF);
-			ptr_dst += 80;
-
-			*ptr_dst = (*font++ ^ 0xFF);
-			ptr_dst += 80;
-
+			for(i=0;i<font->char_y_size;i++)
+			{
+				*ptr_dst = (*char_data++ ^ 0xFF);
+				ptr_dst += 80;
+			}
 		}
 		else
 		{
-			*ptr_dst = *font++;
-			ptr_dst += 80;
-
-			*ptr_dst = *font++;
-			ptr_dst += 80;
-
-			*ptr_dst = *font++;
-			ptr_dst += 80;
-
-			*ptr_dst = *font++;
-			ptr_dst += 80;
-
-			*ptr_dst = *font++;
-			ptr_dst += 80;
-
-			*ptr_dst = *font++;
-			ptr_dst += 80;
-
-			*ptr_dst = *font++;
-			ptr_dst += 80;
-
-			*ptr_dst = *font++;
-			ptr_dst += 80;
+			for(i=0;i<font->char_y_size;i++)
+			{
+				*ptr_dst = (*char_data++);
+				ptr_dst += 80;
+			}
 		}
 	}
 }
@@ -1680,38 +1650,33 @@ void print_char8x8(ui_context * ctx,int col, int line, unsigned char c, int mode
 void clear_line(ui_context * ctx,int line,int mode)
 {
 	unsigned short *ptr_dst;
-	int i;
+	int i,j;
+	font_type * font;
+
+	font = font_list[ctx->font_id];
 
 	if(line < ctx->screen_txt_ysize)
 	{
-		ptr_dst  = (unsigned short *)(screen_buffer + ( line * (80*8) ));
+		ptr_dst  = (unsigned short *)(screen_buffer + ( line * ( 80 * font->char_y_size ) ));
 
 		if(mode & INVERTED)
 		{
 			for(i=0;i< 40;i++)
 			{
-				*ptr_dst++ = 0xFFFF;
-				*ptr_dst++ = 0xFFFF;
-				*ptr_dst++ = 0xFFFF;
-				*ptr_dst++ = 0xFFFF;
-				*ptr_dst++ = 0xFFFF;
-				*ptr_dst++ = 0xFFFF;
-				*ptr_dst++ = 0xFFFF;
-				*ptr_dst++ = 0xFFFF;
+				for(j=0;j<font->char_y_size;j++)
+				{
+					*ptr_dst++ = 0xFFFF;
+				}
 			}
 		}
 		else
 		{
 			for(i=0;i<40;i++)
 			{
-				*ptr_dst++ = 0x0000;
-				*ptr_dst++ = 0x0000;
-				*ptr_dst++ = 0x0000;
-				*ptr_dst++ = 0x0000;
-				*ptr_dst++ = 0x0000;
-				*ptr_dst++ = 0x0000;
-				*ptr_dst++ = 0x0000;
-				*ptr_dst++ = 0x0000;
+				for(j=0;j<font->char_y_size;j++)
+				{
+					*ptr_dst++ = 0x0000;
+				}
 			}
 		}
 	}
@@ -1722,13 +1687,16 @@ void invert_line(ui_context * ctx,int line)
 	int i,j;
 	unsigned short *ptr_dst;
 	int ptroffset;
+	font_type * font;
+
+	font = font_list[ctx->font_id];
 
 	if(line < ctx->screen_txt_ysize)
 	{
-		for(j=0;j<8;j++)
+		for(j=0;j< font->char_y_size ;j++)
 		{
 			ptr_dst = (unsigned short*)screen_buffer;
-			ptroffset = ( 40 * ((line<<3)+j) );
+			ptroffset = ( 40 * ((line * font->char_y_size )+j) );
 
 			for(i=0;i<40;i++)
 			{

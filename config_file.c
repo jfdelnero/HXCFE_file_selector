@@ -82,6 +82,24 @@ int getcfg_backgroundcolor()
 	return cfgfile_ptr->background_color;
 }
 
+void setcfg_fontselection(int font_id)
+{
+	cfgfile * cfgfile_ptr;
+
+	cfgfile_ptr=(cfgfile * )cfgfile_header;
+
+	cfgfile_ptr->font_selection = font_id;
+}
+
+int getcfg_fontselection()
+{
+	cfgfile * cfgfile_ptr;
+
+	cfgfile_ptr=(cfgfile * )cfgfile_header;
+
+	return cfgfile_ptr->font_selection;
+}
+
 #ifdef TEST_FLOPPY_IO
 void test_access(ui_context * ctx, int i)
 {

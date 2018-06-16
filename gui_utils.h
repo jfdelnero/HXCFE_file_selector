@@ -20,4 +20,3 @@ char* stristr( const char* str1, const char* str2 );
 void dbg_printf(char * chaine, ...);
 void print_hex_array(unsigned char * buffer,int size);
 #endif
-

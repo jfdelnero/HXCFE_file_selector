@@ -47,6 +47,8 @@
 
 #include "version.h"
 
+#include "graphx/font_list.h"
+
 void print_str(ui_context * ctx,char * buf,int maxsize,int col,int line,int linefeed,int mode)
 {
 	int i;
@@ -217,8 +219,22 @@ int hxc_printf_box(ui_context * ctx,char * chaine, ...)
 
 void init_display_buffer(ui_context * ctx)
 {
+	int i;
+	font_type * font;
+	
+	font = font_list[ctx->font_id];
+
+	ctx->screen_txt_xsize = ctx->SCREEN_XRESOL / font->char_x_size;
+	ctx->screen_txt_ysize = (ctx->SCREEN_YRESOL / font->char_y_size);
+	
 	ctx->NUMBER_OF_ENTRIES_ON_DISPLAY = ctx->screen_txt_ysize - 2;          // (Display size minus top + bottom)
 	ctx->NUMBER_OF_FILE_ON_DISPLAY = ctx->NUMBER_OF_ENTRIES_ON_DISPLAY - 1; // (Display size minus top + bottom + tittle)
+
+	// Clear all lines.
+	for(i=0;i<ctx->screen_txt_ysize;i++)
+	{
+		clear_line(ctx, i, 0 );
+	}
 
 	// Footprint : Current software / firmware version and title
 	clear_line(ctx, ctx->screen_txt_ysize - 1, INVERTED);
@@ -229,9 +245,6 @@ void init_display_buffer(ui_context * ctx)
 	// Top header : current folder path
 	clear_line(ctx, 0, INVERTED);
 	hxc_print(ctx,LEFT_ALIGNED|INVERTED,0,0, (char*)cur_folder_msg);
-
-	// Startup message
-	hxc_print(ctx,CENTER_ALIGNED,0,HELP_Y_POS+1, (char*)startup_msg);
 }
 
 char to_lower(char c)

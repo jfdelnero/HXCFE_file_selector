@@ -28,6 +28,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
+
 #include "keysfunc_defs.h"
 
 #include "cfg_file.h"
@@ -327,6 +329,23 @@ void ui_chgcolor(ui_context * ctx,int color)
 	ctx->colormode = color;
 	set_color_scheme(color);
 	setcfg_backgroundcolor(color);
+	waitms(100);
+}
+
+void ui_chgfont(ui_context * ctx,int font)
+{
+	int i;
+
+	for(i=0;i<ctx->screen_txt_ysize;i++)
+	{
+		clear_line(ctx, i, 0 );
+	}
+
+	ctx->font_id = font % 3;
+
+	init_display_buffer(ctx);
+
+	setcfg_fontselection(ctx->font_id);
 	waitms(100);
 }
 
@@ -665,10 +684,10 @@ int ui_displayfilelistpage(ui_context * ctx)
 	{
 		if(DirectoryEntry_tab[i].name[0])
 		{
-			entrytype_icon = 12;
+			entrytype_icon = FONT_FILE_ICON;
 
 			if( DirectoryEntry_tab[i].attributes & FILE_ATTR_DIRECTORY )
-				entrytype_icon = 10;
+				entrytype_icon = FONT_FOLDER_ICON;
 
 			hxc_printf(ctx,LEFT_ALIGNED | DONTPARSE,0,y_pos," %c%s",entrytype_icon,DirectoryEntry_tab[i].name);
 
@@ -972,7 +991,6 @@ int check_firmware_version(ui_context * ctx)
 			ofs += get_number(&ctx->FIRMWAREVERSION[ofs], tmp);
 			fw_version[i] = atoi(tmp);
 			ofs++;
-			printf("%d\n",fw_version[i]);
 		}
 
 		if( fw_version[1] > 1 )
@@ -1067,6 +1085,11 @@ int mount_drive(ui_context * ctx, int drive)
 		if( getcfg_backgroundcolor() != 0xFF )
 			set_color_scheme( getcfg_backgroundcolor() );
 
+		if( ctx->font_id != getcfg_fontselection() )
+		{
+			ui_chgfont(ctx,getcfg_fontselection());
+		}
+
 		displayFolder(ctx);
 
 		fl_opendir(ctx->currentPath, &file_list_status);
@@ -1107,6 +1130,9 @@ int main(int argc, char* argv[])
 	init_display(ctx);
 
 	init_display_buffer(ctx);
+
+	// Startup message
+	hxc_print(ctx,CENTER_ALIGNED,0,HELP_Y_POS+1, (char*)startup_msg);
 
 	#ifdef DEBUG
 	dbg_printf("Init display Done\n");

@@ -89,6 +89,16 @@ static int commnand_menu_chgcolor_cb(ui_context * ctx, int event, int xpos, int 
 	return MENU_STAYINMENU;
 }
 
+static int commnand_menu_chgfont_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
+{
+	if(event)
+	{
+		ui_chgfont(ctx,ctx->font_id+1);
+	}
+
+	return MENU_REDRAWMENU;
+}
+
 static int commnand_menu_help_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
 {
 	if(event)
@@ -155,6 +165,7 @@ const menu commands_menu[]=
 //	{"Quit the File selector",          0,                                    -1, (struct menu * )-1, CENTER_ALIGNED},
 //	{"",                                0,                                     0, 0, CENTER_ALIGNED},
 	{"Change display colors",           commnand_menu_chgcolor_cb,             0, 0, CENTER_ALIGNED},
+	{"Change display Font",             commnand_menu_chgfont_cb,              0, 0, CENTER_ALIGNED},	
 	{"HxC Drive Settings",              0,                                     0, (struct menu * )&settings_menu, CENTER_ALIGNED},
 	{"",                                0,                                     0, 0, CENTER_ALIGNED},
 	{"Select drive",                    0,                                     0, (struct menu * )&selectdrive_menu, CENTER_ALIGNED},

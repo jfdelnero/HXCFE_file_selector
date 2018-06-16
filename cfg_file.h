@@ -88,7 +88,7 @@ typedef struct cfgfile_
     uint8_t  padding_5[128];               // --- 0x180   File selector Scratch pad area...
 
     uint8_t  background_color;
-
+    uint8_t  font_selection;
 #ifndef WIN32
 }__attribute__((__packed__)) cfgfile;
 #else
