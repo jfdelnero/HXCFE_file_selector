@@ -1,12 +1,10 @@
-#CC=i386-pc-linux-gcc
-CC=gcc
+CFLAGS = -O3
+LDFLAGS = 
 
-CFLAGS=-O3 -I . -g
-
-LDFLAGS=-lc -lm  -ldl  -lpthread -g
 EXEC=build_font
 
 all: $(EXEC)
+
 build_font: bmp_file.o main.o
 	$(CC) -o $@    $^ $(LDFLAGS)
 
