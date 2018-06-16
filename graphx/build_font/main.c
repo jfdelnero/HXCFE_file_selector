@@ -63,6 +63,8 @@ typedef struct font_spec_
 	unsigned int y_offset;
 
 	unsigned int chars_y_align;
+
+	unsigned int src_font_start_char;
 }font_spec;
 
 unsigned char framebuffer[(128*64) / 8];
@@ -359,6 +361,7 @@ void printhelp(char* argv[])
 	printf("  -yoffset:[nb of pixels]\t\t: Initial y offset\n");
 	printf("  -charsperline:[nb of characters]\t: Characters per line\n");
 	printf("  -charsperrow:[nb of characters]\t: Characters per row\n");
+	printf("  -srcstartchar:[character number]\t: First character index in the source font\n");
 	printf("\n");
 }
 
@@ -389,6 +392,7 @@ int main(int argc, char *argv[])
 	ifnt.chars_per_line = FONT_MATRIX_X_SIZE;
 	ifnt.chars_per_row = FONT_MATRIX_Y_SIZE;
 	ifnt.chars_y_align = 1;
+	ifnt.src_font_start_char = 0;
 
 	// help option...
 	if(isOption(argc,argv,"help",0)>0)
@@ -468,6 +472,12 @@ int main(int argc, char *argv[])
 		ifnt.chars_y_align = atoi(tmpparam);
 	}
 
+	memset(tmpparam,0,sizeof(tmpparam));
+	if(isOption(argc,argv,"srcstartchar",(char*)&tmpparam)>0)
+	{
+		ifnt.src_font_start_char = atoi(tmpparam);
+	}
+
 	if(strlen(filename))
 	{
 		if(!bmp_load(filename,&bdata))
@@ -482,11 +492,12 @@ int main(int argc, char *argv[])
 			printf("Characters per line : %d characters\n",ifnt.chars_per_line);
 			printf("Characters per row : %d characters\n",ifnt.chars_per_row);
 			printf("Character y size alignment : %d pixels\n",ifnt.chars_y_align);
+			printf("Source font starting char : %d\n",ifnt.src_font_start_char);
 
 			printf("\nBmp Loaded... Xsize: %d, Ysize: %d\n",bdata.xsize,bdata.ysize);
 
 			// Get the sprite size.
-			char_sprite = extractchar(&bdata,0,0,ifnt.char_x_size,ifnt.char_y_size,&bufsize,ifnt.chars_y_);
+			char_sprite = extractchar(&bdata,0,0,ifnt.char_x_size,ifnt.char_y_size,&bufsize,ifnt.chars_y_align);
 
 			free(char_sprite);
 
@@ -496,7 +507,7 @@ int main(int argc, char *argv[])
 			if(finalfontbuffer)
 			{
 				memset(finalfontbuffer,0,ifnt.nb_of_chars * bufsize);
-				bufoffset=0;
+				bufoffset = ifnt.src_font_start_char * bufsize;
 
 				for(ychar = 0; ychar < ifnt.chars_per_row; ychar++ )
 				{
@@ -511,7 +522,10 @@ int main(int argc, char *argv[])
 								ychar * ifnt.y_char_step,
 								bufoffset);
 
-						memcpy( finalfontbuffer+bufoffset, char_sprite, bufsize );
+						if( bufoffset < ifnt.nb_of_chars * bufsize)
+						{
+							memcpy( finalfontbuffer+bufoffset, char_sprite, bufsize );
+						}
 
 						bufoffset += bufsize;
 
