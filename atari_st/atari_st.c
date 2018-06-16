@@ -52,7 +52,7 @@
 #include "ui_context.h"
 #include "gui_utils.h"
 
-#include "../graphx/font.h"
+#include "../graphx/font_list.h"
 
 #include "../hal.h"
 
@@ -782,6 +782,7 @@ int install_joy_vector()
 int  init_display(ui_context * ctx)
 {
 	unsigned long k,i;
+	font_type * font;
 
 	linea0();
 
@@ -797,9 +798,6 @@ int  init_display(ui_context * ctx)
 
 	ctx->SCREEN_XRESOL = V_X_MAX;
 	ctx->SCREEN_YRESOL = V_Y_MAX;
-
-	ctx->screen_txt_xsize = ctx->SCREEN_XRESOL / FONT_SIZE_X;
-	ctx->screen_txt_ysize = ctx->SCREEN_YRESOL / FONT_SIZE_Y;
 
 	LINE_BYTES    = V_BYTES_LIN;
 	LINE_WORDS    = V_BYTES_LIN/2;
@@ -821,6 +819,11 @@ int  init_display(ui_context * ctx)
 
 	install_joy_vector();
 
+	font = font_list[ctx->font_id];
+
+	ctx->screen_txt_xsize = ctx->SCREEN_XRESOL / font->char_x_size;
+	ctx->screen_txt_ysize = (ctx->SCREEN_YRESOL / font->char_y_size);
+
 	return ERR_NO_ERROR;
 }
 
@@ -831,69 +834,37 @@ void disablemousepointer()
 
 void print_char8x8(ui_context * ctx, int col, int line, unsigned char c, int mode)
 {
+	int i;
 	unsigned char *ptr_dst;
-	unsigned char * font;
+	const unsigned char * char_data;
+	font_type * font;
+
+	font = font_list[ctx->font_id];
 
 	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
 	{
-		col <<= 3;
-		line <<= 3;
+		col *= font->char_x_size;
+		line *= font->char_y_size;
 
-		ptr_dst  = screen_buffer + ((unsigned long) line * LINE_BYTES) + ((col>>4)<<PLANES_ALIGNDEC) + ((col&8)==8);
-		font     = font_data + (c * ((FONT_SIZE_X*FONT_SIZE_Y)/8));
+		ptr_dst = screen_buffer + ((unsigned long) line * LINE_BYTES) + ((col>>4)<<PLANES_ALIGNDEC) + ((col&8)==8);
+		char_data = font->font_data + (c * font->char_size);
 
 		// in a 16-pixel chunk, there are 2 8-pixel chars, hence the x&8==8
 		if(mode & INVERTED)
 		{
-			*ptr_dst = (*font++) ^ 0xFF;
-			ptr_dst += LINE_BYTES;
-
-			*ptr_dst = (*font++) ^ 0xFF;
-			ptr_dst += LINE_BYTES;
-
-			*ptr_dst = (*font++) ^ 0xFF;
-			ptr_dst += LINE_BYTES;
-
-			*ptr_dst = (*font++) ^ 0xFF;
-			ptr_dst += LINE_BYTES;
-
-			*ptr_dst = (*font++) ^ 0xFF;
-			ptr_dst += LINE_BYTES;
-
-			*ptr_dst = (*font++) ^ 0xFF;
-			ptr_dst += LINE_BYTES;
-
-			*ptr_dst = (*font++) ^ 0xFF;
-			ptr_dst += LINE_BYTES;
-
-			*ptr_dst = (*font++) ^ 0xFF;
-			ptr_dst += LINE_BYTES;
+			for(i=0;i<font->char_y_size;i++)
+			{
+				*ptr_dst = (*char_data++) ^ 0xFF;
+				ptr_dst += LINE_BYTES;
+			}
 		}
 		else
 		{
-			*ptr_dst = *font++;
-			ptr_dst += LINE_BYTES;
-
-			*ptr_dst = *font++;
-			ptr_dst += LINE_BYTES;
-
-			*ptr_dst = *font++;
-			ptr_dst += LINE_BYTES;
-
-			*ptr_dst = *font++;
-			ptr_dst += LINE_BYTES;
-
-			*ptr_dst = *font++;
-			ptr_dst += LINE_BYTES;
-
-			*ptr_dst = *font++;
-			ptr_dst += LINE_BYTES;
-
-			*ptr_dst = *font++;
-			ptr_dst += LINE_BYTES;
-
-			*ptr_dst = *font++;
-			ptr_dst += LINE_BYTES;
+			for(i=0;i<font->char_y_size;i++)
+			{
+				*ptr_dst = *char_data++;
+				ptr_dst += LINE_BYTES;
+			}
 		}
 	}
 }
@@ -901,54 +872,35 @@ void print_char8x8(ui_context * ctx, int col, int line, unsigned char c, int mod
 void clear_line(ui_context * ctx,int line,int mode)
 {
 	unsigned short *ptr_dst;
-	int i;
+	int i,j;
+	font_type * font;
+
+	font = font_list[ctx->font_id];
 
 	if(line < ctx->screen_txt_ysize)
 	{
-		ptr_dst  = (unsigned short *)(screen_buffer + ( line * (LINE_WORDS* 8 * 2) ));
+		ptr_dst  = (unsigned short *)(screen_buffer + ( line * (LINE_WORDS * font->char_y_size * 2) ));
 
 		if(mode & INVERTED)
 		{
 			for(i=0; i<LINE_WORDS; i+=NB_PLANES)
 			{
-				*(ptr_dst) = 0xFFFF;
-				ptr_dst += NB_PLANES;
-				*(ptr_dst) = 0xFFFF;
-				ptr_dst += NB_PLANES;
-				*(ptr_dst) = 0xFFFF;
-				ptr_dst += NB_PLANES;
-				*(ptr_dst) = 0xFFFF;
-				ptr_dst += NB_PLANES;
-				*(ptr_dst) = 0xFFFF;
-				ptr_dst += NB_PLANES;
-				*(ptr_dst) = 0xFFFF;
-				ptr_dst += NB_PLANES;
-				*(ptr_dst) = 0xFFFF;
-				ptr_dst += NB_PLANES;
-				*(ptr_dst) = 0xFFFF;
-				ptr_dst += NB_PLANES;
+				for(j=0;j<font->char_y_size;j++)
+				{
+					*(ptr_dst) = 0xFFFF;
+					ptr_dst += NB_PLANES;
+				}
 			}
 		}
 		else
 		{
 			for(i=0; i<LINE_WORDS; i+=NB_PLANES)
 			{
-				*(ptr_dst) = 0x0000;
-				ptr_dst += NB_PLANES;
-				*(ptr_dst) = 0x0000;
-				ptr_dst += NB_PLANES;
-				*(ptr_dst) = 0x0000;
-				ptr_dst += NB_PLANES;
-				*(ptr_dst) = 0x0000;
-				ptr_dst += NB_PLANES;
-				*(ptr_dst) = 0x0000;
-				ptr_dst += NB_PLANES;
-				*(ptr_dst) = 0x0000;
-				ptr_dst += NB_PLANES;
-				*(ptr_dst) = 0x0000;
-				ptr_dst += NB_PLANES;
-				*(ptr_dst) = 0x0000;
-				ptr_dst += NB_PLANES;
+				for(j=0;j<font->char_y_size;j++)
+				{
+					*(ptr_dst) = 0x0000;
+					ptr_dst += NB_PLANES;
+				}
 			}
 		}
 	}
@@ -956,33 +908,25 @@ void clear_line(ui_context * ctx,int line,int mode)
 
 void invert_line(ui_context * ctx,int line)
 {
-	int i;
+	int i,j;
 	unsigned char  *ptr_dst;
 	unsigned short *ptr_dst2;
+	font_type * font;
+
+	font = font_list[ctx->font_id];
 
 	ptr_dst   = screen_buffer;
-	ptr_dst  += (unsigned long) LINE_BYTES * line * FONT_SIZE_Y;
+	ptr_dst  += (unsigned long) LINE_BYTES * line * font->char_y_size;
 
 	ptr_dst2 = (unsigned short *)ptr_dst;
 
 	for(i=0; i<LINE_WORDS; i+=NB_PLANES)
 	{
-		*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
-		ptr_dst2 += NB_PLANES;
-		*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
-		ptr_dst2 += NB_PLANES;
-		*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
-		ptr_dst2 += NB_PLANES;
-		*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
-		ptr_dst2 += NB_PLANES;
-		*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
-		ptr_dst2 += NB_PLANES;
-		*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
-		ptr_dst2 += NB_PLANES;
-		*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
-		ptr_dst2 += NB_PLANES;
-		*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
-		ptr_dst2 += NB_PLANES;
+		for(j=0;j<font->char_y_size;j++)
+		{
+			*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
+			ptr_dst2 += NB_PLANES;
+		}
 	}
 }
 

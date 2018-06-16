@@ -43,7 +43,10 @@ push-gbo-dsi: $(EXEC)
 push-gbo-pc: $(EXEC)
 	rsync --perms $< gbouthenot@gbo-pc.openvpn:/cygdrive/c/data/dropbox/emul/atari/hd/c/tmp/
 
-$(EXEC):        libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o  fectrl.o errors_def.o menu.o menu_settings.o menu_selectdrive.o menu_commands.o gui_utils.o atari_st.o media_access.o config_file.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o msg_txt.o
+$(EXEC):		libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o  fectrl.o errors_def.o menu.o menu_settings.o menu_selectdrive.o \
+				menu_commands.o gui_utils.o atari_st.o media_access.o config_file.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o \
+				fat_write.o fat_cache.o msg_txt.o \
+				font_list.o font_st_8x8.o font_charset_8x6.o font_dangen_8x12.o
 	$(C)          $(LFLAGS)           $^ -o $@
 	cd loader   && make all
 
@@ -55,7 +58,7 @@ gui_utils.o: ../gui_utils.c
 
 fectrl.o: ../fectrl.c
 	$(C)          $(CFLAGS)        -c $< -o $@
-	
+
 errors_def.o: ../errors_def.c
 	$(C)          $(CFLAGS)        -c $< -o $@
 
@@ -99,6 +102,18 @@ fat_write.o: ../fat32/fat_write.c
 	$(C)          $(CFLAGS)        -c $< -o $@
 
 fat_cache.o: ../fat32/fat_cache.c
+	$(C)          $(CFLAGS)        -c $< -o $@
+
+font_st_8x8.o: ../graphx/fonts/font_st_8x8.c
+	$(C)          $(CFLAGS)        -c $< -o $@
+
+font_dangen_8x12.o: ../graphx/fonts/font_dangen_8x12.c
+	$(C)          $(CFLAGS)        -c $< -o $@
+
+font_charset_8x6.o: ../graphx/fonts/font_charset_8x6.c
+	$(C)          $(CFLAGS)        -c $< -o $@
+
+font_list.o: ../graphx/font_list.c
 	$(C)          $(CFLAGS)        -c $< -o $@
 
 libc/mStartup.o: libc/mStartup.c
