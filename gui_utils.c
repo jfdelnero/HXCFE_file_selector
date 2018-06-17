@@ -71,18 +71,18 @@ void print_str(ui_context * ctx,char * buf,int maxsize,int col,int line,int line
 	i = 0;
 	while(buf[i] && i < maxsize)
 	{
-		if( (x_offset*8) <=(ctx->SCREEN_XRESOL-8))
+		if(buf[i] == '\n' && linefeed)
 		{
-			if(buf[i] == '\n' && linefeed)
-			{
-				x_offset = line;
-				y_offset++;
-			}
-			else
+			x_offset = line;
+			y_offset++;
+		}
+		else
+		{
+			if( (x_offset*8) <=(ctx->SCREEN_XRESOL-8))
 			{
 				print_char8x8(ctx,x_offset,y_offset,buf[i],mode);
-				x_offset++;
 			}
+			x_offset++;
 		}
 		i++;
 	}
@@ -221,12 +221,12 @@ void init_display_buffer(ui_context * ctx)
 {
 	int i;
 	font_type * font;
-	
+
 	font = font_list[ctx->font_id];
 
 	ctx->screen_txt_xsize = ctx->SCREEN_XRESOL / font->char_x_size;
 	ctx->screen_txt_ysize = (ctx->SCREEN_YRESOL / font->char_y_size);
-	
+
 	ctx->NUMBER_OF_ENTRIES_ON_DISPLAY = ctx->screen_txt_ysize - 2;          // (Display size minus top + bottom)
 	ctx->NUMBER_OF_FILE_ON_DISPLAY = ctx->NUMBER_OF_ENTRIES_ON_DISPLAY - 1; // (Display size minus top + bottom + tittle)
 
