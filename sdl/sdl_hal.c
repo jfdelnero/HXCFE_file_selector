@@ -575,8 +575,8 @@ int init_display(ui_context * ctx)
 
 	track_number = 0;
 
-	ctx->SCREEN_XRESOL = 1024;
-	ctx->SCREEN_YRESOL = 480;
+	ctx->SCREEN_XRESOL = MAX_X_RESOLUTION;
+	ctx->SCREEN_YRESOL = MAX_Y_RESOLUTION;
 
 	buffer_size = ctx->SCREEN_XRESOL * ctx->SCREEN_YRESOL;
 
