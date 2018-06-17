@@ -167,6 +167,42 @@ SOURCE=..\..\fat32\fat_write.c
 SOURCE=..\..\fat32\fat_write.h
 # End Source File
 # End Group
+# Begin Group "fonts"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\graphx\fonts\font_charset_8x6.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\graphx\fonts\font_charset_8x6.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\graphx\fonts\font_dangen_8x12.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\graphx\fonts\font_dangen_8x12.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\graphx\font_list.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\graphx\font_list.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\graphx\fonts\font_st_8x8.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\graphx\fonts\font_st_8x8.h
+# End Source File
+# End Group
 # Begin Source File
 
 SOURCE=..\..\config_file.c
