@@ -187,7 +187,6 @@ static int settings_menu_ejectpowerup_cb(ui_context * ctx, int event, int xpos, 
 
 const menu settings_menu[]=
 {
-	{"",                                0,                                0, 0, LEFT_ALIGNED},
 	{"HxC Floppy Emulator settings:",   0,                                0, 0, LEFT_ALIGNED},
 	{"",                                0,                                0, 0, LEFT_ALIGNED},
 	{"Track step sound :",              settings_menu_stepsound_cb,       0, 0, LEFT_ALIGNED},

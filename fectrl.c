@@ -65,6 +65,8 @@
 
 #include "hal.h"
 
+#include "graphx/font_list.h"
+
 // Slots buffer
 disk_in_drive_v2 disks_slots[MAX_NUMBER_OF_SLOT];
 unsigned char last_file;
@@ -341,7 +343,7 @@ void ui_chgfont(ui_context * ctx,int font)
 		clear_line(ctx, i, 0 );
 	}
 
-	ctx->font_id = font % 3;
+	ctx->font_id = font % NB_OF_FONTS;
 
 	init_display_buffer(ctx);
 

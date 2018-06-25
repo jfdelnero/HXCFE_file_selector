@@ -27,12 +27,12 @@
 
 #include "fonts/font_st_8x8.h"
 #include "fonts/font_charset_8x6.h"
-#include "fonts/font_dangen_8x12.h"
+#include "fonts/font_x_b_8x13.h"
 
 font_type * font_list[]=
 {
 	&font_st_8x8,
+	&font_x_b_8x13,
 	&font_charset_8x6,
-	&font_dangen_8x12,
 	0
 };

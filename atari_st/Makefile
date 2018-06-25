@@ -46,7 +46,7 @@ push-gbo-pc: $(EXEC)
 $(EXEC):		libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o  fectrl.o errors_def.o menu.o menu_settings.o menu_selectdrive.o \
 				menu_commands.o gui_utils.o atari_st.o media_access.o config_file.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o \
 				fat_write.o fat_cache.o msg_txt.o \
-				font_list.o font_st_8x8.o font_charset_8x6.o font_dangen_8x12.o
+				font_list.o font_st_8x8.o font_charset_8x6.o font_x_b_8x13.o
 	$(C)          $(LFLAGS)           $^ -o $@
 	cd loader   && make all
 
@@ -108,6 +108,9 @@ font_st_8x8.o: ../graphx/fonts/font_st_8x8.c
 	$(C)          $(CFLAGS)        -c $< -o $@
 
 font_dangen_8x12.o: ../graphx/fonts/font_dangen_8x12.c
+	$(C)          $(CFLAGS)        -c $< -o $@
+
+font_x_b_8x13.o: ../graphx/fonts/font_x_b_8x13.c
 	$(C)          $(CFLAGS)        -c $< -o $@
 
 font_charset_8x6.o: ../graphx/fonts/font_charset_8x6.c

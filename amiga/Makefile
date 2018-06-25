@@ -20,7 +20,7 @@ AUTOBOOT.ADF: HXCFEMNG bootblock/bootblock.c bootblock/ncrt0.S bootblock/make_bo
 HXCFEMNG:	libc/ncrt0.o libc/amiga_api.o libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o libc/ncrt0.o \
 			fectrl.o errors_def.o media_access.o config_file.o menu.o menu_settings.o menu_selectdrive.o menu_commands.o gui_utils.o \
 			amiga.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o reboot.o msg_txt.o \
-			font_list.o font_st_8x8.o font_charset_8x6.o font_dangen_8x12.o
+			font_list.o font_st_8x8.o font_charset_8x6.o font_x_b_8x13.o
 
 	$(CC) -o $@    $^ $(LDFLAGS)
 	m68k-amigaos-strip -s $@
@@ -91,6 +91,12 @@ font_st_8x8.o: ../graphx/fonts/font_st_8x8.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 font_dangen_8x12.o: ../graphx/fonts/font_dangen_8x12.c
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+font_vga_8x12.o: ../graphx/fonts/font_vga_8x12.c
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+font_x_b_8x13.o: ../graphx/fonts/font_x_b_8x13.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 font_charset_8x6.o: ../graphx/fonts/font_charset_8x6.c

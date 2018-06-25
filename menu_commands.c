@@ -168,7 +168,6 @@ const menu commands_menu[]=
 	{"Change display colors",           commnand_menu_chgcolor_cb,             0, 0, CENTER_ALIGNED},
 	{"Change display Font",             commnand_menu_chgfont_cb,              0, 0, CENTER_ALIGNED},	
 	{"HxC Drive Settings",              0,                                     0, (struct menu * )&settings_menu, CENTER_ALIGNED},
-	{"",                                0,                                     0, 0, CENTER_ALIGNED},
 	{"Help / About",                    commnand_menu_help_cb,                 0, 0, CENTER_ALIGNED},
 	{0, 0 , 0 ,0}
 };

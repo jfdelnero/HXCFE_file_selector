@@ -39,3 +39,6 @@ typedef struct _font_type
 #endif
 
 extern font_type * font_list[];
+
+#define NB_OF_FONTS 3
+
