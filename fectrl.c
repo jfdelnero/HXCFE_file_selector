@@ -559,14 +559,14 @@ int ui_slots_menu(ui_context * ctx, int drive)
 
 int ui_loadfilelistpage(ui_context * ctx)
 {
-	#ifdef DEBUG
-	dbg_printf("enter ui_loadfilelistpage\n");
-	#endif
-
 	int i,j,y_pos;
 	unsigned char displayentry;
 	//unsigned char last_file;
 	unsigned char entrytype_icon;
+
+	#ifdef DEBUG
+	dbg_printf("enter ui_loadfilelistpage\n");
+	#endif
 
 	i=0;
 	do
@@ -987,6 +987,11 @@ int check_firmware_version(ui_context * ctx)
 		ctx->firmware_main_version = 3;
 
 		ofs = 1;
+
+		if(!strcmp(ctx->FIRMWAREVERSION,"v3.X.X.Xa"))
+		{
+			return 0;
+		}
 
 		for( i = 0; i < 4 ; i++ )
 		{
