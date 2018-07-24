@@ -202,6 +202,14 @@ SOURCE=..\..\graphx\fonts\font_st_8x8.c
 
 SOURCE=..\..\graphx\fonts\font_st_8x8.h
 # End Source File
+# Begin Source File
+
+SOURCE=..\..\graphx\fonts\font_x_b_8x13.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\graphx\fonts\font_x_b_8x13.h
+# End Source File
 # End Group
 # Begin Source File
 
