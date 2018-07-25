@@ -55,6 +55,7 @@
 extern int media_init();
 extern int media_read(uint32 sector, uint8 *buffer, uint32 sector_count);
 extern int media_write(uint32 sector, uint8 *buffer, uint32 sector_count);
+extern int check_firmware_version(ui_context * ctx);
 extern FL_FILE * cfg_file_handle;
 extern int getext(char * path,char * exttodest);
 extern int read_cfg_file(ui_context * ctx,unsigned char * cfgfile_header);
@@ -95,6 +96,8 @@ int cmd_mount_drive(ui_context * ctx, int drive)
 
 	if( ret == ERR_NO_ERROR )
 	{
+		check_firmware_version(ctx);
+
 		ret = read_cfg_file(ctx,cfgfile_header);
 
 		if( ret != ERR_NO_ERROR)
