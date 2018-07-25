@@ -195,6 +195,8 @@ int write_mass_storage(unsigned long lba, unsigned char * data)
 			return ERR_NO_ERROR;
 		}
 
+		printf("WriteFile : Error 0x%.8X\n",GetLastError());
+
 		if(locked)
 			DeviceIoControl(hMassStorage,(DWORD) FSCTL_UNLOCK_VOLUME, NULL, 0, NULL, 0, &dwNotUsed, NULL);
 	}
@@ -235,6 +237,8 @@ int read_mass_storage(unsigned long lba, unsigned char * data, int nbsector)
 		{
 			return ERR_NO_ERROR;
 		}
+
+		printf("ReadFile : Error 0x%.8X\n",GetLastError());
 	}
 
 	#else
