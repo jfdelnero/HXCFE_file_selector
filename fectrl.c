@@ -262,6 +262,10 @@ int getext(char * path,char * exttodest)
 		}
 	}
 
+	#ifdef DEBUG
+	printf("getext : [%s] -> [%s]\n",path,exttodest);
+	#endif
+
 	return 0;
 }
 
