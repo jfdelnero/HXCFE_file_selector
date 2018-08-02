@@ -575,6 +575,8 @@ int scan_tree(ui_context * ctx)
 					drive = 0;
 					freeslotfound = 0;
 					slotnumber = 1;
+
+					DirectoryEntry.attributes = 0x00;
 					// Get the file name extension.
 					getext(dir_entry.filename,(char*)&DirectoryEntry.type);
 
@@ -589,7 +591,7 @@ int scan_tree(ui_context * ctx)
 								ctx->slot_map[slotnumber>>3]   |= (0x80 >> (slotnumber&7));
 								ctx->change_map[slotnumber>>3] |= (0x80 >> (slotnumber&7));
 
-								DirectoryEntry.attributes=0x00;
+								DirectoryEntry.attributes = 0x00;
 								if(dir_entry.is_readonly)
 									DirectoryEntry.attributes |= FILE_ATTR_READ_ONLY;
 
@@ -628,6 +630,18 @@ int scan_tree(ui_context * ctx)
 							printf("\nError : Can't add %s ! No free space into this cfg file !\n",dir_entry.filename);
 						}
 					}
+					else
+					{
+						#ifdef DEBUG
+						printf("DEBUG : %s not supported/filtered !\n",dir_entry.filename);
+						#endif
+					}
+				}
+				else
+				{
+					#ifdef DEBUG
+					printf("DEBUG : %s already found in slot %d !\n",dir_entry.filename,slot);
+					#endif
 				}
 			}
 		}
