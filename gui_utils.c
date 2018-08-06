@@ -230,6 +230,8 @@ void init_display_buffer(ui_context * ctx)
 	ctx->NUMBER_OF_ENTRIES_ON_DISPLAY = ctx->screen_txt_ysize - 2;          // (Display size minus top + bottom)
 	ctx->NUMBER_OF_FILE_ON_DISPLAY = ctx->NUMBER_OF_ENTRIES_ON_DISPLAY - 1; // (Display size minus top + bottom + tittle)
 
+	chg_video_conf(ctx);
+
 	// Clear all lines.
 	for(i=0;i<ctx->screen_txt_ysize;i++)
 	{
@@ -238,6 +240,7 @@ void init_display_buffer(ui_context * ctx)
 
 	// Footprint : Current software / firmware version and title
 	clear_line(ctx, ctx->screen_txt_ysize - 1, INVERTED);
+
 	hxc_printf(ctx,LEFT_ALIGNED | INVERTED,0, ctx->screen_txt_ysize - 1,"FW %s",ctx->FIRMWAREVERSION);
 	hxc_print(ctx,CENTER_ALIGNED | INVERTED,0,ctx->screen_txt_ysize - 1,(char*)title_msg);
 	hxc_print(ctx,RIGHT_ALIGNED | INVERTED,0,ctx->screen_txt_ysize - 1,(char*)copyright_msg);

@@ -49,6 +49,8 @@
 
 #include "conf.h"
 
+#include "fast_char.h"
+
 #include "keysfunc_defs.h"
 #include "keys_defs.h"
 #include "keymap.h"
@@ -122,6 +124,8 @@ struct RasInfo rasInfo;
 struct BitMap my_bit_map;
 struct RastPort my_rast_port;
 struct Screen *screen;
+
+static unsigned short bytes_per_line;
 
 UWORD  *pointer;
 struct ColorMap *cm=NULL;
@@ -1566,6 +1570,51 @@ int init_display(ui_context * ctx)
 	return ERR_NO_ERROR;
 }
 
+void patch_char_func(int numberoflines)
+{
+	volatile unsigned short * func_ptr;
+	int i;
+	if( numberoflines > 4 && numberoflines <= 16)
+	{
+		///////////////////////////////////////////
+
+		func_ptr = (unsigned short*)&print_char;
+
+		for(i = 0; i < numberoflines;i++)
+		{
+			func_ptr[5 + (i * 2) + 0] = 0x1298;    // move.b  (a0)+,(a1)
+			func_ptr[5 + (i * 2) + 1] = 0xD3C0;    // add.l   d0,a1
+		}
+
+		func_ptr[5 + (i * 2) + 0] = 0x4E75;        // rts
+
+		///////////////////////////////////////////
+
+		func_ptr = (unsigned short*)&print_inv_char;
+
+		for(i = 0; i < numberoflines;i++)
+		{
+			func_ptr[5 + (i * 4) + 0] = 0x1218;    // move.b  (a0)+,d1
+			func_ptr[5 + (i * 4) + 1] = 0x4601;    // not.b   d1
+			func_ptr[5 + (i * 4) + 2] = 0x1281;    // move.b  d1,(a1)
+			func_ptr[5 + (i * 4) + 3] = 0xD3C0;    // add.l   d0,a1
+		}
+
+		func_ptr[5 + (i * 4) + 0] = 0x4E75;        // rts
+	}
+}
+
+void chg_video_conf(ui_context * ctx)
+{
+	font_type * font;
+
+	font = font_list[ctx->font_id];
+
+	patch_char_func(font->char_y_size);
+
+	bytes_per_line = font->char_y_size * 80;
+}
+
 void DestroyScrn ()
 {
 	WORD Cntr;
@@ -1616,7 +1665,6 @@ unsigned char set_color_scheme(unsigned char color)
 
 void print_char8x8(ui_context * ctx,int col, int line, unsigned char c, int mode)
 {
-	int i;
 	unsigned char *ptr_dst;
 	const unsigned char * char_data;
 	font_type * font;
@@ -1625,24 +1673,16 @@ void print_char8x8(ui_context * ctx,int col, int line, unsigned char c, int mode
 
 	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
 	{
-		ptr_dst  = screen_buffer + (( line * ( 80 * font->char_y_size) ) + col);
+		ptr_dst  = screen_buffer + (( line * bytes_per_line ) + col);
 		char_data = font->font_data + (c * font->char_size);
 
 		if(mode & INVERTED)
 		{
-			for(i=0;i<font->char_y_size;i++)
-			{
-				*ptr_dst = (*char_data++ ^ 0xFF);
-				ptr_dst += 80;
-			}
+			print_inv_char((void*)ptr_dst, (void*)char_data);
 		}
 		else
 		{
-			for(i=0;i<font->char_y_size;i++)
-			{
-				*ptr_dst = (*char_data++);
-				ptr_dst += 80;
-			}
+			print_char((void*)ptr_dst, (void*)char_data);
 		}
 	}
 }
@@ -1650,59 +1690,37 @@ void print_char8x8(ui_context * ctx,int col, int line, unsigned char c, int mode
 void clear_line(ui_context * ctx,int line,int mode)
 {
 	unsigned short *ptr_dst;
-	int i,j;
 	font_type * font;
 
 	font = font_list[ctx->font_id];
 
 	if(line < ctx->screen_txt_ysize)
 	{
-		ptr_dst  = (unsigned short *)(screen_buffer + ( line * ( 80 * font->char_y_size ) ));
+		ptr_dst  = (unsigned short *)(screen_buffer + ( line * bytes_per_line ));
 
 		if(mode & INVERTED)
 		{
-			for(i=0;i< 40;i++)
-			{
-				for(j=0;j<font->char_y_size;j++)
-				{
-					*ptr_dst++ = 0xFFFF;
-				}
-			}
+			fast_clear_line( ptr_dst, 0xFFFFFFFF, font->char_y_size );
 		}
 		else
 		{
-			for(i=0;i<40;i++)
-			{
-				for(j=0;j<font->char_y_size;j++)
-				{
-					*ptr_dst++ = 0x0000;
-				}
-			}
+			fast_clear_line( ptr_dst, 0x00000000, font->char_y_size );
 		}
 	}
 }
 
 void invert_line(ui_context * ctx,int line)
 {
-	int i,j;
 	unsigned short *ptr_dst;
-	int ptroffset;
 	font_type * font;
 
 	font = font_list[ctx->font_id];
 
 	if(line < ctx->screen_txt_ysize)
 	{
-		for(j=0;j< font->char_y_size ;j++)
-		{
-			ptr_dst = (unsigned short*)screen_buffer;
-			ptroffset = ( 40 * ((line * font->char_y_size )+j) );
+		ptr_dst  = (unsigned short *)(screen_buffer + ( line * bytes_per_line ));
 
-			for(i=0;i<40;i++)
-			{
-				ptr_dst[ptroffset+i] ^= 0xFFFF;
-			}
-		}
+		fast_inverse_line( ptr_dst, font->char_y_size);
 	}
 }
 
@@ -1711,7 +1729,6 @@ void reboot()
 	_reboot();
 	lockup();
 }
-
 
 int process_command_line(int argc, char* argv[])
 {
