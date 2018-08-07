@@ -10,7 +10,7 @@
 # Supplied arch : linux-i386, linux-amd64, cygwin
 ARCH             = cygwin
 
-GCCBIN           = m68k-atari-mint-gcc
+TOOLCHAIN        = m68k-atari-mint
 GCCOPT           = -Os -I . -I .. -I ../fat32 -DFATFS_IS_LITTLE_ENDIAN=0 -Wall
 GCLOPT           = -Os -nostdlib -Wl,-Map,symbols.map -Wl,--traditional-format -fomit-frame-pointer -m68000
 
@@ -18,7 +18,9 @@ VASMBIN          = build-tools/vbcc/bin-$(ARCH)/vasmm68k_mot
 VASMOPT          = -Faout -showopt -m68000 -spaces -quiet
 
 # GCC : PRG size about 44054 bytes
-C                = $(GCCBIN)
+C                = $(TOOLCHAIN)-gcc
+AS               = $(TOOLCHAIN)-as
+
 CFLAGS           = $(GCCOPT)
 
 LFLAGS           = $(GCLOPT) -s    # STRIP SYMBOLS
@@ -45,7 +47,7 @@ push-gbo-pc: $(EXEC)
 
 $(EXEC):		libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o  fectrl.o errors_def.o menu.o menu_settings.o menu_selectdrive.o \
 				menu_commands.o gui_utils.o atari_st.o media_access.o config_file.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o \
-				fat_write.o fat_cache.o msg_txt.o \
+				fat_write.o fat_cache.o msg_txt.o fast_char.o \
 				font_list.o font_st_8x8.o font_charset_8x6.o font_x_b_8x13.o
 	$(C)          $(LFLAGS)           $^ -o $@
 	cd loader   && make all
@@ -127,3 +129,6 @@ libc/snprintf/snprintf.o: libc/snprintf/snprintf.c libc/snprintf/snprintf.h
 
 libc/mStartupAsmC.o: libc/mStartupAsmC.s
 	$(VASMBIN)    $(VASMOPT)          $< -o $@
+
+fast_char.o: fast_char.S
+	$(AS) -o $@ $<

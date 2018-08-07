@@ -44,6 +44,8 @@
 
 #include "conf.h"
 
+#include "fast_char.h"
+
 #include "keysfunc_defs.h"
 #include "keys_defs.h"
 #include "keymap.h"
@@ -87,6 +89,9 @@ unsigned short CHUNK_WORDS;					/* number of words for a 16-    */
 											/* pixel chunk =2*NB_PLANES     */
 unsigned short PLANES_ALIGNDEC;				/* number of left shifts to
 											   transform nbChucks to Bytes  */
+unsigned short NB_WORDS_PER_TXT_LINE;
+static unsigned short bytes_per_line;
+
 __LINEA *__aline;
 __FONT  **__fonts;
 short  (**__funcs) (void);
@@ -827,6 +832,58 @@ int  init_display(ui_context * ctx)
 	return ERR_NO_ERROR;
 }
 
+void patch_char_func(int numberoflines)
+{
+	volatile unsigned short * func_ptr;
+	int i;
+	if( numberoflines > 4 && numberoflines <= 16)
+	{
+		///////////////////////////////////////////
+
+		func_ptr = (unsigned short*)&print_char;
+
+		func_ptr[5] = 0x0000;
+		func_ptr[6] = LINE_BYTES;                  // move.l  #80, d0
+
+		for(i = 0; i < numberoflines;i++)
+		{
+			func_ptr[7 + (i * 2) + 0] = 0x1298;    // move.b  (a0)+,(a1)
+			func_ptr[7 + (i * 2) + 1] = 0xD3C0;    // add.l   d0,a1
+		}
+
+		func_ptr[7 + (i * 2) + 0] = 0x4E75;        // rts
+
+		///////////////////////////////////////////
+
+		func_ptr = (unsigned short*)&print_inv_char;
+
+		func_ptr[5] = 0x0000;
+		func_ptr[6] = LINE_BYTES;                  // move.l  #80, d0
+
+		for(i = 0; i < numberoflines;i++)
+		{
+			func_ptr[7 + (i * 4) + 0] = 0x1218;    // move.b  (a0)+,d1
+			func_ptr[7 + (i * 4) + 1] = 0x4601;    // not.b   d1
+			func_ptr[7 + (i * 4) + 2] = 0x1281;    // move.b  d1,(a1)
+			func_ptr[7 + (i * 4) + 3] = 0xD3C0;    // add.l   d0,a1
+		}
+
+		func_ptr[7 + (i * 4) + 0] = 0x4E75;        // rts
+	}
+}
+
+void chg_video_conf(ui_context * ctx)
+{
+	font_type * font;
+
+	font = font_list[ctx->font_id];
+
+	patch_char_func(font->char_y_size);
+
+	bytes_per_line = font->char_y_size * LINE_BYTES;
+	NB_WORDS_PER_TXT_LINE = ( LINE_WORDS / NB_PLANES ) * font->char_y_size;
+}
+
 void disablemousepointer()
 {
 
@@ -834,8 +891,7 @@ void disablemousepointer()
 
 void print_char8x8(ui_context * ctx, int col, int line, unsigned char c, int mode)
 {
-	int i;
-	unsigned char *ptr_dst;
+	void *ptr_dst;
 	const unsigned char * char_data;
 	font_type * font;
 
@@ -844,90 +900,48 @@ void print_char8x8(ui_context * ctx, int col, int line, unsigned char c, int mod
 	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
 	{
 		col *= font->char_x_size;
-		line *= font->char_y_size;
 
-		ptr_dst = screen_buffer + ((unsigned long) line * LINE_BYTES) + ((col>>4)<<PLANES_ALIGNDEC) + ((col&8)==8);
+		ptr_dst = (void*)(screen_buffer + (line * bytes_per_line) + ((col>>4)<<PLANES_ALIGNDEC) + ((col&8)==8));
 		char_data = font->font_data + (c * font->char_size);
 
 		// in a 16-pixel chunk, there are 2 8-pixel chars, hence the x&8==8
 		if(mode & INVERTED)
 		{
-			for(i=0;i<font->char_y_size;i++)
-			{
-				*ptr_dst = (*char_data++) ^ 0xFF;
-				ptr_dst += LINE_BYTES;
-			}
+			print_inv_char(ptr_dst, (void*)char_data);
 		}
 		else
 		{
-			for(i=0;i<font->char_y_size;i++)
-			{
-				*ptr_dst = *char_data++;
-				ptr_dst += LINE_BYTES;
-			}
+			print_char(ptr_dst, (void*)char_data);
 		}
 	}
 }
 
 void clear_line(ui_context * ctx,int line,int mode)
 {
-	unsigned short *ptr_dst;
-	int i,j;
-	font_type * font;
-
-	font = font_list[ctx->font_id];
+	void *ptr_dst;
 
 	if(line < ctx->screen_txt_ysize)
 	{
-		ptr_dst  = (unsigned short *)(screen_buffer + ( line * (LINE_WORDS * font->char_y_size * 2) ));
+		ptr_dst  = (void *)(screen_buffer + ( line * bytes_per_line ));
 
 		if(mode & INVERTED)
 		{
-			for(i=0; i<LINE_WORDS; i+=NB_PLANES)
-			{
-				for(j=0;j<font->char_y_size;j++)
-				{
-					*(ptr_dst) = 0xFFFF;
-					ptr_dst += NB_PLANES;
-				}
-			}
+			fast_clear_line( ptr_dst,0xFFFF,NB_WORDS_PER_TXT_LINE,NB_PLANES);
 		}
 		else
 		{
-			for(i=0; i<LINE_WORDS; i+=NB_PLANES)
-			{
-				for(j=0;j<font->char_y_size;j++)
-				{
-					*(ptr_dst) = 0x0000;
-					ptr_dst += NB_PLANES;
-				}
-			}
+			fast_clear_line( ptr_dst,0x0000,NB_WORDS_PER_TXT_LINE,NB_PLANES);
 		}
 	}
 }
 
 void invert_line(ui_context * ctx,int line)
 {
-	int i,j;
-	unsigned char  *ptr_dst;
-	unsigned short *ptr_dst2;
-	font_type * font;
+	void *ptr_dst;
 
-	font = font_list[ctx->font_id];
+	ptr_dst  = (void *)(screen_buffer + ( line * bytes_per_line ));
 
-	ptr_dst   = screen_buffer;
-	ptr_dst  += (unsigned long) LINE_BYTES * line * font->char_y_size;
-
-	ptr_dst2 = (unsigned short *)ptr_dst;
-
-	for(i=0; i<LINE_WORDS; i+=NB_PLANES)
-	{
-		for(j=0;j<font->char_y_size;j++)
-		{
-			*ptr_dst2 = (*ptr_dst2 ^ 0xFFFF);
-			ptr_dst2 += NB_PLANES;
-		}
-	}
+	fast_inverse_line( ptr_dst, NB_WORDS_PER_TXT_LINE, NB_PLANES );
 }
 
 void su_reboot()
