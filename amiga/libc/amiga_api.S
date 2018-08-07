@@ -9,6 +9,7 @@ _LVOPermit = -138
 _LVOAllocMem = -198
 _LVOFreeMem = -210
 _LVOGetProgramDir = -600
+_LVOCacheClearU = -636
 _LVOCreateMsgPort = -666
 _LVODeleteMsgPort = -672
 _LVOCreateIORequest = -654
@@ -59,6 +60,7 @@ _LVOReadUnitID = -36
 .globl    _Lock
 .globl    _UnLock
 .globl    _GetProgramDir
+.globl    _CacheClearU
 .globl    _Delay
 
 .globl    _FreeCprList
@@ -298,6 +300,13 @@ _OpenLibrary:
 	movea.l 4+arg_0(sp),a1
 	move.l  4+arg_4(sp),d0
 	jsr     -0x228(a6)
+	movea.l (sp)+,a6
+	rts
+
+_CacheClearU:
+	move.l  a6,-(sp)
+	movea.l _SysBase,a6
+	jsr     a6@(_LVOCacheClearU:W)
 	movea.l (sp)+,a6
 	rts
 

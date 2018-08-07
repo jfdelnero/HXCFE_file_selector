@@ -1602,6 +1602,12 @@ void patch_char_func(int numberoflines)
 
 		func_ptr[5 + (i * 4) + 0] = 0x4E75;        // rts
 	}
+
+	// Invalidate instruction cache.
+	if( GetLibraryVersion((struct Library *) SysBase) >= 37 )
+	{
+		CacheClearU();
+	}
 }
 
 void chg_video_conf(ui_context * ctx)
