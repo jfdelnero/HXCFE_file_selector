@@ -635,6 +635,10 @@ int init_display(ui_context * ctx)
 	return ERR_NO_ERROR;
 }
 
+void chg_video_conf(ui_context * ctx)
+{
+}
+
 void disablemousepointer()
 {
 }
