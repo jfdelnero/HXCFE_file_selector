@@ -4,6 +4,7 @@
 /*  (c)HxC2001      */
 /* ---------------- */
 
+_LVOSupervisor = -30
 _LVOForbid = -132
 _LVOPermit = -138
 _LVOAllocMem = -198
@@ -61,6 +62,7 @@ _LVOReadUnitID = -36
 .globl    _UnLock
 .globl    _GetProgramDir
 .globl    _CacheClearU
+.globl    _Supervisor
 .globl    _Delay
 
 .globl    _FreeCprList
@@ -307,6 +309,17 @@ _CacheClearU:
 	move.l  a6,-(sp)
 	movea.l _SysBase,a6
 	jsr     a6@(_LVOCacheClearU:W)
+	movea.l (sp)+,a6
+	rts
+
+_Supervisor:
+	arg_0           =  4
+	move.l  a6,-(sp)
+	move.l  a5,-(sp)
+	movea.l _SysBase,a6
+	move.l  8+arg_0(sp),a5
+	jsr     a6@(_LVOSupervisor:W)
+	movea.l (sp)+,a5
 	movea.l (sp)+,a6
 	rts
 
