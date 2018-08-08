@@ -20,7 +20,7 @@ AUTOBOOT.ADF: HXCFEMNG bootblock/bootblock.c bootblock/ncrt0.S bootblock/make_bo
 HXCFEMNG:	libc/ncrt0.o libc/amiga_api.o libc/mStartupAsmC.o libc/mStartup.o libc/snprintf/snprintf.o libc/ncrt0.o \
 			fectrl.o errors_def.o media_access.o config_file.o menu.o menu_settings.o menu_selectdrive.o menu_commands.o gui_utils.o \
 			amiga.o crc.o fat_access.o fat_filelib.o fat_misc.o fat_string.o fat_table.o fat_write.o fat_cache.o reboot.o msg_txt.o \
-			font_list.o font_st_8x8.o font_charset_8x6.o font_x_b_8x13.o fast_char.o
+			font_list.o font_st_8x8.o font_charset_8x6.o font_x_b_8x13.o fast_char.o cache.o
 
 	$(CC) -o $@    $^ $(LDFLAGS)
 	m68k-amigaos-strip -s $@
@@ -31,6 +31,9 @@ reboot.o: reboot.S
 	$(AS) -o $@ $<
 
 fast_char.o: fast_char.S
+	$(AS) -o $@ $<
+
+cache.o: cache.S
 	$(AS) -o $@ $<
 
 fectrl.o: ../fectrl.c

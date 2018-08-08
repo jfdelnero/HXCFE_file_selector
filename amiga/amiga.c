@@ -50,6 +50,7 @@
 #include "conf.h"
 
 #include "fast_char.h"
+#include "cache.h"
 
 #include "keysfunc_defs.h"
 #include "keys_defs.h"
@@ -1607,6 +1608,15 @@ void patch_char_func(int numberoflines)
 	if( GetLibraryVersion((struct Library *) SysBase) >= 37 )
 	{
 		CacheClearU();
+	}
+	else
+	{
+		// KS < 2.0 - No OS cache support
+		// Directly invalidate the instruction cache if running on a 68020+
+		if(is_68020())
+		{
+			Supervisor(&invalidate_icache);
+		}
 	}
 }
 
