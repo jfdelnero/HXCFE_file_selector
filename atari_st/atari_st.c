@@ -58,6 +58,8 @@
 
 #include "../hal.h"
 
+#include "cache.h"
+
 #include "atari_hw.h"
 
 #include "errors_def.h"
@@ -832,6 +834,11 @@ int  init_display(ui_context * ctx)
 	return ERR_NO_ERROR;
 }
 
+void su_invalidate_cache()
+{
+	invalidate_icache();
+}
+
 void patch_char_func(int numberoflines)
 {
 	volatile unsigned short * func_ptr;
@@ -869,6 +876,11 @@ void patch_char_func(int numberoflines)
 		}
 
 		func_ptr[7 + (i * 4) + 0] = 0x4E75;        // rts
+	}
+
+	if (is_68020())
+	{
+		Supexec(su_invalidate_cache);
 	}
 }
 
