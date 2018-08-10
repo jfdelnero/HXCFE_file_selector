@@ -29,6 +29,10 @@ typedef struct ui_context_
 	int NUMBER_OF_ENTRIES_ON_DISPLAY;
 	int NUMBER_OF_FILE_ON_DISPLAY;
 
+	int char_ptr_col;
+	int char_ptr_line;
+	void * vid_mem_ptr;
+
 	int screen_txt_xsize;
 	int screen_txt_ysize;
 

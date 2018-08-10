@@ -93,6 +93,7 @@ unsigned short PLANES_ALIGNDEC;				/* number of left shifts to
 											   transform nbChucks to Bytes  */
 unsigned short NB_WORDS_PER_TXT_LINE;
 static unsigned short bytes_per_line;
+static unsigned char * chars_LUT[256];
 
 __LINEA *__aline;
 __FONT  **__fonts;
@@ -847,7 +848,7 @@ void patch_char_func(int numberoflines)
 	{
 		///////////////////////////////////////////
 
-		func_ptr = (unsigned short*)&print_char;
+		func_ptr = (unsigned short*)&fast_print_char;
 
 		func_ptr[5] = 0x0000;
 		func_ptr[6] = LINE_BYTES;                  // move.l  #80, d0
@@ -862,7 +863,7 @@ void patch_char_func(int numberoflines)
 
 		///////////////////////////////////////////
 
-		func_ptr = (unsigned short*)&print_inv_char;
+		func_ptr = (unsigned short*)&fast_print_inv_char;
 
 		func_ptr[5] = 0x0000;
 		func_ptr[6] = LINE_BYTES;                  // move.l  #80, d0
@@ -887,6 +888,7 @@ void patch_char_func(int numberoflines)
 void chg_video_conf(ui_context * ctx)
 {
 	font_type * font;
+	int i;
 
 	font = font_list[ctx->font_id];
 
@@ -894,6 +896,16 @@ void chg_video_conf(ui_context * ctx)
 
 	bytes_per_line = font->char_y_size * LINE_BYTES;
 	NB_WORDS_PER_TXT_LINE = ( LINE_WORDS / NB_PLANES ) * font->char_y_size;
+
+	for(i=0;i<256;i++)
+	{
+		chars_LUT[i] = (unsigned char*)font->font_data;
+	}
+
+	for(i=0;i<font->nb_of_chars;i++)
+	{
+		chars_LUT[i] = (unsigned char*)(font->font_data + (i * font->char_size));
+	}
 }
 
 void disablemousepointer()
@@ -901,30 +913,50 @@ void disablemousepointer()
 
 }
 
-void print_char8x8(ui_context * ctx, int col, int line, unsigned char c, int mode)
+void set_char_pos(ui_context * ctx,int col, int line)
 {
-	void *ptr_dst;
-	const unsigned char * char_data;
-	font_type * font;
-
-	font = font_list[ctx->font_id];
-
 	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
 	{
-		col *= font->char_x_size;
+		ctx->char_ptr_col = col;
+		ctx->char_ptr_line = line;
+	}
+	else
+	{
+		ctx->char_ptr_col = ctx->screen_txt_xsize - 1;
+		ctx->char_ptr_line = ctx->screen_txt_ysize - 1;
+	}
 
-		ptr_dst = (void*)(screen_buffer + (line * bytes_per_line) + ((col>>4)<<PLANES_ALIGNDEC) + ((col&8)==8));
-		char_data = font->font_data + (c * font->char_size);
+	ctx->vid_mem_ptr = screen_buffer + (ctx->char_ptr_line * bytes_per_line) + ((ctx->char_ptr_col>>1)<<PLANES_ALIGNDEC) + (ctx->char_ptr_col&1);
+}
 
-		// in a 16-pixel chunk, there are 2 8-pixel chars, hence the x&8==8
-		if(mode & INVERTED)
+void print_char(ui_context * ctx, unsigned char c, int mode)
+{
+	if(mode & INVERTED)
+	{
+		fast_print_inv_char((void*)ctx->vid_mem_ptr, (void*)chars_LUT[c]);
+	}
+	else
+	{
+		fast_print_char((void*)ctx->vid_mem_ptr, (void*)chars_LUT[c]);
+	}
+
+	ctx->char_ptr_col++;
+
+	if( ctx->char_ptr_col == ctx->screen_txt_xsize)
+	{
+		if(ctx->char_ptr_line < (ctx->screen_txt_ysize - 1))
 		{
-			print_inv_char(ptr_dst, (void*)char_data);
+			ctx->char_ptr_col = 0;
+			ctx->char_ptr_line++;
+			ctx->vid_mem_ptr = screen_buffer + (ctx->char_ptr_line * bytes_per_line);
 		}
+	}
+	else
+	{
+		if(ctx->char_ptr_col&1)
+			ctx->vid_mem_ptr ++;
 		else
-		{
-			print_char(ptr_dst, (void*)char_data);
-		}
+			ctx->vid_mem_ptr += ((1<<PLANES_ALIGNDEC) - 1);	
 	}
 }
 

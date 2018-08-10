@@ -127,6 +127,7 @@ struct RastPort my_rast_port;
 struct Screen *screen;
 
 static unsigned short bytes_per_line;
+static unsigned char * chars_LUT[256];
 
 UWORD  *pointer;
 struct ColorMap *cm=NULL;
@@ -1579,7 +1580,7 @@ void patch_char_func(int numberoflines)
 	{
 		///////////////////////////////////////////
 
-		func_ptr = (unsigned short*)&print_char;
+		func_ptr = (unsigned short*)&fast_print_char;
 
 		for(i = 0; i < numberoflines;i++)
 		{
@@ -1591,7 +1592,7 @@ void patch_char_func(int numberoflines)
 
 		///////////////////////////////////////////
 
-		func_ptr = (unsigned short*)&print_inv_char;
+		func_ptr = (unsigned short*)&fast_print_inv_char;
 
 		for(i = 0; i < numberoflines;i++)
 		{
@@ -1623,12 +1624,23 @@ void patch_char_func(int numberoflines)
 void chg_video_conf(ui_context * ctx)
 {
 	font_type * font;
+	int i;
 
 	font = font_list[ctx->font_id];
 
 	patch_char_func(font->char_y_size);
 
 	bytes_per_line = font->char_y_size * 80;
+
+	for(i=0;i<256;i++)
+	{
+		chars_LUT[i] = (unsigned char*)font->font_data;
+	}
+
+	for(i=0;i<font->nb_of_chars;i++)
+	{
+		chars_LUT[i] = (unsigned char*)(font->font_data + (i * font->char_size));
+	}
 }
 
 void DestroyScrn ()
@@ -1679,27 +1691,46 @@ unsigned char set_color_scheme(unsigned char color)
 	return color;
 }
 
-void print_char8x8(ui_context * ctx,int col, int line, unsigned char c, int mode)
+void set_char_pos(ui_context * ctx,int col, int line)
 {
-	unsigned char *ptr_dst;
-	const unsigned char * char_data;
-	font_type * font;
-
-	font = font_list[ctx->font_id];
-
 	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
 	{
-		ptr_dst  = screen_buffer + (( line * bytes_per_line ) + col);
-		char_data = font->font_data + (c * font->char_size);
+		ctx->char_ptr_col = col;
+		ctx->char_ptr_line = line;
+	}
+	else
+	{
+		ctx->char_ptr_col = ctx->screen_txt_xsize - 1;
+		ctx->char_ptr_line = ctx->screen_txt_ysize - 1;
+	}
 
-		if(mode & INVERTED)
+	ctx->vid_mem_ptr = screen_buffer + (( ctx->char_ptr_line * bytes_per_line ) + ctx->char_ptr_col);
+}
+
+void print_char(ui_context * ctx, unsigned char c, int mode)
+{
+	if(mode & INVERTED)
+	{
+		fast_print_inv_char((void*)ctx->vid_mem_ptr, (void*)chars_LUT[c]);
+	}
+	else
+	{
+		fast_print_char((void*)ctx->vid_mem_ptr, (void*)chars_LUT[c]);
+	}
+
+	ctx->char_ptr_col++;
+	if( ctx->char_ptr_col == ctx->screen_txt_xsize)
+	{
+		if(ctx->char_ptr_line < (ctx->screen_txt_ysize - 1))
 		{
-			print_inv_char((void*)ptr_dst, (void*)char_data);
+			ctx->char_ptr_col = 0;
+			ctx->char_ptr_line++;
+			ctx->vid_mem_ptr = screen_buffer + ( ctx->char_ptr_line * bytes_per_line );
 		}
-		else
-		{
-			print_char((void*)ptr_dst, (void*)char_data);
-		}
+	}
+	else
+	{
+		ctx->vid_mem_ptr += 1;
 	}
 }
 

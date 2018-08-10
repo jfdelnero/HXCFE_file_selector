@@ -85,6 +85,7 @@ SDL_Color   *colors;
 SDL_TimerID sdl_timer_id;
 
 unsigned char * screen_buffer;
+static unsigned short bytes_per_line;
 
 uint16_t sector_pos[16];
 
@@ -637,6 +638,12 @@ int init_display(ui_context * ctx)
 
 void chg_video_conf(ui_context * ctx)
 {
+	font_type * font;
+	int i;
+
+	font = font_list[ctx->font_id];
+
+	bytes_per_line = font->char_y_size*ctx->SCREEN_XRESOL;
 }
 
 void disablemousepointer()
@@ -694,7 +701,23 @@ unsigned char set_color_scheme(unsigned char color)
 	return color;
 }
 
-void print_char8x8(ui_context * ctx, int col, int line, unsigned char c, int mode)
+void set_char_pos(ui_context * ctx,int col, int line)
+{
+	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
+	{
+		ctx->char_ptr_col = col;
+		ctx->char_ptr_line = line;
+	}
+	else
+	{
+		ctx->char_ptr_col = ctx->screen_txt_xsize - 1;
+		ctx->char_ptr_line = ctx->screen_txt_ysize - 1;
+	}
+
+	ctx->vid_mem_ptr = screen_buffer + ((ctx->char_ptr_line * bytes_per_line)+ (ctx->char_ptr_col<<3));
+}
+
+void print_char(ui_context * ctx, unsigned char c, int mode)
 {
 	int i,j;
 	unsigned char *ptr_dst;
@@ -704,41 +727,52 @@ void print_char8x8(ui_context * ctx, int col, int line, unsigned char c, int mod
 
 	font = font_list[ctx->font_id];
 
-	ptr_dst = (unsigned char*)screen_buffer;
-
 	if(mode & INVERTED)
 		set_byte = 0x00;
 	else
 		set_byte = 0xFF;
 
-	if(col < ctx->screen_txt_xsize && line < ctx->screen_txt_ysize)
-	{
-		ptr_dst += (((line * font->char_y_size)*ctx->SCREEN_XRESOL)+ (col<<3));
-		font_sprite     = font->font_data + (c * font->char_size);
+	ptr_dst = ctx->vid_mem_ptr;
+	font_sprite = font->font_data + (c * font->char_size);
 
-		for(j=0;j<font->char_y_size;j++)
+	for(j=0;j<font->char_y_size;j++)
+	{
+		for(i=0;i<font->char_x_size;i++)
 		{
-			for(i=0;i<font->char_x_size;i++)
-			{
-				if( *font_sprite & (0x80>>i) )
-					ptr_dst[i]= set_byte;
-				else
-					ptr_dst[i]= set_byte ^ 0xFF;
-			}
-			font_sprite++;
-			ptr_dst=ptr_dst + ctx->SCREEN_XRESOL;
+			if( *font_sprite & (0x80>>i) )
+				ptr_dst[i]= set_byte;
+			else
+				ptr_dst[i]= set_byte ^ 0xFF;
 		}
+		font_sprite++;
+		ptr_dst += ctx->SCREEN_XRESOL;
 	}
 
+	ctx->char_ptr_col++;
+	if( ctx->char_ptr_col == ctx->screen_txt_xsize)
+	{
+		if(ctx->char_ptr_line < (ctx->screen_txt_ysize - 1))
+		{
+			ctx->char_ptr_col = 0;
+			ctx->char_ptr_line++;
+			ctx->vid_mem_ptr = screen_buffer + ( ctx->char_ptr_line * bytes_per_line );
+		}
+	}
+	else
+	{
+		ctx->vid_mem_ptr += font->char_x_size;
+	}
 }
 
 void clear_line(ui_context * ctx,int line,int mode)
 {
 	int i;
 
+	set_char_pos(ctx,0,line);
+
 	for(i=0;i<ctx->screen_txt_xsize;i++)
 	{
-		print_char8x8(ctx,i,line,' ',mode);
+		print_char(ctx,' ',mode);
 	}
 }
 

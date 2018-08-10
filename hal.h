@@ -22,7 +22,8 @@ void disablemousepointer();
 ////////////////////////////////////
 int  init_display(ui_context * ctx);
 void chg_video_conf(ui_context * ctx);
-void print_char8x8(ui_context * ctx, int col, int line, unsigned char c, int mode);
+void set_char_pos(ui_context * ctx,int col, int line);
+void print_char(ui_context * ctx, unsigned char c, int mode);
 void clear_line(ui_context * ctx, int line, int mode);
 int  restore_display(ui_context * ctx);
 

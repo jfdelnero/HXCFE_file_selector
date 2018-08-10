@@ -29,11 +29,11 @@
 
 | ----------------------------------------------------------------------------------
 
-	.globl _print_char
+	.globl _fast_print_char
 	.align 4
 	.text
 
-_print_char:
+_fast_print_char:
 
 	move.l  4(sp), a1 | First parameter -> Destination.
 	move.l  8(sp), a0 | Second parameter -> Source.
@@ -94,11 +94,11 @@ _print_char:
 
 | ----------------------------------------------------------------------------------
 
-	.globl _print_inv_char
+	.globl _fast_print_inv_char
 	.align 4
 	.text
 
-_print_inv_char:
+_fast_print_inv_char:
 
 	move.l  4(sp), a1 | First parameter -> Destination.
 	move.l  8(sp), a0 | Second parameter -> Source.

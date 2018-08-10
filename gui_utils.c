@@ -52,10 +52,6 @@
 void print_str(ui_context * ctx,char * buf,int maxsize,int col,int line,int linefeed,int mode)
 {
 	int i;
-	int x_offset,y_offset;
-
-	x_offset = col;
-	y_offset = line;
 
 	#ifdef DEBUG
 	dbg_printf("UIOut x:%d y:%d %s\n",col,line,buf);
@@ -68,21 +64,19 @@ void print_str(ui_context * ctx,char * buf,int maxsize,int col,int line,int line
 	}
 	#endif
 
+	set_char_pos(ctx, col, line);
+
 	i = 0;
 	while(buf[i] && i < maxsize)
 	{
 		if(buf[i] == '\n' && linefeed)
 		{
-			x_offset = line;
-			y_offset++;
+			line++;
+			set_char_pos(ctx, 0, line);
 		}
 		else
 		{
-			if( (x_offset*8) <=(ctx->SCREEN_XRESOL-8))
-			{
-				print_char8x8(ctx,x_offset,y_offset,buf[i],mode);
-			}
-			x_offset++;
+			print_char(ctx,buf[i],mode);
 		}
 		i++;
 	}
@@ -155,11 +149,23 @@ int hxc_printf(ui_context * ctx,unsigned char mode,int col,int line,char * chain
 	return 0;
 }
 
+#define BOX_UPPERBAR_YPOS 9
+
+#define UPPER_HORIZONTAL_BAR_CHAR 8
+#define LOWER_HORIZONTAL_BAR_CHAR 9
+#define RIGHT_VERTICAL_BAR_CHAR 7
+#define LEFT_VERTICAL_BAR_CHAR 6
+#define UPPER_LEFT_CORNER_CHAR 2
+#define UPPER_RIGHT_CORNER_CHAR 3
+#define LOWER_LEFT_CORNER_CHAR 4
+#define LOWER_RIGHT_CORNER_CHAR 5
+
 int hxc_printf_box(ui_context * ctx,char * chaine, ...)
 {
 	char temp_buffer[1024];
 	int str_size;
 	int i;
+	int start_xpos;
 	va_list marker;
 
 	va_start( marker, chaine );
@@ -173,44 +179,55 @@ int hxc_printf_box(ui_context * ctx,char * chaine, ...)
 	str_size = strlen(temp_buffer);
 	str_size += 4;
 
-	// Upper bar
-	for(i=0;i< str_size;i++)
-	{
-		print_char8x8(ctx,((ctx->screen_txt_xsize - str_size)/2)+i,10-1,8,0);
-	}
-
-
-	// Upper left & right bar
-	print_char8x8(ctx,((ctx->screen_txt_xsize-str_size)/2)+(i-1),10-1,3,0);
-	print_char8x8(ctx,((ctx->screen_txt_xsize-str_size)/2),10-1,2,0);
-
-	for(i=0;i< str_size;i++)
-	{
-		print_char8x8(ctx,((ctx->screen_txt_xsize-str_size)/2)+i,80,' ',0);
-	}
+	start_xpos = ( ctx->screen_txt_xsize - str_size) / 2;
 
 	// Upper bar
+	set_char_pos(ctx, start_xpos, BOX_UPPERBAR_YPOS);
 	for(i=0;i< str_size;i++)
 	{
-		print_char8x8(ctx,((ctx->screen_txt_xsize - str_size)/2)+i,10,' ',0);
+		print_char(ctx,UPPER_HORIZONTAL_BAR_CHAR,0);
 	}
 
-	// Middle left & right bar
-	print_char8x8(ctx,((ctx->screen_txt_xsize-str_size)/2)+(i-1),10,7,0);
-	print_char8x8(ctx,((ctx->screen_txt_xsize-str_size)/2),10,6,0);
+	// Top right corner
+	set_char_pos(ctx, start_xpos + (i-1), BOX_UPPERBAR_YPOS);
+	print_char(ctx,UPPER_RIGHT_CORNER_CHAR,0);
+
+	//Top left corner
+	set_char_pos(ctx, start_xpos, BOX_UPPERBAR_YPOS);
+	print_char(ctx,UPPER_LEFT_CORNER_CHAR,0);
+
+	// Clear Middle space bar
+	set_char_pos(ctx, start_xpos, BOX_UPPERBAR_YPOS+1);
+	for(i=0;i< str_size;i++)
+	{
+		print_char(ctx,' ',0);
+	}
+
+	// Middle right bar
+	set_char_pos(ctx, start_xpos + (i-1), BOX_UPPERBAR_YPOS+1);
+	print_char(ctx,RIGHT_VERTICAL_BAR_CHAR,0);
+
+	// Middle left bar
+	set_char_pos(ctx, start_xpos, BOX_UPPERBAR_YPOS+1);
+	print_char(ctx,LEFT_VERTICAL_BAR_CHAR,0);
 
 	// Print the string
-	print_str(ctx,temp_buffer,MAXTXTSIZE,((ctx->screen_txt_xsize-str_size)/2)+2,10,0,0);
+	print_str(ctx,temp_buffer,MAXTXTSIZE,start_xpos + 2,BOX_UPPERBAR_YPOS+1,0,0);
 
 	// Lower bar
+	set_char_pos(ctx, start_xpos, BOX_UPPERBAR_YPOS+2);
 	for(i=0;i<str_size;i++)
 	{
-		print_char8x8(ctx,((ctx->screen_txt_xsize-str_size)/2)+i,10+1,9,0);
+		print_char(ctx,LOWER_HORIZONTAL_BAR_CHAR,0);
 	}
 
-	// Lower left & right bar
-	print_char8x8(ctx,((ctx->screen_txt_xsize-str_size)/2)+(i-1),10+1,5,0);
-	print_char8x8(ctx,((ctx->screen_txt_xsize-str_size)/2),10+1,4,0);
+	// Bottom right corner
+	set_char_pos(ctx, start_xpos + (i-1), BOX_UPPERBAR_YPOS+2);
+	print_char(ctx,LOWER_RIGHT_CORNER_CHAR,0);
+
+	// Bottom left corner
+	set_char_pos(ctx, start_xpos, BOX_UPPERBAR_YPOS+2);
+	print_char(ctx,LOWER_LEFT_CORNER_CHAR,0);
 
 	va_end( marker );
 
@@ -263,44 +280,44 @@ char to_lower(char c)
 // https://stackoverflow.com/questions/27303062/strstr-function-like-that-ignores-upper-or-lower-case
 char* stristr( const char* str1, const char* str2 )
 {
-    const char* p1 = str1 ;
-    const char* p2 = str2 ;
-    const char* r = *p2 == 0 ? str1 : 0 ;
+	const char* p1 = str1 ;
+	const char* p2 = str2 ;
+	const char* r = *p2 == 0 ? str1 : 0 ;
 
-    while( *p1 && *p2 )
-    {
-        if( to_lower( (unsigned char)*p1 ) == to_lower( (unsigned char)*p2 ) )
-        {
-            if( r == 0 )
-            {
-                r = p1 ;
-            }
+	while( *p1 && *p2 )
+	{
+		if( to_lower( (unsigned char)*p1 ) == to_lower( (unsigned char)*p2 ) )
+		{
+			if( r == 0 )
+			{
+				r = p1 ;
+			}
 
-            p2++ ;
-        }
-        else
-        {
-            p2 = str2 ;
-            if( r != 0 )
-            {
-                p1 = r + 1 ;
-            }
+			p2++ ;
+		}
+		else
+		{
+			p2 = str2 ;
+			if( r != 0 )
+			{
+				p1 = r + 1 ;
+			}
 
-            if( to_lower( (unsigned char)*p1 ) == to_lower( (unsigned char)*p2 ) )
-            {
-                r = p1 ;
-                p2++ ;
-            }
-            else
-            {
-                r = 0 ;
-            }
-        }
+			if( to_lower( (unsigned char)*p1 ) == to_lower( (unsigned char)*p2 ) )
+			{
+				r = p1 ;
+				p2++ ;
+			}
+			else
+			{
+				r = 0 ;
+			}
+		}
 
-        p1++ ;
-    }
+		p1++ ;
+	}
 
-    return *p2 == 0 ? (char*)r : 0 ;
+	return *p2 == 0 ? (char*)r : 0 ;
 }
 
 #ifdef DEBUG
