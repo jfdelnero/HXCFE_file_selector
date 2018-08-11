@@ -639,7 +639,6 @@ int init_display(ui_context * ctx)
 void chg_video_conf(ui_context * ctx)
 {
 	font_type * font;
-	int i;
 
 	font = font_list[ctx->font_id];
 
@@ -760,7 +759,7 @@ void print_char(ui_context * ctx, unsigned char c, int mode)
 	}
 	else
 	{
-		ctx->vid_mem_ptr += font->char_x_size;
+		(unsigned char*)ctx->vid_mem_ptr += font->char_x_size;
 	}
 }
 
@@ -778,7 +777,8 @@ void clear_line(ui_context * ctx,int line,int mode)
 
 void invert_line(ui_context * ctx, int line)
 {
-	int i,j;
+	int i;
+	unsigned int j;
 	unsigned char *ptr_dst;
 	int ptroffset;
 	font_type * font;
