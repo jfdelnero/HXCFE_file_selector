@@ -279,7 +279,8 @@ int media_read(uint32 sector, uint8 *buffer, uint32 sector_count)
 	dbg_printf("media_read sector : 0x%.8X, cnt : %d \n",sector,sector_count);
 	#endif
 
-	hxc_printf(&g_ui_ctx,LEFT_ALIGNED,8*79,1,"%c",23);
+	set_char_pos(&g_ui_ctx,g_ui_ctx.screen_txt_xsize - 1, 0);
+	print_char(&g_ui_ctx, 10, INVERTED);
 
 	for(i=0;i<sector_count;i++)
 	{
@@ -317,7 +318,8 @@ int media_read(uint32 sector, uint8 *buffer, uint32 sector_count)
 		#endif
 	}
 
-	hxc_print(&g_ui_ctx,LEFT_ALIGNED,8*79,1," ");
+	set_char_pos(&g_ui_ctx,g_ui_ctx.screen_txt_xsize - 1, 0);
+	print_char(&g_ui_ctx, ' ', INVERTED);
 
 	return 1;
 }
@@ -331,7 +333,8 @@ int media_write(uint32 sector, uint8 *buffer, uint32 sector_count)
 	dbg_printf("media_write : 0x%.8X\n",sector);
 	#endif
 
-	hxc_printf(&g_ui_ctx,LEFT_ALIGNED,8*79,1,"%c",23);
+	set_char_pos(&g_ui_ctx,g_ui_ctx.screen_txt_xsize - 1, 0);
+	print_char(&g_ui_ctx, 1, INVERTED);
 
 	for(i=0;i<sector_count;i++)
 	{
@@ -352,7 +355,9 @@ int media_write(uint32 sector, uint8 *buffer, uint32 sector_count)
 
 		sector++;
 	}
-	hxc_print(&g_ui_ctx,LEFT_ALIGNED,8*79,1," ");
+
+	set_char_pos(&g_ui_ctx,g_ui_ctx.screen_txt_xsize - 1, 0);
+	print_char(&g_ui_ctx, ' ', INVERTED);
 
 	#ifdef DEBUG
 	print_hex_array(buffer,512);
