@@ -509,6 +509,7 @@ int ui_slots_menu(ui_context * ctx, int drive)
 				}
 
 			break;
+
 			case FCT_SELECT_FILE_DRIVEA:
 				if(!ctx->slotselectorpos)
 				{
@@ -523,6 +524,11 @@ int ui_slots_menu(ui_context * ctx, int drive)
 						return PAGE_SLOTSLIST;
 				}
 			break;
+
+			case FCT_QUIT:
+				return_to_system(ctx);
+			break;
+
 			default:
 				if(process_extra_functions(ctx, key))
 				{
@@ -876,6 +882,11 @@ int ui_mainfileselector(ui_context * ctx)
 							error_message_box(ctx, ui_savereboot(ctx,1));
 						}
 					}
+					break;
+
+				case FCT_QUIT:
+					return_to_system(ctx);
+
 					break;
 
 				case FCT_TOP:
