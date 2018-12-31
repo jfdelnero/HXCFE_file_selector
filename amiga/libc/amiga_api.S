@@ -86,6 +86,7 @@ _LVOReadUnitID = -36
 .globl    _SetAPen
 
 .globl    _OpenScreen
+.globl    _CloseScreen
 
 .globl    ___main
 
@@ -612,5 +613,15 @@ _OpenScreen:
 	movea.l _IntuitionBase,a6
 	movea.l 4+arg_0(sp),a0
 	jsr     -0xC6(a6)
+	movea.l (sp)+,a6
+	rts
+
+_CloseScreen:
+	arg_0           =  4
+
+	move.l  a6,-(sp)
+	movea.l _IntuitionBase,a6
+	movea.l 4+arg_0(sp),a0
+	jsr     -0x42(a6)
 	movea.l (sp)+,a6
 	rts
