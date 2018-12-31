@@ -1621,6 +1621,9 @@ int restore_display(ui_context * ctx)
 	if( viewPort.ColorMap )
 		FreeColorMap( viewPort.ColorMap );
 
+	// Close the screen
+	CloseScreen( screen );
+
 	// Close the Graphics library:
 	if( GfxBaseptr )
 		CloseLibrary( (struct Library *)GfxBaseptr );
@@ -1835,17 +1838,9 @@ int return_to_system(ui_context * ctx)
 		setnoclick(i,1); // Restore state
 	}
 
-	if(mfmtobinLUT_L)
-		FreeMem(mfmtobinLUT_L,256);
-
-	if(mfmtobinLUT_H)
-		FreeMem(mfmtobinLUT_H,256);
-
-	if(track_buffer_rd)
-		FreeMem(track_buffer_rd, sizeof(unsigned short) * RD_TRACK_BUFFER_SIZE);
-
-	if(track_buffer_wr)
-		FreeMem(track_buffer_wr, sizeof(unsigned short) * WR_TRACK_BUFFER_SIZE);
+	deinit_fdc();
+	// Idle floppy pins state
+	WRITEREG_B(CIABPRB, 0xFF );
 
 	restore_display(ctx);
 
