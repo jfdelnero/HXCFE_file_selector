@@ -1017,3 +1017,8 @@ int process_command_line(int argc, char* argv[])
 {
 	return 0;
 }
+
+int return_to_system(ui_context * ctx)
+{
+	return 0;
+}

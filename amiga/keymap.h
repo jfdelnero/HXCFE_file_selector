@@ -19,6 +19,7 @@ keyboard_funct_mapper keysmap[]=
 	{FCT_CHGCOLOR,0x51},
 	{FCT_EMUCFG,0x52},
 	{FCT_ESCAPE,0x45},
+	{FCT_QUIT,0x53},
 	{FCT_NO_FUNCTION,0x00}
 };
 

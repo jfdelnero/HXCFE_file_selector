@@ -31,6 +31,7 @@ int  restore_display(ui_context * ctx);
 // System                         //
 ////////////////////////////////////
 void reboot();
+int  return_to_system(ui_context * ctx);
 void waitsec(int secs);
 void waitms(int  ms);
 void lockup();

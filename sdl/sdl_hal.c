@@ -759,7 +759,7 @@ void print_char(ui_context * ctx, unsigned char c, int mode)
 	}
 	else
 	{
-		(unsigned char*)ctx->vid_mem_ptr += font->char_x_size;
+		ctx->vid_mem_ptr = (unsigned char*)(ctx->vid_mem_ptr)+ font->char_x_size;
 	}
 }
 
@@ -1023,4 +1023,9 @@ int process_command_line(int argc, char* argv[])
 	}
 
 	return 1;
+}
+
+int return_to_system(ui_context * ctx)
+{
+	return 0;
 }

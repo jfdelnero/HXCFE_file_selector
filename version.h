@@ -1,2 +1,2 @@
-#define VERSIONCODE "1.85a"
-#define DATECODE "11 August 2018"
+#define VERSIONCODE "1.87a"
+#define DATECODE "31 December 2018"

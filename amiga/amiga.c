@@ -126,6 +126,8 @@ struct BitMap my_bit_map;
 struct RastPort my_rast_port;
 struct Screen *screen;
 
+struct TDU_PublicUnit old_state_unit[4];
+
 static unsigned short bytes_per_line;
 static unsigned char * chars_LUT[256];
 
@@ -570,7 +572,7 @@ int jumptotrack(unsigned char t)
 	#endif
 
 	k = 0;
-	while((READREG_B(CIAAPRA) & CIAAPRA_DSKTRACK0) && k<1024)
+	while((READREG_B(CIAAPRA) & CIAAPRA_DSKTRACK0) && k<512)
 	{
 		WRITEREG_B(CIABPRB, ~(CIABPRB_DSKMOTOR | CIABPRB_DSKSEL  | CIABPRB_DSKSTEP));
 		waitms(1);
@@ -580,7 +582,7 @@ int jumptotrack(unsigned char t)
 		k++;
 	}
 
-	if(k < 1024)
+	if(k < 512)
 	{
 		#ifdef DEBUG
 		dbg_printf("jumptotrack %d - track 0 found\n",t);
@@ -1138,7 +1140,7 @@ int readsector(unsigned char sectornum,unsigned char * data,unsigned char invali
 		return -ERR_MEDIA_READ_SECTOR_NOT_FOUND;
 }
 
-static void setnoclick(ULONG unitnum, ULONG onoff)
+static void setnoclick(ULONG unitnum, ULONG operation)
 {
 	struct MsgPort *port;
 
@@ -1155,15 +1157,38 @@ static void setnoclick(ULONG unitnum, ULONG onoff)
 
 				Forbid();
 
-				if (onoff)
-					unit->tdu_PubFlags |= TDPF_NOCLICK;
-				else
-					unit->tdu_PubFlags &= ~TDPF_NOCLICK;
+				switch( operation )
+				{
+					case 0: // Save state
+						memcpy(&old_state_unit[unitnum],unit,sizeof(struct TDU_PublicUnit));
+					break;
 
-				// Hack to fully disable the click...
-				unit->tdu_SettleDelay = 0x7FFFFFFF;
-				unit->tdu_StepDelay = 0x7FFFFFFF;
-				unit->tdu_CalibrateDelay = 0x7FFFFFFF;
+					case 1: // Restore state
+						unit->tdu_SettleDelay = old_state_unit[unitnum].tdu_SettleDelay;
+						unit->tdu_StepDelay = old_state_unit[unitnum].tdu_StepDelay;
+						unit->tdu_CalibrateDelay = old_state_unit[unitnum].tdu_CalibrateDelay;
+
+						unit->tdu_PubFlags = ( (unit->tdu_PubFlags & ~TDPF_NOCLICK) | (old_state_unit[unitnum].tdu_PubFlags & TDPF_NOCLICK));
+
+					break;
+
+					case 2: // click off
+						unit->tdu_PubFlags |= TDPF_NOCLICK;
+
+						// Hack to fully disable the click...
+						unit->tdu_SettleDelay = 0x7FFFFFFF;
+						unit->tdu_StepDelay = 0x7FFFFFFF;
+						unit->tdu_CalibrateDelay = 0x7FFFFFFF;
+					break;
+
+					case 3: // click on
+						unit->tdu_PubFlags &= ~TDPF_NOCLICK;
+
+						unit->tdu_SettleDelay = old_state_unit[unitnum].tdu_SettleDelay;
+						unit->tdu_StepDelay = old_state_unit[unitnum].tdu_StepDelay;
+						unit->tdu_CalibrateDelay = old_state_unit[unitnum].tdu_CalibrateDelay;
+					break;
+				}
 
 				Permit();
 				CloseDevice((APTR) ioreq);
@@ -1186,7 +1211,10 @@ int init_fdc(int drive)
 	#endif
 
 	for(i=0;i<4;i++)
-		setnoclick(i,0);
+	{
+		setnoclick(i,0); // Save state
+		setnoclick(i,2); // click off
+	}
 
 	CIABPRB_DSKSEL = CIABPRB_DSKSEL0 << (drive&3);
 
@@ -1572,6 +1600,38 @@ int init_display(ui_context * ctx)
 	return ERR_NO_ERROR;
 }
 
+int restore_display(ui_context * ctx)
+{
+	int loop;
+
+	LoadView( my_old_view );
+
+	// Free automatically allocated display structures:
+	FreeVPortCopLists( &viewPort );
+	FreeCprList( view.LOFCprList );
+
+	// Deallocate the display memory, BitPlane for BitPlane:
+	for( loop = 0; loop < DEPTH; loop++ )
+	{
+		if( my_bit_map.Planes[ loop ] )
+			FreeRaster( my_bit_map.Planes[ loop ], ctx->SCREEN_XRESOL, 256 );
+	}
+
+	// Deallocate the ColorMap:
+	if( viewPort.ColorMap )
+		FreeColorMap( viewPort.ColorMap );
+
+	// Close the Graphics library:
+	if( GfxBaseptr )
+		CloseLibrary( (struct Library *)GfxBaseptr );
+
+	// Close the Intuition library:
+	if( IntuitionBase )
+		CloseLibrary( (struct Library *)IntuitionBase );
+
+	return 0;
+}
+
 void patch_char_func(int numberoflines)
 {
 	volatile unsigned short * func_ptr;
@@ -1640,28 +1700,6 @@ void chg_video_conf(ui_context * ctx)
 	for(i=0;i<font->nb_of_chars;i++)
 	{
 		chars_LUT[i] = (unsigned char*)(font->font_data + (i * font->char_size));
-	}
-}
-
-void DestroyScrn ()
-{
-	WORD Cntr;
-
-	if (view.LOFCprList)
-		FreeCprList(view.LOFCprList);
-
-	if (view.SHFCprList)
-		FreeCprList(view.SHFCprList);
-
-	FreeVPortCopLists(&viewPort);
-
-	if (cm)
-		FreeColorMap(cm);
-
-	for (Cntr = 0; Cntr < 8; Cntr++)
-	{
-		if (my_bit_map.Planes[Cntr])
-			FreeRaster (my_bit_map.Planes[Cntr], 640, 480);
 	}
 }
 
@@ -1779,5 +1817,39 @@ void reboot()
 
 int process_command_line(int argc, char* argv[])
 {
+	return 0;
+}
+
+int return_to_system(ui_context * ctx)
+{
+	int i;
+
+	if(rbfint)
+	{
+		RemIntServer(5,rbfint);
+		FreeMem(rbfint, sizeof(struct Interrupt));
+	}
+
+	for(i=0;i<4;i++)
+	{
+		setnoclick(i,1); // Restore state
+	}
+
+	if(mfmtobinLUT_L)
+		FreeMem(mfmtobinLUT_L,256);
+
+	if(mfmtobinLUT_H)
+		FreeMem(mfmtobinLUT_H,256);
+
+	if(track_buffer_rd)
+		FreeMem(track_buffer_rd, sizeof(unsigned short) * RD_TRACK_BUFFER_SIZE);
+
+	if(track_buffer_wr)
+		FreeMem(track_buffer_wr, sizeof(unsigned short) * WR_TRACK_BUFFER_SIZE);
+
+	restore_display(ctx);
+
+	exit(0);
+
 	return 0;
 }

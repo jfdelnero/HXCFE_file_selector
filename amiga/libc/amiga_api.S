@@ -21,10 +21,10 @@ _LVOFindName = -276
 _LVORemDevice = -438
 _LVORemResource = -492
 _LVOOpenResource = -498
-_LVOAllocSignal = -330 
+_LVOAllocSignal = -330
 _LVOFreeSignal = -336
-_LVOFindTask = -294 
-_LVOAddPort = -354 
+_LVOFindTask = -294
+_LVOAddPort = -354
 
 
 _LVOAllocUnit = -6
@@ -41,7 +41,9 @@ _LVOReadUnitID = -36
 .globl    _AllocMem
 .globl    _FreeMem
 .globl    _AddIntServer
+.globl    _RemIntServer
 .globl    _OpenLibrary
+.globl    _CloseLibrary
 .globl    _CreateMsgPort
 .globl    _CreateIORequest
 .globl    _OpenDevice
@@ -54,8 +56,8 @@ _LVOReadUnitID = -36
 .globl    _OpenResource
 .globl    _AllocSignal
 .globl    _FreeSignal
-.globl    _FindTask 
-.globl    _AddPort 
+.globl    _FindTask
+.globl    _AddPort
 
 .globl    _Info
 .globl    _Lock
@@ -181,7 +183,7 @@ _RemDevice:
 	jsr     a6@(_LVORemDevice:W)
 	movea.l (sp)+,a6
 	rts
-	
+
 _OpenResource:
 	arg_0=  4
 
@@ -222,7 +224,7 @@ _FreeSignal:
 	movea.l (sp)+,a6
 	rts
 
-_FindTask: 
+_FindTask:
 	arg_0=  4
 
 	move.l  a6,-(sp)
@@ -232,7 +234,7 @@ _FindTask:
 	movea.l (sp)+,a6
 	rts
 
-_AddPort: 	
+_AddPort:
 	arg_0=  4
 
 	move.l  a6,-(sp)
@@ -241,7 +243,7 @@ _AddPort:
 	jsr     a6@(_LVOFindTask:W)
 	movea.l (sp)+,a6
 	rts
-	
+
 _Forbid:
 	move.l  a6,-(sp)
 	movea.l _SysBase,a6
@@ -255,7 +257,7 @@ _Permit:
 	jsr     a6@(_LVOPermit:W)
 	movea.l (sp)+,a6
 	rts
-	
+
 
 _AllocMem:
 	arg_0=  4
@@ -293,6 +295,18 @@ _AddIntServer:
 	movea.l (sp)+,a6
 	rts
 
+_RemIntServer:
+	arg_0           =  4
+	arg_4           =  8
+
+	move.l  a6,-(sp)
+	movea.l _SysBase,a6
+	move.l  4+arg_0(sp),d0
+	movea.l 4+arg_4(sp),a1
+	jsr     -0xAE(a6)
+	movea.l (sp)+,a6
+	rts
+
 _OpenLibrary:
 	arg_0           =  4
 	arg_4           =  8
@@ -302,6 +316,16 @@ _OpenLibrary:
 	movea.l 4+arg_0(sp),a1
 	move.l  4+arg_4(sp),d0
 	jsr     -0x228(a6)
+	movea.l (sp)+,a6
+	rts
+
+_CloseLibrary:
+	arg_0           =  4
+
+	move.l  a6,-(sp)
+	movea.l _SysBase,a6
+	movea.l 4+arg_0(sp),a1
+	jsr     -0x19e(a6)
 	movea.l (sp)+,a6
 	rts
 

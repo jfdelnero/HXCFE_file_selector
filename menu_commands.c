@@ -79,6 +79,13 @@ static int commnand_menu_savereboot_cb(ui_context * ctx, int event, int xpos, in
 	return MENU_REDRAWMENU;
 }
 
+static int commnand_menu_leavefileselector_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
+{
+	return_to_system(ctx);
+
+	return MENU_STAYINMENU;	
+}
+
 static int commnand_menu_chgcolor_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
 {
 	if(event)
@@ -159,14 +166,13 @@ const menu commands_menu[]=
 	{"Save and Reboot",                 commnand_menu_savereboot_cb,         0x3, 0, CENTER_ALIGNED},
 	{"Save",                            commnand_menu_savereboot_cb,         0x1, 0, CENTER_ALIGNED},
 	{"Reboot",                          commnand_menu_savereboot_cb,         0x2, 0, CENTER_ALIGNED},
+	{"Leave the File selector",         commnand_menu_leavefileselector_cb,   -1, (struct menu * )-1, CENTER_ALIGNED},
 	{"Select drive",                    0,                                     0, (struct menu * )&selectdrive_menu, CENTER_ALIGNED},
 	{"",                                0,                                     0, 0, CENTER_ALIGNED},
 	{"Clear all slots !",               commnand_menu_clearslots_cb,           0, 0, CENTER_ALIGNED},
 	{"",                                0,                                     0, 0, CENTER_ALIGNED},
-//	{"Quit the File selector",          0,                                    -1, (struct menu * )-1, CENTER_ALIGNED},
-//	{"",                                0,                                     0, 0, CENTER_ALIGNED},
 	{"Change display colors",           commnand_menu_chgcolor_cb,             0, 0, CENTER_ALIGNED},
-	{"Change display Font",             commnand_menu_chgfont_cb,              0, 0, CENTER_ALIGNED},	
+	{"Change display Font",             commnand_menu_chgfont_cb,              0, 0, CENTER_ALIGNED},
 	{"HxC Drive Settings",              0,                                     0, (struct menu * )&settings_menu, CENTER_ALIGNED},
 	{"Help / About",                    commnand_menu_help_cb,                 0, 0, CENTER_ALIGNED},
 	{0, 0 , 0 ,0}
