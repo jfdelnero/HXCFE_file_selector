@@ -81,8 +81,10 @@ static int commnand_menu_savereboot_cb(ui_context * ctx, int event, int xpos, in
 
 static int commnand_menu_leavefileselector_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
 {
-	return_to_system(ctx);
-
+	if(event)
+	{	
+		return_to_system(ctx);
+	}
 	return MENU_STAYINMENU;	
 }
 
