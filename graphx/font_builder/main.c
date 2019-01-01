@@ -1,6 +1,6 @@
 /*
 //
-// Copyright (C) 2017-2018 Jean-François DEL NERO / HxC2001
+// Copyright (C) 2017-2019 Jean-François DEL NERO / HxC2001
 //
 // This file is part of the FontCP&P software
 //
@@ -604,7 +604,7 @@ int main(int argc, char *argv[])
 	font_spec ifnt;
 
 	printf("FontCP&P v0.8\n");
-	printf("(c) Jean-François DEL NERO / HxC2001 2017-2018\n\n");
+	printf("(c) Jean-François DEL NERO / HxC2001 2017-2019\n\n");
 
 	memset(&framebuffer,0,sizeof(framebuffer));
 

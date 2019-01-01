@@ -1,5 +1,5 @@
 |
-| Copyright (C) 2009-2018 Jean-François DEL NERO
+| Copyright (C) 2009-2019 Jean-François DEL NERO
 |
 | This file is part of the HxCFloppyEmulator file selector.
 |
