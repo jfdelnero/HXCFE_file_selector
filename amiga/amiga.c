@@ -75,13 +75,9 @@
 
 #include "errors_def.h"
 
-#define DEPTH    2 /* 1 BitPlanes should be used, gives eight colours. */
-#define COLOURS  2 /* 2^1 = 2                                          */
-
-#define BLACK 0x002           /*  RGB values for the four colors used.   */
-#define RED   0xFFF
-#define GREEN 0x0f0
-#define BLUE  0x00f
+#define XRESOL   640
+#define YRESOL   256
+#define DEPTH    1 /* 2 colors */
 
 volatile unsigned short io_floppy_timeout;
 
@@ -115,15 +111,8 @@ unsigned long __commandlen;
 struct Interrupt *rbfint, *priorint;
 
 extern struct Library * DOSBase;
-struct Library * libptr;
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBaseptr;
-struct View * my_old_view;
-struct View view;
-struct ViewPort viewPort = { 0 };
-struct RasInfo rasInfo;
-struct BitMap my_bit_map;
-struct RastPort my_rast_port;
 struct Screen *screen;
 
 struct TDU_PublicUnit old_state_unit[4];
@@ -131,41 +120,22 @@ struct TDU_PublicUnit old_state_unit[4];
 static unsigned short bytes_per_line;
 static unsigned char * chars_LUT[256];
 
-UWORD  *pointer;
-struct ColorMap *cm=NULL;
-
 extern ui_context g_ui_ctx;
-
-struct TextAttr MyFont =
-{
-		(STRPTR)"topaz.font", // Font Name
-		TOPAZ_SIXTY, // Font Height
-		FS_NORMAL, // Style
-		FPF_ROMFONT, // Preferences
-};
 
 struct NewScreen screen_cfg =
 {
-		(WORD)0,   /* the LeftEdge should be equal to zero */
-		(WORD)0,   /* TopEdge */
-		(WORD)640, /* Width (low-resolution) */
-		(WORD)256, /* Height (non-interlace) */
-		(WORD)1,   /* Depth (4 colors will be available) */
-		(UBYTE)0, (UBYTE)1, /* the DetailPen and BlockPen specifications */
-		(UWORD)0,  /* no special display modes */
-		CUSTOMSCREEN, /* the screen type */
-		&MyFont, /* use my own font */
-		(UBYTE *)"HxC Floppy Emulator file selector", /* this declaration is compiled as a text pointer */
-		(struct Gadget *)NULL, /* no special screen gadgets */
-		(struct BitMap *)NULL  /* no special CustomBitMap */
-};
-
-struct TagItem vcTags[] =
-{
-	{VTAG_ATTACH_CM_SET, (ULONG)NULL },
-	{VTAG_VIEWPORTEXTRA_SET, (ULONG)NULL },
-	{VTAG_NORMAL_DISP_SET, (ULONG)NULL },
-	{VTAG_END_CM, (ULONG)NULL }
+	(WORD)0,       /* the LeftEdge should be equal to zero */
+	(WORD)0,       /* TopEdge */
+	(WORD)XRESOL,  /* Width (low-resolution) */
+	(WORD)YRESOL,  /* Height (non-interlace) */
+	(WORD)DEPTH,   /* Depth */
+	(UBYTE)0, (UBYTE)0, /* the DetailPen and BlockPen specifications */
+	(UWORD)0,  /* no special display modes */
+	CUSTOMSCREEN, /* the screen type */
+	NULL, /* custom font */
+	(UBYTE *)"HxC Floppy Emulator file selector", /* this declaration is compiled as a text pointer */
+	(struct Gadget *)NULL, /* no special screen gadgets */
+	(struct BitMap *)NULL  /* no special CustomBitMap */
 };
 
 /********************************************************************************
@@ -1513,81 +1483,33 @@ void init_timer()
 
 int init_display(ui_context * ctx)
 {
-	unsigned short loop;
 	font_type * font;
 
-	ctx->SCREEN_XRESOL = 640;
-
-	memset(&view,0,sizeof(struct View));
-	memset(&viewPort,0,sizeof(struct ViewPort));
-	memset(&rasInfo,0,sizeof(struct RasInfo));
-	memset(&my_bit_map,0,sizeof(struct BitMap));
-	memset(&my_rast_port,0,sizeof(struct RastPort));
-
 	IntuitionBase = (struct IntuitionBase *) OpenLibrary( (CONST_STRPTR)"intuition.library", 0 );
-	screen = (struct Screen *)OpenScreen(&screen_cfg);
+	if( !IntuitionBase )
+		return -ERR_SYSLIB_LOAD;
 
-	/* Open the Graphics library: */
 	GfxBaseptr = (struct GfxBase *) OpenLibrary( (CONST_STRPTR)"graphics.library", 0 );
 	if( !GfxBaseptr )
 		return -ERR_SYSLIB_LOAD;
 
-	/* Save the current View, so we can restore it later: */
-	my_old_view = GfxBaseptr->ActiView;
+	ctx->SCREEN_XRESOL = XRESOL;
+	// PAL or NTSC Machine ?
+	ctx->SCREEN_YRESOL = (GfxBaseptr->DisplayFlags & PAL) ? YRESOL : 200;
 
-	/* 1. Prepare the View structure, and give it a pointer to */
-	/*    the first ViewPort:                                  */
-	InitView( &view );
-	view.Modes |= HIRES;//LACE;
+	screen_cfg.Width = ctx->SCREEN_XRESOL;
+	screen_cfg.Height = ctx->SCREEN_YRESOL;
+	screen_cfg.Depth = DEPTH;
+	screen_cfg.ViewModes = HIRES;
 
-	/* 4. Prepare the BitMap: */
-	InitBitMap( &my_bit_map, DEPTH, ctx->SCREEN_XRESOL, 256 );
+	screen = (struct Screen *)OpenScreen(&screen_cfg);
 
-	/* Allocate memory for the Raster: */
-	for( loop = 0; loop < DEPTH; loop++ )
-	{
-		my_bit_map.Planes[ loop ] = (PLANEPTR) AllocRaster( ctx->SCREEN_XRESOL, 256 );
-		BltClear( my_bit_map.Planes[ loop ], RASSIZE( ctx->SCREEN_XRESOL, 256 ), 0 );
-	}
+	ShowTitle( screen, 0 );
 
-	/* 5. Prepare the RasInfo structure: */
-	rasInfo.BitMap = &my_bit_map; /* Pointer to the BitMap structure.  */
-	rasInfo.RxOffset = 0;         /* The top left corner of the Raster */
-	rasInfo.RyOffset = 0;         /* should be at the top left corner  */
-	/* of the display.                   */
-	rasInfo.Next = NULL;          /* Single playfield - only one       */
-	/* RasInfo structure is necessary.   */
+	// Default color scheme
+	LoadRGB4(&screen->ViewPort, colortable, 4);
 
-	InitVPort(&viewPort);           /*  Initialize the ViewPort.  */
-	view.ViewPort = &viewPort;      /*  Link the ViewPort into the View.  */
-	viewPort.RasInfo = &rasInfo;
-	viewPort.DWidth = ctx->SCREEN_XRESOL;
-	viewPort.DHeight = 256;
-
-	/* Set the display mode the old-fashioned way */
-	viewPort.Modes=HIRES;// | LACE;
-
-	cm =(struct ColorMap *) GetColorMap(COLOURS);
-
-	/* Attach the ColorMap, old 1.3-style */
-	viewPort.ColorMap = cm;
-
-	LoadRGB4(&viewPort, colortable, 4);
-
-	/* 6. Create the display: */
-	MakeVPort( &view, &viewPort );
-	MrgCop( &view );
-	LoadView( &view );
-	WaitTOF();
-	WaitTOF();
-
-	/* 7. Prepare the RastPort, and give it a pointer to the BitMap. */
-	InitRastPort( &my_rast_port );
-	my_rast_port.BitMap = &my_bit_map;
-	SetAPen( &my_rast_port,   1 );
-	screen_buffer = my_bit_map.Planes[ 0 ];
-
-	ctx->SCREEN_YRESOL = (GfxBaseptr->DisplayFlags & PAL) ? 256 : 200;
+	screen_buffer = screen->RastPort.BitMap->Planes[0];
 
 	font = font_list[ctx->font_id];
 
@@ -1595,6 +1517,7 @@ int init_display(ui_context * ctx)
 	ctx->screen_txt_ysize = (ctx->SCREEN_YRESOL / font->char_y_size);
 
 	disablemousepointer();
+
 	init_timer();
 
 	return ERR_NO_ERROR;
@@ -1602,25 +1525,6 @@ int init_display(ui_context * ctx)
 
 int restore_display(ui_context * ctx)
 {
-	int loop;
-
-	LoadView( my_old_view );
-
-	// Free automatically allocated display structures:
-	FreeVPortCopLists( &viewPort );
-	FreeCprList( view.LOFCprList );
-
-	// Deallocate the display memory, BitPlane for BitPlane:
-	for( loop = 0; loop < DEPTH; loop++ )
-	{
-		if( my_bit_map.Planes[ loop ] )
-			FreeRaster( my_bit_map.Planes[ loop ], ctx->SCREEN_XRESOL, 256 );
-	}
-
-	// Deallocate the ColorMap:
-	if( viewPort.ColorMap )
-		FreeColorMap( viewPort.ColorMap );
-
 	// Close the screen
 	CloseScreen( screen );
 
@@ -1728,7 +1632,7 @@ void initpal()
 
 unsigned char set_color_scheme(unsigned char color)
 {
-	LoadRGB4(&viewPort, &colortable[(color&0x1F)*4], 4);
+	LoadRGB4(&screen->ViewPort, &colortable[(color&0x1F)*4], 4);
 	return color;
 }
 

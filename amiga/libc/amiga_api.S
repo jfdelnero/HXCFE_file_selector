@@ -87,6 +87,8 @@ _LVOReadUnitID = -36
 
 .globl    _OpenScreen
 .globl    _CloseScreen
+.globl    _ScreenToFront
+.globl    _ShowTitle
 
 .globl    ___main
 
@@ -623,5 +625,27 @@ _CloseScreen:
 	movea.l _IntuitionBase,a6
 	movea.l 4+arg_0(sp),a0
 	jsr     -0x42(a6)
+	movea.l (sp)+,a6
+	rts
+
+_ScreenToFront:
+	arg_0           =  4
+
+	move.l  a6,-(sp)
+	movea.l _IntuitionBase,a6
+	movea.l 4+arg_0(sp),a0
+	jsr     -0xFC(a6)
+	movea.l (sp)+,a6
+	rts
+
+_ShowTitle:
+	arg_0           =  4
+	arg_4           =  8
+
+	move.l  a6,-(sp)
+	movea.l _IntuitionBase,a6
+	movea.l 4+arg_0(sp),a0
+	move.l  4+arg_4(sp),d0
+	jsr     -0x11A(a6)
 	movea.l (sp)+,a6
 	rts
