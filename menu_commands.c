@@ -79,15 +79,6 @@ static int commnand_menu_savereboot_cb(ui_context * ctx, int event, int xpos, in
 	return MENU_REDRAWMENU;
 }
 
-static int commnand_menu_leavefileselector_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
-{
-	if(event)
-	{	
-		return_to_system(ctx);
-	}
-	return MENU_STAYINMENU;	
-}
-
 static int commnand_menu_chgcolor_cb(ui_context * ctx, int event, int xpos, int ypos, int parameter)
 {
 	if(event)

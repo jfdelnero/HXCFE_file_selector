@@ -525,12 +525,6 @@ int ui_slots_menu(ui_context * ctx, int drive)
 				}
 			break;
 
-			/*
-			case FCT_QUIT:
-				return_to_system(ctx);
-			break;
-			*/
-
 			default:
 				if(process_extra_functions(ctx, key))
 				{
@@ -885,12 +879,6 @@ int ui_mainfileselector(ui_context * ctx)
 						}
 					}
 					break;
-
-				/*
-				case FCT_QUIT:
-					return_to_system(ctx);
-					break;
-				*/
 
 				case FCT_TOP:
 					ctx->page_number=0;
