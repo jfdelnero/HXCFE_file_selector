@@ -313,7 +313,6 @@ void ui_reboot(ui_context * ctx)
 {
 	hxc_printf_box(ctx,(char*)reboot_msg);
 	waitsec(1);
-	jumptotrack(0);
 	reboot();
 }
 

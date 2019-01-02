@@ -1190,6 +1190,8 @@ int init_fdc(int drive)
 	dbg_printf("init_fdc\n");
 	#endif
 
+	memset(&old_state_unit,0,sizeof(old_state_unit));
+
 	for(i=0;i<4;i++)
 	{
 		setnoclick(i,0); // Save state
@@ -1736,6 +1738,7 @@ void reboot()
 	}
 	else
 	{
+		jumptotrack(0);
 		_reboot();
 	}
 	lockup();

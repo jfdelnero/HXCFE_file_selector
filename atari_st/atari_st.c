@@ -998,6 +998,7 @@ void su_reboot()
 
 void reboot()
 {
+	jumptotrack(0);
 	Supexec(su_reboot);
 }
 
