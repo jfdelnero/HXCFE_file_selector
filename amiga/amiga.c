@@ -331,13 +331,23 @@ void testblink()
 
 void lockup()
 {
+	int i;
 	#ifdef DEBUG
 	dbg_printf("lockup : Sofware halted...\n");
 	#endif
 
+	i = 0;
 	for(;;)
 	{
-		waitsec(100);
+		if( DOSBase && i >= 4 )
+		{
+			// We are not trackloaded ! return to the system after some seconds.
+			return_to_system(&g_ui_ctx);
+		}
+
+		waitsec(1);
+
+		i++;
 	}
 }
 
@@ -1718,7 +1728,16 @@ void invert_line(ui_context * ctx,int line)
 
 void reboot()
 {
-	_reboot();
+	if( DOSBase )
+	{
+		// We are not trackloaded ! just return to the system.
+		return_to_system(&g_ui_ctx);
+		lockup();
+	}
+	else
+	{
+		_reboot();
+	}
 	lockup();
 }
 

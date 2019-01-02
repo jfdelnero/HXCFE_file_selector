@@ -165,10 +165,9 @@ const menu commands_menu[]=
 {
 	{"--- Save and Settings ---",       0,                      PAGE_FILEBROWSER, (struct menu * )-1, CENTER_ALIGNED},
 	{"",                                0,                                     0, 0, CENTER_ALIGNED},
-	{"Save and Reboot",                 commnand_menu_savereboot_cb,         0x3, 0, CENTER_ALIGNED},
+	{"Save and Quit/Reboot",            commnand_menu_savereboot_cb,         0x3, 0, CENTER_ALIGNED},
 	{"Save",                            commnand_menu_savereboot_cb,         0x1, 0, CENTER_ALIGNED},
-	{"Reboot",                          commnand_menu_savereboot_cb,         0x2, 0, CENTER_ALIGNED},
-	{"Leave the File selector",         commnand_menu_leavefileselector_cb,   -1, (struct menu * )-1, CENTER_ALIGNED},
+	{"Quit/Reboot",                     commnand_menu_savereboot_cb,         0x2, 0, CENTER_ALIGNED},
 	{"Select drive",                    0,                                     0, (struct menu * )&selectdrive_menu, CENTER_ALIGNED},
 	{"",                                0,                                     0, 0, CENTER_ALIGNED},
 	{"Clear all slots !",               commnand_menu_clearslots_cb,           0, 0, CENTER_ALIGNED},

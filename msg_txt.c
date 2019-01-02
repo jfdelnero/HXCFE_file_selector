@@ -100,9 +100,9 @@ const char help_scr3_msg[]=
 	"                    Escape to abort the search\n"
 	"F2                : Change color\n"
 	"F3                : Settings menu\n"
-	"F8                : Reboot\n"
+	"F8                : Quit/Reboot\n"
 	"F9                : Save\n"
-	"F10               : Save and Reboot\n"
+	"F10               : Save and Quit/Reboot\n"
 	"\n"
 	"\n"
 	"                   ---Press Enter / Fire to continue---"
@@ -118,10 +118,10 @@ const char help_scr4_msg[]=
 	"The first line of each page allows to switch to the next one :\n"
 	"Media files list ->Drive A slots list ->Drive B slots list ->Save/Settings page\n"
 	"\n"
-	"\n"
-	"\n"
-	"\n"
-	"\n"
+	"Amiga Workbench tips and tricks :\n"
+	"Press Left-Amiga+N keys to switch to the Workbench.\n"
+	"Press Left-Amiga+M keys to switch back to the HxC File selector.\n"
+	"You can drag/scroll the HxC File selector screen with the upper bar.\n"
 	"                   ---Press Enter / Fire to continue---"
 };
 
@@ -171,7 +171,7 @@ const pagedesc help_pages[]=
 };
 
 const char cur_folder_msg[] = "Current folder:";
-const char reboot_msg[] = ">>>>>Rebooting...<<<<<";
+const char reboot_msg[] = ">>>>>Exiting/Rebooting...<<<<<";
 const char save_msg[] = "Saving selection...";
 const char save_and_restart_msg[] = "Saving selection and restarting...";
 const char title_msg[] = { "HxC Floppy Emulator file selector v" VERSIONCODE};
