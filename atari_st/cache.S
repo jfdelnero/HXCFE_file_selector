@@ -28,15 +28,15 @@
 	| From https://groups.google.com/d/topic/comp.sys.m68k/SF0ektrtBtQ/discussion (Detecting 68040/060)
 	_is_68020:
 		movem.l a7,-(a7)    | Don't let this line get 'optimised'
-		cmpa.l  (a7)+,a7	| Was stored value pre-decremented?
-		bne.s   MC020		| Z unless this is a 68020 or later
+		cmpa.l  (a7)+,a7    | Was stored value pre-decremented?
+		bne.s   MC020       | Z unless this is a 68020 or later
 
-		move.l #0,d0		| Not an 68020+
+		move.l #0,d0        | Not an 68020+
 
 		rts
 
 	MC020:
-		move.l #1,d0		| This is a 68020+
+		move.l #1,d0        | This is a 68020+
 
 		rts
 
