@@ -1,6 +1,6 @@
 /*
 //
-// Copyright (C) 2009-2019 Jean-François DEL NERO
+// Copyright (C) 2009-2020 Jean-François DEL NERO
 //
 // This file is part of the HxCFloppyEmulator file selector.
 //
@@ -41,7 +41,7 @@ const char startup_msg[]=
 	"HxC Floppy Emulator file selector\n"
 	"V" VERSIONCODE " - " DATECODE "\n"
 	"\n"
-	"(c) 2009-2019 HxC2001 / Jean-Francois DEL NERO\n"
+	"(c) 2009-2020 HxC2001 / Jean-Francois DEL NERO\n"
 	"\n"
 	"Email : hxc2001@free.fr\n"
 	"\n"
