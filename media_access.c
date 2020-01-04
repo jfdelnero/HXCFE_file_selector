@@ -103,6 +103,52 @@ int setlbabase(unsigned long lba)
 	return ret;
 }
 
+"#if 0
+int test_cmd(unsigned long lba)
+{
+	int ret;
+	unsigned char sector[512];
+	direct_access_cmd_sector * dacs;
+
+	#ifdef DEBUG
+	dbg_printf("test_cmd\n");
+	#endif
+
+	dacs=(direct_access_cmd_sector  *)sector;
+
+	memset(&sector,0,512);
+
+	setlbabase(0xFFFFFFFF);
+	readsector(1,sector,1);
+
+	hxc_printf_box(&g_ui_ctx,"<%s>",sector);
+
+	setlbabase(0);
+
+	memset(&sector,0,512);
+
+#ifdef CORTEX_FW_SUPPORT
+	if(g_ui_ctx.firmware_type == CORTEX_FIRMWARE)
+	{
+		strcpy(dacs->DAHEADERSIGNATURE,CORTEX_FW_ID);
+	}
+	else
+	{
+		strcpy(dacs->DAHEADERSIGNATURE,HXC_FW_ID);
+	}
+#else
+	strcpy(dacs->DAHEADERSIGNATURE,HXC_FW_ID);
+#endif
+
+	dacs->cmd_code = 10;
+	strcpy((char*)&dacs->parameter_0,"WB-3_1.ADF");
+
+	ret = writesector( 0,(unsigned char *)&sector);
+
+	return ret;
+}
+#endif
+
 int test_floppy_if()
 {
 	int ret;
