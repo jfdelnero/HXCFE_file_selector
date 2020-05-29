@@ -152,7 +152,7 @@ const char help_scr6_msg[]=
 	"\n"
 	"Updates : http://hxc2001.free.fr/floppy_drive_emulator/\n"
 	"          https://hxc2001.com                          \n"
-	"Forum   : http://torlus.com/floppy/forum               \n"
+	"Forum   : https://torlus.com/floppy/forum              \n"
 	"Facebook: https://www.facebook.com/groups/hxc2001      \n"
 	"Sources : https://github.com/jfdelnero                 \n"
 	"\n"
