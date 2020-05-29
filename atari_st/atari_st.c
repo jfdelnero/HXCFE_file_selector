@@ -428,24 +428,41 @@ void su_fdcDmaWriteMode(void)
 	fdcDmaMode = 0x100;
 }
 
-void read9sectors(unsigned char *adr)
+unsigned char read9sectors(unsigned char *adr)
 {
 	void * old_ssp;
 	WORD sectorNumber;
+	unsigned char status;
+	int retry;
 
 	old_ssp = (void *) Super(0L);
 
-	su_fdcDmaReadMode();
-	su_fdcDmaAdrSet(adr);
-	su_fdcRegSet(0x90, 9);                   /* sector count : 9 sectors */
+	retry = 10;
 
-	for (sectorNumber = 0; sectorNumber<=8; sectorNumber++)
+	do
 	{
-		su_fdcRegSet(0x84, sectorNumber);
-		su_fdcSendCommandWait(0x88);         /* READ SECTOR, no spinup */
-	}
+		su_fdcDmaReadMode();
+		su_fdcDmaAdrSet(adr);
+		su_fdcRegSet(0x90, 9);                   /* sector count : 9 sectors */
+
+		for (sectorNumber = 0; sectorNumber<=8; sectorNumber++)
+		{
+			su_fdcRegSet(0x84, sectorNumber);
+			su_fdcSendCommandWait(0x88);         /* READ SECTOR, no spinup */
+
+			status = su_fdcRegGet(0x80); // Status register - Check CRC & DRQ issue flags;
+
+			if(status & 0x1C)
+				break;                   // CRC and/or DMA error
+		}
+
+		retry--;
+
+	} while( retry && (status & 0x1C) );
 
 	Super(old_ssp);
+
+	return status & 0x1C;
 }
 
 void write1sector(WORD sectorNumber, unsigned char *adr)
@@ -477,7 +494,11 @@ int readsector(unsigned char sectornum,unsigned char * data,unsigned char invali
 {
 	if(!valid_cache || invalidate_cache)
 	{
-		read9sectors(datacache);
+		if(read9sectors(datacache))
+		{
+			return ERR_MEDIA_READ;
+		}
+
 		valid_cache=0xFF;
 	}
 
