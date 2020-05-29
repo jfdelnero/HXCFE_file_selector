@@ -103,7 +103,7 @@ int setlbabase(unsigned long lba)
 	return ret;
 }
 
-"#if 0
+#if 0
 int test_cmd(unsigned long lba)
 {
 	int ret;
