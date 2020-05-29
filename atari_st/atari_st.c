@@ -30,6 +30,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <mint/osbind.h>
+#include <mint/ostruct.h>
 #include <time.h>
 #include <vt52.h>
 
@@ -106,6 +107,7 @@ unsigned long timercnt;
 WORD fdcDmaMode = 0;
 
 extern ui_context g_ui_ctx;
+_KEYTAB * keyboard_map;
 
 #ifdef DEBUG
 
@@ -196,6 +198,35 @@ static unsigned short colortable[] = {
 	0x555, 0x000, 0x00f, 0x0f0, // w
 	0x666, 0x000, 0x00f, 0x0f0  // b
 };
+
+#if 0
+#define _cookie_base   (0x5a0L)
+
+static unsigned long read_cookie(unsigned long needed_cookie)
+{
+	unsigned long *cookie_ptr;
+	unsigned long cookie_value;
+
+	cookie_ptr = (unsigned long*)( Setexc( _cookie_base >> 2, (const void (*)(void))-1) ); // cookiejar pointer
+	cookie_value = NULL;
+
+	if(cookie_ptr != 0)
+	{
+		while( (*cookie_ptr != needed_cookie) && (*cookie_ptr != 0) )
+		{
+			cookie_ptr += 2;
+		}
+
+		if(*cookie_ptr == needed_cookie)
+		{
+			cookie_value = *(cookie_ptr + 1);
+			return cookie_value;    // Cookie found.
+		}
+	}
+
+	return cookie_value;
+}
+#endif
 
 void su_get_hz200(void)
 {
@@ -595,7 +626,7 @@ unsigned char Joystick()
 	if( (g_joydata[2]&0x80) ) // Fire
 		joystick |= 0x10;
 
-	if((g_joydata[2]&0x02) ) // Down
+	if((g_joydata[2]&0x02) )  // Down
 		joystick |= 0x02;
 
 	if( (g_joydata[2]&0x01) ) // Up
@@ -627,8 +658,9 @@ unsigned char Keyboard()
 
 unsigned char get_char()
 {
-	unsigned char key,i,c;
-	unsigned char function_code,key_code;
+	unsigned char key,c;
+	unsigned char function_code;
+	unsigned char shiftkey;
 
 	function_code=FCT_NO_FUNCTION;
 	while(!(Keyboard()&0x80));
@@ -651,13 +683,15 @@ unsigned char get_char()
 
 		}while(c);
 
-		i=0;
-		do
-		{
-			function_code=char_keysmap[i].function_code;
-			key_code=char_keysmap[i].keyboard_code;
-			i++;
-		}while((key_code!=key) && (function_code!=FCT_NO_FUNCTION) );
+		if( (key == 28) || (key == 114) ) // Return
+			return '\n';
+
+		shiftkey = Kbshift(-1);
+
+		if( shiftkey & 0x03)
+			function_code = keyboard_map->shift[key];
+		else
+			function_code = keyboard_map->unshift[key];
 
 	}while(function_code==FCT_NO_FUNCTION);
 
@@ -825,6 +859,9 @@ int  init_display(ui_context * ctx)
 
 	Supexec(su_toggleConterm);
 
+	// Get the current key map.
+	keyboard_map = Keytbl(-1,-1,-1);
+
 	install_joy_vector();
 
 	font = font_list[ctx->font_id];
@@ -956,7 +993,7 @@ void print_char(ui_context * ctx, unsigned char c, int mode)
 		if(ctx->char_ptr_col&1)
 			ctx->vid_mem_ptr ++;
 		else
-			ctx->vid_mem_ptr += ((1<<PLANES_ALIGNDEC) - 1);	
+			ctx->vid_mem_ptr += ((1<<PLANES_ALIGNDEC) - 1);
 	}
 }
 
