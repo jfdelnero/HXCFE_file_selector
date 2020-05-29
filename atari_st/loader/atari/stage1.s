@@ -27,6 +27,8 @@ ASYNCADDR2      =     1                         ; maintain a second, offseted ad
 
 	include "const.s"
 
+	move.w  #COLOR_BLUE,$ffff8240.w
+
 	pea     -1.w
 	move.w  #$48,-(a7)                          ; MALLOC
 	trap    #1

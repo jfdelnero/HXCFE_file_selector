@@ -13,3 +13,5 @@ LOADsize        =     PACKlen+STAGE2len
 ;STAGE2len       equ     322                        ;stage1
 ;PACKlen         equ     82896                      ;stage1
 
+COLOR_BLUE       equ     $337
+COLOR_RED        equ     $533

@@ -152,12 +152,18 @@ fdcIrq80:
 	movem.l  a0-a2/d0,-(a7)
 	lea     alStruct(pc),a0
 
+	move.w  #COLOR_BLUE,$ffff8240.w             ; Blue screen
+
+	move.w  $ffff8604.w,d0                      ; Read FDC status
+	and.b   #$1C,d0                             ; CRC / DMA error ?
+	bne.s   .fdcError                           ; something wrong happened...
+
 	moveq   #64,d0
 	asl     #3,d0                               ; d0=512
-	add.l   d0,(a0)+                            ; alAddress,     a0=s+4 we juste read 512 bytes
+	add.l   d0,(a0)+                            ; alAddress,     a0=s+4 we just read 512 bytes
 
 	IF ASYNCADDR2
-	add.l   d0,(a0)+                            ; alAddress2,    a0=s+8 we juste read 512 bytes
+	add.l   d0,(a0)+                            ; alAddress2,    a0=s+8 we just read 512 bytes
 	ENDIF
 
 	subq.l  #1,(a0)+                            ; alSectorCount, a0=s+8/12 remaining sectors
@@ -192,6 +198,10 @@ fdcIrq80:
 	lea     .fdcIrq53(pc),a0                    ; change IRQ to the StepIn one. This also calls .switchSide
 	move.l  a0,$11c.w
 	bra     .return
+
+.fdcError:
+	move.w  #COLOR_RED,$ffff8240.w              ; Red screen
+	bra     .nextSector                         ; And just retry...
 
 .switchSide:    ;a0=s+9/13
 	;reset PSG register 14. Also called after StepIn.

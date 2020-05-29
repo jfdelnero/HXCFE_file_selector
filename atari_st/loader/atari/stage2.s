@@ -190,7 +190,7 @@ FIN2071:
 MSG1:
 	;dc.b    27,'e'                             ; show cursor
 	dc.b    27,'w'                              ; wrap off
-	dc.b    "Loading HxC Manager...                 "
+	dc.b    "Loading The HxC File Selector :) ...   "
 	dc.b    10                                  ; line down
 	dc.b    27,'o'                              ; clear start of line
 	dc.b    ']'
