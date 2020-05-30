@@ -1,22 +1,35 @@
- HxC Floppy Emulator file selector - A file selector program for the HxC Floppy Emulator
- Copyright (C) 2009-2016  Jean-François DEL NERO / HxC2001
+-------------------------------------------------------------------------------
+-----------H----H---X----X----CCCCC----22222-----0000-----0000-----11----------
+----------H----H-----X-X----C--------------2---0----0---0----0---1-1-----------
+---------HHHHHH------X-----C----------22222---0----0---0----0-----1------------
+--------H----H-----X--X---C----------2-------0----0---0----0-----1-------------
+-------H----H----X-----X--CCCCC-----222222---0000-----0000----11111------------
+-------------------------------------------------------------------------------
+ HxC Floppy Emulator project - https://hxc2001.com/
+ (c) 2006-2020 Jean-François DEL NERO / (c) HxC2001
+-------------------------------------------------------------------------------
+ HxC Floppy Emulator file selector
+ A file selector program for the HxC Floppy Emulators
 
- contact: hxc2001( a t )free.fr
+ Copyright (C) 2009-2020  Jean-François DEL NERO / HxC2001
+
+ contact: hxc2001( a t )free.fr / hxc2001( a t )hxc2001.com
  website: http://hxc2001.free.fr/floppy_drive_emulator
- forum:   http://www.torlus.com/floppy/forum
+          https://hxc2001.com
+ forum:   https://www.torlus.com/floppy/forum
 
- HxC Floppy Emulator file selector may be used and distributed without restriction
- provided that this copyright statement is not removed from the file and that any
- derivative work contains the original copyright notice and the associated
- disclaimer.
+ HxC Floppy Emulator file selector may be used and distributed without
+ restriction provided that this copyright statement is not removed from the
+ file and that any derivative work contains the original copyright notice and
+ the associated disclaimer.
 
  HxC Floppy Emulator file selector is free software; you can redistribute it
  and/or modify  it under the terms of the GNU General Public License
  as published by the Free Software Foundation; either version 2
  of the License, or (at your option) any later version.
 
- HxC Floppy Emulator file selector is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
+ HxC Floppy Emulator file selector is distributed in the hope that it will be
+ useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
    See the GNU General Public License for more details.
 
@@ -25,20 +38,20 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 
- The HxCFloppyEmulator file selector software embedded the following libraries :
+ The HxCFloppyEmulator file selector software embedded the following libraries:
 
- -----------------------------------------------------------------------------------------------
+ ------------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-//					        FAT16/32 File IO Library
-//								    V2.6
-// 	  							 Rob Riglar
-//						    Copyright 2003 - 2010
+//                          FAT16/32 File IO Library
+//                                  V2.6
+//                               Rob Riglar
+//                          Copyright 2003 - 2010
 //
-//   					  Email: rob@robriglar.com
+//                        Email: rob@robriglar.com
 //
-//								License: GPL
+//                              License: GPL
 //   If you would like a version with a more permissive license for use in
 //   closed source commercial applications please contact me for details.
 //-----------------------------------------------------------------------------
@@ -57,8 +70,6 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
- -----------------------------------------------------------------------------------------------
-
 
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
