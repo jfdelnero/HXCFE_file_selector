@@ -1,0 +1,256 @@
+-------------------------------------------------------------------------------
+-----------H----H---X----X----CCCCC----22222-----0000-----0000-----11----------
+----------H----H-----X-X----C--------------2---0----0---0----0---1-1-----------
+---------HHHHHH------X-----C----------22222---0----0---0----0-----1------------
+--------H----H-----X--X---C----------2-------0----0---0----0-----1-------------
+-------H----H----X-----X--CCCCC-----222222---0000-----0000----11111------------
+-------------------------------------------------------------------------------
+ HxC Floppy Emulator project - https://hxc2001.com/
+ (c) 2006-2020 Jean-François DEL NERO / (c) HxC2001
+-------------------------------------------------------------------------------
+ HxC Floppy Emulator file selector
+ A file selector program for the HxC Floppy Emulators
+
+ Copyright (C) 2009-2020  Jean-François DEL NERO / HxC2001
+
+ Contact  : hxc2001( a t )free.fr / hxc2001( a t )hxc2001.com
+ Website  : http://hxc2001.free.fr/floppy_drive_emulator
+            https://hxc2001.com
+ Forum:     https://www.torlus.com/floppy/forum
+ Facebook : https://www.facebook.com/groups/hxc2001
+ Twitter  : https://twitter.com/jfdelnero
+-------------------------------------------------------------------------------
+
+30 May 2020 : HxC Floppy Emulator file selector v2020.05.30
+
+    Atari ST :
+
+        - More robust track loader : FDC errors checking + retry.
+
+        - More robust floppy access : FDC errors checking + retry.
+
+        - AUTOBOOT.HFE : Is now a browsable FAT image.
+
+        - GEMDOS .PRG file selector version available in the
+          AUTOBOOT.HFE image. This PRG can be copied on harddisk.
+
+        - GEMDOS started file selector can return to the system without
+          restarting the machine.
+
+        - Don't lockup the system anymore in case of error if we are not
+          track-loaded.
+
+        - Keyboard : All keyboard layouts now supported.
+                     International support fixed.
+                     (Thanks to Vincent Rivière for the tip :) ).
+
+    New version code format : year.month.day[suffix]
+
+-------------------------------------------------------------------------------
+
+2 January 2019 : HxC Floppy Emulator file selector Version 1.89
+
+    Amiga : Better multitasking/Workbench compatibility/support
+
+        - Don't "overtake"/hand-initialize the screen anymore :
+          Let the system initialize the bitplane and just use it.
+
+        - Don't reboot anymore the system but just exit the file selector
+          if we are not track-loaded.
+
+        - Don't lockup the system anymore in case of error if we are not
+          track-loaded.
+
+    With these modifications the file selector is now more "Workbench-friendly".
+
+    Amiga Workbench tips and tricks :
+
+        Press Left-Amiga+N keys to switch to the Workbench.
+        Press Left-Amiga+M keys to switch back to the HxC File selector.
+        You can drag/scroll the HxC File selector screen with the upper bar.
+
+-------------------------------------------------------------------------------
+
+11 August 2018 : HxC Floppy Emulator file selector Version 1.85
+
+    Main changes :
+
+        - Atari ST & Amiga version -> Huge graphical performance gain !
+
+-------------------------------------------------------------------------------
+
+2 August 2018 : HxC Floppy Emulator file selector Version 1.84
+
+    Main changes :
+
+        - Windows/Linux version : populateslots function fixed.
+
+-------------------------------------------------------------------------------
+
+30 July 2018 HxC Floppy Emulator file selector Version 1.83
+
+    Main changes :
+
+        - Windows/Linux version : V2 CFG file support + command line tools
+          fixed.
+
+-------------------------------------------------------------------------------
+
+18 June 2018 : HxC Floppy Emulator file selector Version 1.81
+
+    Main changes :
+
+        - 3 text fonts available : 8x6, 8x8 or 8x12 size !
+
+        - New "Clear slots" function.
+
+        - Code optimizations.
+
+        - Various glitches and bugs fixed.
+
+-------------------------------------------------------------------------------
+
+1 October 2017 : HxC Floppy Emulator file selector Version 1.65
+
+    Main changes :
+
+        - Major code rewrite/refactoring to prepare the next releases.
+
+        - Pure text interface to port it to others machines :
+          No more graphical dependency.
+
+        - You can mount/switch to any emulators connected to the machine.
+          Up to 4 drives on Amiga.
+
+        - Cortex Firmware compatibility added for the Amiga and PC/SDL version:
+          It seems that this firmware use the HxC Direct Access protocol...
+
+        - Search/filter function fixed.
+
+        - Various glitches and bugs corrected.
+
+-------------------------------------------------------------------------------
+
+8 March 2017 : HxCFloppyEmulator Manager v1.46
+
+    Main changes :
+
+        - Slow directory access fixed.
+
+-------------------------------------------------------------------------------
+
+26 December 2016 : HxCFloppyEmulator Manager v1.44
+
+    Main changes :
+
+        - Internal code refactored.
+
+        - V2 Config file support.
+
+        - lots of bugs fixes and improvements ! ( again ;) )
+
+-------------------------------------------------------------------------------
+
+15 May 2016 : HxCFloppyEmulator Manager v1.35
+
+    Main changes :
+
+        - User interface completely refactored.
+
+        - lots of bugs fixes and improvements ! ;)
+
+-------------------------------------------------------------------------------
+
+20/06/2015: SDCard HxCFloppyEmulator Manager v2.01
+
+    Main changes :
+
+        - New keyboard layout
+
+        - New function : File viewer.
+
+        - Files are sorted.
+
+        - Compatible with the new STM32 Firmware.
+
+    Press "Help" for more details.
+
+-------------------------------------------------------------------------------
+
+14/07/2012: SDCard HxCFloppyEmulator Manager v1.9b
+
+    Main changes :
+
+        - "Show all slots" function fixed.
+
+-------------------------------------------------------------------------------
+
+08/07/2012: SDCard HxCFloppyEmulator Manager v1.9a
+
+    Main changes :
+
+        - Fast Loader by Gilles Bouthenot !
+          Manager Loaded in less than 2 seconds ;)
+
+-------------------------------------------------------------------------------
+
+04/06/2012: SDCard HxCFloppyEmulator Manager v1.8a
+
+    Main changes :
+
+        - All Keyboards support added.
+
+        - Video mode init corrected.
+
+-------------------------------------------------------------------------------
+
+03/06/2012: SDCard HxCFloppyEmulator Manager v1.7a
+
+    Main changes :
+
+        - Track Seek timeout/Floprate() bug corrected for TOS 2.06 machines
+
+        - Monochrome/HighRes machine support added.
+
+-------------------------------------------------------------------------------
+
+02/06/2012: SDCard HxCFloppyEmulator Manager v1.6a
+
+    Main changes :
+
+        - No more Key sound.
+
+        - More Color scheme. Color setting is now saved.
+
+        - <<Folder name with space>> bug corrected
+
+-------------------------------------------------------------------------------
+
+06/02/2011: SDCard HxCFloppyEmulator Manager v1.5a
+
+    Main changes :
+
+        - Faster disk access, some bugs corrected.
+
+        - Some New functions (press help for more details).
+            > Search function.
+            > Color scheme
+            and some others functions ;-)
+
+-------------------------------------------------------------------------------
+
+13/05/2010: SDCard HxCFloppyEmulator Manager v1.1a
+
+    Main changes :
+
+        - FAT32 entry browser bugs corrected (last character bug, missing entry
+          bug).
+
+        - selection saving speedup.
+
+-------------------------------------------------------------------------------
+
+11/05/2010: SDCard HxCFloppyEmulator Manager v1.0a
+
+    - Initial version.
+
