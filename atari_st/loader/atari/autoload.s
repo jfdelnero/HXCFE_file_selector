@@ -94,12 +94,25 @@ fdcAutoloader:
 	; install our fdc Interrupt
 	lea     fdcIrq80(pc),a1
 	move.l  a1,$11c.w
-	moveq   #7,d1
-	bset    d1,$fffffa09.w                      ; enable FDC MFP interrupt
-	bset    d1,$fffffa15.w                      ; enable FDC MFP interrupt
 
 	lea     $ffff8606.w,a1                      ; a1=$FF8606
 	lea     $ffff8604.w,a2                      ; a2=$FF8604
+
+	; Move to track 1 to skip the FAT and jump into the loader file. 
+	move.w  #$80,(a1)                           ; FDC Command register
+	move.w  #$51,(a2)                           ; Step in, updateTrack, notVerify, 3ms
+	moveq   #$FF,d1                             ; The status byte is slow to be updated (32uS) ... Wait before checking it...
+.waitwd:                                        ; Delay loop...
+	subq.b  #1,d1
+	bne.s   .waitwd
+.loopstep:
+	move.w  (a2),d0                             ; Read FDC status
+	btst    #0,d0                               ; FDC busy ?
+	bne.s   .loopstep
+
+	moveq   #7,d1
+	bset    d1,$fffffa09.w                      ; enable FDC MFP interrupt
+	bset    d1,$fffffa15.w                      ; enable FDC MFP interrupt
 
 	move.w  #$180,(a1)                          ; DMA reset to load mode
 	move.w  d3,(a1)
@@ -152,7 +165,7 @@ fdcIrq80:
 	movem.l  a0-a2/d0,-(a7)
 	lea     alStruct(pc),a0
 
-	move.w  #COLOR_BLUE,$ffff8240.w             ; Blue screen
+	;move.w  #COLOR_BLUE,$ffff8240.w             ; Blue screen
 
 	move.w  $ffff8604.w,d0                      ; Read FDC status
 	and.b   #$1C,d0                             ; CRC / DMA error ?
