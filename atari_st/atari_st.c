@@ -96,6 +96,8 @@ unsigned short NB_WORDS_PER_TXT_LINE;
 static unsigned short bytes_per_line;
 static unsigned char * chars_LUT[256];
 
+static unsigned short backup_pal[16];
+
 __LINEA *__aline;
 __FONT  **__fonts;
 short  (**__funcs) (void);
@@ -261,13 +263,24 @@ void waitsec(int secs)
 
 void lockup()
 {
+	int i;
+
 	#ifdef DEBUG
 	dbg_printf("lockup : Sofware halted...\n");
 	#endif
 
+	i = 0;
 	for(;;)
 	{
-		waitsec(100);
+		if( i >= 4 && Fgetdta ())
+		{
+			// We are not trackloaded ! return to the system after some seconds.
+			return_to_system(&g_ui_ctx);
+		}
+
+		waitsec(1);
+
+		i++;
 	}
 }
 
@@ -849,6 +862,12 @@ int  init_display(ui_context * ctx)
 
 	linea0();
 
+	// Save the current palette
+	for(i=0;i<16;i++)
+	{
+		backup_pal[i] = Setcolor( i , -1 );
+	}
+
 	// Line-A : Hidemouse
 	// do not do : __asm__("dc.w 0xa00a"); (it clobbers registry)
 	lineaa();
@@ -1048,10 +1067,23 @@ void invert_line(ui_context * ctx,int line)
 
 void su_reboot()
 {
-	asm("move.l #4,A6");
-	asm("move.l (A6),A0");
-	asm("move.l A0,-(SP)");
-	asm("rts");
+	if( Fgetdta () )
+	{
+		// We are not trackloaded ! just return to the system.
+
+		return_to_system(&g_ui_ctx);
+
+		lockup();
+	}
+	else
+	{
+		asm("move.l #4,A6");
+		asm("move.l (A6),A0");
+		asm("move.l A0,-(SP)");
+		asm("rts");
+	}
+
+	lockup();
 }
 
 void reboot()
@@ -1079,5 +1111,29 @@ int process_command_line(int argc, char* argv[])
 
 int return_to_system(ui_context * ctx)
 {
+	int i;
+
+	su_fdcUnlock();
+
+	// Clear sceen
+	memset(screen_buffer, 0, ctx->SCREEN_YRESOL * LINE_BYTES);
+
+	// Restore video mode
+	if ( _oldrez != 0xffff )
+	{
+		Setscreen((unsigned char *) -1, (unsigned char *) -1, _oldrez );
+	}
+
+	// Retore the palette
+	for(i=0;i<16;i++)
+	{
+		 Setcolor( i, backup_pal[i] );
+	}
+
+	// Enable mouse pointer
+	linea9();
+
+	exit(0);
+
 	return 0;
 }
