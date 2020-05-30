@@ -11,7 +11,7 @@ NRV2BOPT=
 all: OUT.ST
 
 clean:
-	rm -f temp/packed.n2b temp/stage1.bin temp/stage2.bin atari/equates.s temp/depack.prg temp/depack_bp OUT.ST
+	rm -f temp/packed.n2b temp/stage1.bin temp/stage2.bin atari/equates.s temp/depack.prg temp/depack_bp OUT.ST *.PRG COPYING.TXT
 
 push-mina: OUT.ST
 	rsync --perms $< Gilles@mina.openvpn:/cygdrive/c/users/Gilles/Desktop
@@ -46,4 +46,9 @@ temp/stage1.bin: atari/stage1.s atari/equates.s atari/const.s atari/autoload.s t
 
 OUT.ST: temp/stage1.bin temp/stage2.bin temp/packed.n2b
 	perl link.pl
+	hxcfe  -putfile:DESKTOP.INF  -finput:$@
+	cp ../HXCFEMNG.PRG .
+	hxcfe  -putfile:HXCFEMNG.PRG -finput:$@
+	cp ../../COPYING_FULL COPYING.TXT
+	hxcfe  -putfile:COPYING.TXT -finput:$@
 	hxcfe  -conv:HXC_HFE -finput:$@ -foutput:AUTOBOOT.HFE
