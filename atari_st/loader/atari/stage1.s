@@ -27,6 +27,19 @@ ASYNCADDR2      =     1                         ; maintain a second, offseted ad
 
 	include "const.s"
 
+	; Shift key pressed ?
+;	move.w  #-1,-(a7)
+;	move.w  #11,-(a7)                           ; Kbshift
+;	trap    #13
+;	addq.l  #4,a7
+
+;	and.b   #$03,d0                             ; Shift keys
+;	beq     no_shift_pressed
+	; End ! Return and do a "normal boot"
+;	rts
+
+;no_shift_pressed:
+
 	move.w  #COLOR_BLUE,$ffff8240.w
 
 	pea     -1.w
