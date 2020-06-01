@@ -1,4 +1,4 @@
--------------------------------------------------------------------------------
+﻿-------------------------------------------------------------------------------
 -----------H----H---X----X----CCCCC----22222-----0000-----0000-----11----------
 ----------H----H-----X-X----C--------------2---0----0---0----0---1-1-----------
 ---------HHHHHH------X-----C----------22222---0----0---0----0-----1------------
@@ -20,6 +20,15 @@
  Facebook : https://www.facebook.com/groups/hxc2001
  Twitter  : https://twitter.com/jfdelnero
 -------------------------------------------------------------------------------
+
+1 June 2020 : HxC Floppy Emulator file selector v2020.06.01
+
+    Atari ST :
+
+        - Fix a possible crash after a warm reboot from another software.
+          (Memory/stack state dependent crash)
+
+        - Keyboard : Backspace key is now equal to the Delete key.
 
 30 May 2020 : HxC Floppy Emulator file selector v2020.05.30
 
