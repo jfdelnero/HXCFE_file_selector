@@ -49,7 +49,25 @@ start:
         addq.l #6,sp
         endif
 
+        move.l  basepage(pc),a5         ;basepage
+        tst.l   $24(a5)                 ;dta exists ?
+        beq.s   .trackloaded            ;No. We are trackloaded.
+
         jsr _main
+
+        bra _exit
+
+.trackloaded:
+
+        ; Loaded from the trackloader
+        ; Push NULL argc and argv to the stack
+
+        move.l #0,-(sp)
+        move.l #0,-(sp)
+
+        jsr _main
+
+        addq.l #8,sp
 
 _exit:
 ;       move.w #1,-(sp)
