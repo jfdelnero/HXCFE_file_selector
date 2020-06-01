@@ -720,6 +720,9 @@ unsigned char get_char()
 		if( (key == 28) || (key == 114) ) // Return
 			return '\n';
 
+		if( key == 14 ) // Backspace -> del
+			return 127;
+
 		shiftkey = Kbshift(-1);
 
 		if( shiftkey & 0x03)
