@@ -1,2 +1,2 @@
-#define VERSIONCODE "2020.06.01"
-#define DATECODE "1 June 2020"
+#define VERSIONCODE "2020.10.25"
+#define DATECODE "25 October 2020"

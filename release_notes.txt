@@ -21,6 +21,12 @@
  Twitter  : https://twitter.com/jfdelnero
 -------------------------------------------------------------------------------
 
+25 October 2020 : HxC Floppy Emulator file selector v2020.10.25
+
+    Windows / Linux version :
+
+        - Fix command line functions segfault.
+
 1 June 2020 : HxC Floppy Emulator file selector v2020.06.01
 
     Atari ST :
