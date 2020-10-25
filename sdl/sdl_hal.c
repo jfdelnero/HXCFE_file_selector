@@ -84,7 +84,8 @@ SDL_Color   *colors;
 
 SDL_TimerID sdl_timer_id;
 
-unsigned char * screen_buffer;
+unsigned char * screen_buffer = 0;
+
 static unsigned short bytes_per_line;
 
 uint16_t sector_pos[16];
@@ -355,7 +356,7 @@ int readsector(unsigned char sectornum,unsigned char * data,unsigned char invali
 int init_fdc(int drive)
 {
 	#ifdef WIN32
-	char drv_path[64];
+	char drv_path[256];
 
 	strcpy(drv_path,"\\\\.\\");
 	strncat(drv_path,dev_path,sizeof(drv_path)-1);
@@ -733,6 +734,9 @@ void print_char(ui_context * ctx, unsigned char c, int mode)
 
 	ptr_dst = ctx->vid_mem_ptr;
 	font_sprite = font->font_data + (c * font->char_size);
+
+	if(!screen_buffer)
+		return;
 
 	for(j=0;j<font->char_y_size;j++)
 	{
