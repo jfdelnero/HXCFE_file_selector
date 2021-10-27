@@ -274,7 +274,7 @@ int read_hxc_cfg_file(ui_context * ctx,unsigned char * cfgfile_header)
 				break;
 
 				case '2':
-					if( ctx->firmware_main_version != 3 )
+					if( ctx->firmware_main_version < 3 )
 					{
 						#ifdef DEBUG
 						dbg_printf("Firmware not supporting this config file !\n");
