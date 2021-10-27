@@ -993,6 +993,9 @@ int check_firmware_version(ui_context * ctx)
 
 		ofs = 1;
 
+		if( ctx->firmware_main_version >= 4 )
+			return 0;
+
 		if(!strcmp(ctx->FIRMWAREVERSION,"v3.X.X.Xa"))
 		{
 			return 0;
