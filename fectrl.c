@@ -987,7 +987,7 @@ int check_firmware_version(ui_context * ctx)
 		return 0;
 	}
 
-	if( !strncmp(ctx->FIRMWAREVERSION, "v3.", 3) || !strncmp(ctx->FIRMWAREVERSION, "v4.", 3) )
+	if( (ctx->FIRMWAREVERSION[0] == 'v') && (ctx->FIRMWAREVERSION[1] >= '3' && ctx->FIRMWAREVERSION[1] <= '9') && ctx->FIRMWAREVERSION[2] == '.' )
 	{
 		ctx->firmware_main_version = (ctx->FIRMWAREVERSION[1] - '0');
 
