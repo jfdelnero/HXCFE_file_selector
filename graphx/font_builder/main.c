@@ -1,6 +1,6 @@
 /*
 //
-// Copyright (C) 2017-2021 Jean-François DEL NERO / HxC2001
+// Copyright (C) 2017-2022 Jean-François DEL NERO / HxC2001
 //
 // This file is part of the FontCP&P software
 //
