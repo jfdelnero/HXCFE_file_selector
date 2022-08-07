@@ -6,12 +6,12 @@
 -------H----H----X-----X--CCCCC-----222222---0000-----0000----11111------------
 -------------------------------------------------------------------------------
  HxC Floppy Emulator project - https://hxc2001.com/
- (c) 2006-2021 Jean-François DEL NERO / (c) HxC2001
+ (c) 2006-2022 Jean-François DEL NERO / (c) HxC2001
 -------------------------------------------------------------------------------
  HxC Floppy Emulator file selector
  A file selector program for the HxC Floppy Emulators
 
- Copyright (C) 2009-2021  Jean-François DEL NERO / HxC2001
+ Copyright (C) 2009-2022  Jean-François DEL NERO / HxC2001
 
  Contact  : hxc2001( a t )free.fr / hxc2001( a t )hxc2001.com
  Website  : http://hxc2001.free.fr/floppy_drive_emulator
@@ -20,6 +20,10 @@
  Facebook : https://www.facebook.com/groups/hxc2001
  Twitter  : https://twitter.com/jfdelnero
 -------------------------------------------------------------------------------
+
+7 August 2022 : HxC Floppy Emulator file selector v2020.8.7
+
+    - Fix firmware version detection. (fix for fw v5.x.x.x up to v9.x.x.x)
 
 27 October 2020 : HxC Floppy Emulator file selector v2021.10.27
 
