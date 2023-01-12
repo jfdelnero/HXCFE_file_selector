@@ -605,6 +605,15 @@ int ui_loadfilelistpage(ui_context * ctx)
 				}
 			}
 
+			if( 
+				( (dir_entry.filename[0] == '.') && (dir_entry.filename[1] != '.') ) || 
+				( dir_entry.is_hidden && !(dir_entry.filename[0] == '.' && dir_entry.filename[1] == '.') )
+			)
+			{
+				// Hide '.' and hidden files
+				displayentry = 0x00;
+			}
+
 			if(displayentry)
 			{
 				// Get the file name extension.

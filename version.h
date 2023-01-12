@@ -1,2 +1,2 @@
-#define VERSIONCODE "2022.8.7"
-#define DATECODE "7 August 2022"
+#define VERSIONCODE "2023.1.12"
+#define DATECODE "12 January 2023"

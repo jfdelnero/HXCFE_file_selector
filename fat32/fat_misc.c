@@ -128,7 +128,7 @@ int fatfs_entry_lfn_invalid(struct fat_dir_entry *entry)
     if ( (entry->Name[0]==FILE_HEADER_BLANK)  ||
          (entry->Name[0]==FILE_HEADER_DELETED)||
          (entry->Attr==FILE_ATTR_VOLUME_ID) ||
-         (entry->Attr & FILE_ATTR_SYSHID) )
+         ((entry->Attr & FILE_ATTR_SYSHID) == FILE_ATTR_SYSHID) )
         return 1;
     else
         return 0;
@@ -144,7 +144,7 @@ int fatfs_entry_lfn_exists(struct lfn_cache *lfn, struct fat_dir_entry *entry)
          (entry->Name[0]!=FILE_HEADER_BLANK) &&
          (entry->Name[0]!=FILE_HEADER_DELETED) &&
          (entry->Attr!=FILE_ATTR_VOLUME_ID) &&
-         (!(entry->Attr&FILE_ATTR_SYSHID)) &&
+        !((entry->Attr&FILE_ATTR_SYSHID) == FILE_ATTR_SYSHID) &&
          (lfn->no_of_strings) )
         return 1;
     else
@@ -160,7 +160,7 @@ int fatfs_entry_sfn_only(struct fat_dir_entry *entry)
          (entry->Name[0]!=FILE_HEADER_BLANK) &&
          (entry->Name[0]!=FILE_HEADER_DELETED) &&
          (entry->Attr!=FILE_ATTR_VOLUME_ID) &&
-         (!(entry->Attr&FILE_ATTR_SYSHID)) )
+        !((entry->Attr&FILE_ATTR_SYSHID) == FILE_ATTR_SYSHID) )
         return 1;
     else
         return 0;
