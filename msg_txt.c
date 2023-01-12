@@ -1,6 +1,6 @@
 /*
 //
-// Copyright (C) 2009-2022 Jean-François DEL NERO
+// Copyright (C) 2009-2023 Jean-François DEL NERO
 //
 // This file is part of the HxCFloppyEmulator file selector.
 //
@@ -41,7 +41,7 @@ const char startup_msg[]=
 	"HxC Floppy Emulator file selector\n"
 	"V" VERSIONCODE " - " DATECODE "\n"
 	"\n"
-	"(c) 2009-2022 HxC2001 / Jean-Francois DEL NERO\n"
+	"(c) 2009-2023 HxC2001 / Jean-Francois DEL NERO\n"
 	"\n"
 	"Email : hxc2001@free.fr\n"
 	"\n"
@@ -130,7 +130,7 @@ const char help_scr5_msg[]=
 	"HxC Floppy Emulator file selector\n"
 	"V" VERSIONCODE " - " DATECODE "\n"
 	"\n"
-	"(c) 2006-2022 HxC2001 / Jean-Francois DEL NERO\n"
+	"(c) 2006-2023 HxC2001 / Jean-Francois DEL NERO\n"
 	"Email : hxc2001@free.fr\n"
 	"\n"
 	"Atari ST version optimized by Gilles Bouthenot\n"
@@ -147,7 +147,7 @@ const char help_scr6_msg[]=
 	"HxC Floppy Emulator file selector\n"
 	"V" VERSIONCODE " - " DATECODE "\n"
 	"\n"
-	"(c) 2006-2022 HxC2001 / Jean-Francois DEL NERO\n"
+	"(c) 2006-2023 HxC2001 / Jean-Francois DEL NERO\n"
 	"Email : hxc2001@free.fr\n"
 	"\n"
 	"Updates : http://hxc2001.free.fr/floppy_drive_emulator/\n"
