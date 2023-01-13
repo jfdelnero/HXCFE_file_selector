@@ -23,7 +23,7 @@
 
 12 January 2023 : HxC Floppy Emulator file selector v2023.1.12
 
-    - Fix hidden ".." issue (macOs created folders contains ".." with the hidden flag set...)
+    - Fix the hidden ".." entry issue (macOs create folders with the ".." entry hidden flag set...)
 
     - Don't show hidden files anymore (hidden flag set or with a name starting with a dot).
 
