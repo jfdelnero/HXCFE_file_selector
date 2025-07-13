@@ -1,6 +1,6 @@
 /*
 //
-// Copyright (C) 2009-2023 Jean-François DEL NERO
+// Copyright (C) 2009-2025 Jean-François DEL NERO
 //
 // This file is part of the HxCFloppyEmulator file selector.
 //
@@ -41,16 +41,15 @@ const char startup_msg[]=
 	"HxC Floppy Emulator file selector\n"
 	"V" VERSIONCODE " - " DATECODE "\n"
 	"\n"
-	"(c) 2009-2023 HxC2001 / Jean-Francois DEL NERO\n"
+	"(c) 2009-2025 HxC2001 / Jean-Francois DEL NERO\n"
 	"\n"
 	"Email : hxc2001@free.fr\n"
 	"\n"
 	">>> Press HELP key for the function key list <<<"
 	"\n"
-	"Updates:  http://hxc2001.free.fr/floppy_drive_emulator/\n"
+	"Updates:  https://hxc2001.com/floppy_drive_emulator/\n"
 	"          https://hxc2001.com\n"
-	"Forum:    https://torlus.com/floppy/forum\n"
-	"Facebook: https://www.facebook.com/groups/hxc2001\n"
+	"Forum:    https://hxc2001.com/floppy/forum\n"
 	"Sources : https://github.com/jfdelnero\n"
 	"\n"
 	"This software uses the FAT16/32 File IO Library v2.6\n"
@@ -152,7 +151,7 @@ const char help_scr6_msg[]=
 	"\n"
 	"Updates : http://hxc2001.free.fr/floppy_drive_emulator/\n"
 	"          https://hxc2001.com                          \n"
-	"Forum   : https://torlus.com/floppy/forum              \n"
+	"Forum   : https://hxc2001.com/floppy/forum             \n"
 	"Facebook: https://www.facebook.com/groups/hxc2001      \n"
 	"Sources : https://github.com/jfdelnero                 \n"
 	"\n"
